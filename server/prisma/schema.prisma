@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Card {
+  id              String   @id @default(uuid())
+  uuid            String   @unique // MTGJSON uuid
+  name            String
+  setCode         String
+  setName         String
+  rarity          String
+  manaCost        String?
+  manaValue       Float    @default(0)
+  typeLine        String
+  oracleText      String?
+  scryfallId      String?
+  collectorNumber String
+  priceEur        Float?
+  priceEurFoil    Float?
+  priceUsd        Float?
+  priceUsdFoil    Float?
+  imageUri        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  collectionItems CollectionItem[]
+  wishlistItems   WishlistItem[]
+
+  @@index([name])
+  @@index([setCode])
+  @@index([scryfallId])
+  @@map("cards")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String
+  shareCode    String   @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  collectionItems    CollectionItem[]
+  wishlistItems      WishlistItem[]
+  initiatedSessions  TradeSession[]   @relation("TradeSessionInitiator")
+  joinedSessions     TradeSession[]   @relation("TradeSessionJoiner")
+
+  @@map("users")
+}
+
+enum CardCondition {
+  M
+  NM
+  LP
+  MP
+  HP
+  DMG
+}
+
+model CollectionItem {
+  id           String        @id @default(uuid())
+  userId       String
+  cardId       String
+  quantity     Int           @default(1)
+  foilQuantity Int           @default(0)
+  condition    CardCondition @default(NM)
+  language     String        @default("EN")
+  forTrade     Int           @default(0)
+  tradePrice   Float?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, cardId, condition, language])
+  @@index([userId])
+  @@index([cardId])
+  @@index([forTrade])
+  @@map("collection_items")
+}
+
+enum WishlistPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model WishlistItem {
+  id           String           @id @default(uuid())
+  userId       String
+  cardId       String
+  quantity     Int              @default(1)
+  priority     WishlistPriority @default(NORMAL)
+  maxPrice     Float?
+  minCondition CardCondition?
+  foilOnly     Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, cardId])
+  @@index([userId])
+  @@index([cardId])
+  @@map("wishlist_items")
+}
+
+enum TradeSessionStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  EXPIRED
+}
+
+model TradeSession {
+  id          String             @id @default(uuid())
+  sessionCode String             @unique
+  initiatorId String
+  joinerId    String?
+  status      TradeSessionStatus @default(PENDING)
+  matchesJson Json?
+  expiresAt   DateTime
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  initiator User  @relation("TradeSessionInitiator", fields: [initiatorId], references: [id], onDelete: Cascade)
+  joiner    User? @relation("TradeSessionJoiner", fields: [joinerId], references: [id], onDelete: SetNull)
+
+  @@index([sessionCode])
+  @@index([initiatorId])
+  @@index([joinerId])
+  @@index([status])
+  @@map("trade_sessions")
+}

@@ -1,0 +1,234 @@
+// Card condition enum
+export enum CardCondition {
+  MINT = 'M',
+  NEAR_MINT = 'NM',
+  LIGHTLY_PLAYED = 'LP',
+  MODERATELY_PLAYED = 'MP',
+  HEAVILY_PLAYED = 'HP',
+  DAMAGED = 'DMG',
+}
+
+// Wishlist priority enum
+export enum WishlistPriority {
+  LOW = 'LOW',
+  NORMAL = 'NORMAL',
+  HIGH = 'HIGH',
+  URGENT = 'URGENT',
+}
+
+// Trade session status enum
+export enum TradeSessionStatus {
+  PENDING = 'PENDING',
+  ACTIVE = 'ACTIVE',
+  COMPLETED = 'COMPLETED',
+  EXPIRED = 'EXPIRED',
+}
+
+// Card types
+export interface Card {
+  id: string;
+  name: string;
+  setCode: string;
+  setName: string;
+  rarity: string;
+  manaCost: string | null;
+  manaValue: number;
+  typeLine: string;
+  oracleText: string | null;
+  scryfallId: string | null;
+  collectorNumber: string;
+  priceEur: number | null;
+  priceEurFoil: number | null;
+  priceUsd: number | null;
+  priceUsdFoil: number | null;
+  imageUri: string | null;
+}
+
+// User types
+export interface User {
+  id: string;
+  email: string;
+  displayName: string;
+  shareCode: string;
+  createdAt: Date;
+}
+
+export interface UserPublic {
+  id: string;
+  displayName: string;
+  shareCode: string;
+}
+
+// Collection types
+export interface CollectionItem {
+  id: string;
+  userId: string;
+  cardId: string;
+  quantity: number;
+  foilQuantity: number;
+  condition: CardCondition;
+  language: string;
+  forTrade: number;
+  tradePrice: number | null;
+  card?: Card;
+}
+
+export interface CollectionItemInput {
+  cardId: string;
+  quantity: number;
+  foilQuantity?: number;
+  condition?: CardCondition;
+  language?: string;
+  forTrade?: number;
+  tradePrice?: number | null;
+}
+
+export interface CollectionStats {
+  totalCards: number;
+  uniqueCards: number;
+  totalValue: number;
+  totalValueFoil: number;
+  forTradeCount: number;
+}
+
+// Wishlist types
+export interface WishlistItem {
+  id: string;
+  userId: string;
+  cardId: string;
+  quantity: number;
+  priority: WishlistPriority;
+  maxPrice: number | null;
+  minCondition: CardCondition | null;
+  foilOnly: boolean;
+  card?: Card;
+}
+
+export interface WishlistItemInput {
+  cardId: string;
+  quantity?: number;
+  priority?: WishlistPriority;
+  maxPrice?: number | null;
+  minCondition?: CardCondition | null;
+  foilOnly?: boolean;
+}
+
+// Trade types
+export interface TradeSession {
+  id: string;
+  sessionCode: string;
+  initiatorId: string;
+  joinerId: string | null;
+  status: TradeSessionStatus;
+  expiresAt: Date;
+  createdAt: Date;
+  initiator?: UserPublic;
+  joiner?: UserPublic;
+}
+
+export interface TradeMatch {
+  card: Card;
+  offererUserId: string;
+  receiverUserId: string;
+  availableQuantity: number;
+  condition: CardCondition;
+  isFoil: boolean;
+  priority: WishlistPriority;
+  priceEur: number | null;
+  tradePrice: number | null;
+}
+
+export interface TradeMatchResult {
+  session: TradeSession;
+  userAOffers: TradeMatch[];
+  userBOffers: TradeMatch[];
+  userATotalValue: number;
+  userBTotalValue: number;
+}
+
+// Auth types
+export interface LoginInput {
+  email: string;
+  password: string;
+}
+
+export interface RegisterInput {
+  email: string;
+  password: string;
+  displayName: string;
+}
+
+export interface AuthResponse {
+  user: User;
+  token: string;
+}
+
+// API response types
+export interface ApiResponse<T> {
+  data?: T;
+  error?: string;
+  message?: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+// Card search types
+export interface CardSearchParams {
+  query?: string;
+  setCode?: string;
+  rarity?: string;
+  colors?: string[];
+  type?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface CardAutocompleteResult {
+  id: string;
+  name: string;
+  setCode: string;
+  setName: string;
+  scryfallId: string | null;
+}
+
+// Import types
+export interface ImportResult {
+  success: number;
+  failed: number;
+  errors: string[];
+}
+
+// Helper to get Scryfall image URL
+export function getScryfallImageUrl(
+  scryfallId: string | null,
+  size: 'small' | 'normal' | 'large' | 'png' = 'normal'
+): string | null {
+  if (!scryfallId) return null;
+  const dir1 = scryfallId.charAt(0);
+  const dir2 = scryfallId.charAt(1);
+  return `https://cards.scryfall.io/${size}/front/${dir1}/${dir2}/${scryfallId}.jpg`;
+}
+
+// Condition ranking for comparison
+export const CONDITION_RANK: Record<CardCondition, number> = {
+  [CardCondition.MINT]: 0,
+  [CardCondition.NEAR_MINT]: 1,
+  [CardCondition.LIGHTLY_PLAYED]: 2,
+  [CardCondition.MODERATELY_PLAYED]: 3,
+  [CardCondition.HEAVILY_PLAYED]: 4,
+  [CardCondition.DAMAGED]: 5,
+};
+
+export function isConditionAcceptable(
+  cardCondition: CardCondition,
+  minCondition: CardCondition | null
+): boolean {
+  if (!minCondition) return true;
+  return CONDITION_RANK[cardCondition] <= CONDITION_RANK[minCondition];
+}

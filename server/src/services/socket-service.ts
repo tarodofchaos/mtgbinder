@@ -2,6 +2,7 @@ import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { logger } from '../utils/logger';
+import { config } from '../utils/config';
 
 let io: Server | null = null;
 
@@ -12,7 +13,7 @@ interface AuthenticatedSocket extends Socket {
 export function initializeSocket(httpServer: HttpServer): Server {
   io = new Server(httpServer, {
     cors: {
-      origin: process.env.CLIENT_URL || 'http://localhost:3000',
+      origin: config.clientUrl,
       methods: ['GET', 'POST'],
       credentials: true,
     },
@@ -27,7 +28,7 @@ export function initializeSocket(httpServer: HttpServer): Server {
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { userId: string };
+      const decoded = jwt.verify(token, config.jwtSecret) as { userId: string };
       socket.userId = decoded.userId;
       next();
     } catch {
@@ -45,19 +46,49 @@ export function initializeSocket(httpServer: HttpServer): Server {
 
     // Join a trade session room
     socket.on('join-trade-session', (sessionCode: string) => {
-      socket.join(`trade:${sessionCode}`);
-      logger.info({ userId: socket.userId, sessionCode }, 'User joined trade session room');
+      try {
+        if (!sessionCode || typeof sessionCode !== 'string') {
+          socket.emit('error', { message: 'Invalid session code' });
+          return;
+        }
+
+        const sanitizedCode = sessionCode.toUpperCase().slice(0, 10);
+        socket.join(`trade:${sanitizedCode}`);
+        logger.info({ userId: socket.userId, sessionCode: sanitizedCode }, 'User joined trade session room');
+      } catch (error) {
+        logger.error({ error, userId: socket.userId, sessionCode }, 'Failed to join trade session');
+        socket.emit('error', { message: 'Failed to join session' });
+      }
     });
 
     // Leave a trade session room
     socket.on('leave-trade-session', (sessionCode: string) => {
-      socket.leave(`trade:${sessionCode}`);
-      logger.info({ userId: socket.userId, sessionCode }, 'User left trade session room');
+      try {
+        if (!sessionCode || typeof sessionCode !== 'string') {
+          return;
+        }
+
+        const sanitizedCode = sessionCode.toUpperCase().slice(0, 10);
+        socket.leave(`trade:${sanitizedCode}`);
+        logger.info({ userId: socket.userId, sessionCode: sanitizedCode }, 'User left trade session room');
+      } catch (error) {
+        logger.error({ error, userId: socket.userId, sessionCode }, 'Failed to leave trade session');
+      }
     });
 
-    socket.on('disconnect', () => {
-      logger.info({ userId: socket.userId }, 'User disconnected from socket');
+    // Handle errors on the socket
+    socket.on('error', (error) => {
+      logger.error({ error, userId: socket.userId }, 'Socket error');
     });
+
+    socket.on('disconnect', (reason) => {
+      logger.info({ userId: socket.userId, reason }, 'User disconnected from socket');
+    });
+  });
+
+  // Handle server-level errors
+  io.engine.on('connection_error', (error) => {
+    logger.error({ error }, 'Socket.IO connection error');
   });
 
   return io;

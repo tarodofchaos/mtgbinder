@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../utils/prisma';
+import { config } from '../utils/config';
 
 export interface AuthenticatedRequest extends Request {
   userId?: string;
@@ -21,7 +22,7 @@ export async function authMiddleware(
   const token = authHeader.substring(7);
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { userId: string };
+    const decoded = jwt.verify(token, config.jwtSecret) as { userId: string };
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
@@ -55,7 +56,7 @@ export function optionalAuthMiddleware(
   const token = authHeader.substring(7);
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { userId: string };
+    const decoded = jwt.verify(token, config.jwtSecret) as { userId: string };
     req.userId = decoded.userId;
   } catch {
     // Token invalid, but that's okay for optional auth

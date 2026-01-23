@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { customAlphabet } from 'nanoid';
 import { prisma } from '../utils/prisma';
+import { config } from '../utils/config';
 import { validate } from '../middleware/validate';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import { AppError } from '../middleware/error-handler';
@@ -52,8 +53,8 @@ router.post('/register', validate(registerSchema), async (req, res: Response, ne
 
     const token = jwt.sign(
       { userId: user.id },
-      process.env.JWT_SECRET || 'secret',
-      { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'] }
+      config.jwtSecret,
+      { expiresIn: config.jwtExpiresIn as jwt.SignOptions['expiresIn'] }
     );
 
     res.status(201).json({
@@ -81,8 +82,8 @@ router.post('/login', validate(loginSchema), async (req, res: Response, next) =>
 
     const token = jwt.sign(
       { userId: user.id },
-      process.env.JWT_SECRET || 'secret',
-      { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'] }
+      config.jwtSecret,
+      { expiresIn: config.jwtExpiresIn as jwt.SignOptions['expiresIn'] }
     );
 
     res.json({

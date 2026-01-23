@@ -201,17 +201,21 @@ export function TradeSessionPage() {
         <Grid size={6}>
           <Paper sx={styles.summaryCard}>
             <Typography sx={{ ...styles.summaryValue, color: 'success.main' }}>
-              {myOffers.length}
+              {myOffers.filter((m) => m.isMatch).length}
             </Typography>
-            <Typography sx={styles.summaryLabel}>Cards you can offer</Typography>
+            <Typography sx={styles.summaryLabel}>
+              Matching cards you can offer ({myOffers.length} total)
+            </Typography>
           </Paper>
         </Grid>
         <Grid size={6}>
           <Paper sx={styles.summaryCard}>
             <Typography sx={{ ...styles.summaryValue, color: 'primary.main' }}>
-              {theirOffers.length}
+              {theirOffers.filter((m) => m.isMatch).length}
             </Typography>
-            <Typography sx={styles.summaryLabel}>Cards they can offer</Typography>
+            <Typography sx={styles.summaryLabel}>
+              Matching cards they can offer ({theirOffers.length} total)
+            </Typography>
           </Paper>
         </Grid>
       </Grid>

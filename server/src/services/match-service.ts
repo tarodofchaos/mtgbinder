@@ -1,6 +1,5 @@
 import { CardCondition } from '@prisma/client';
 import { prisma } from '../utils/prisma';
-import { isConditionAcceptable } from '../utils/card-conditions';
 
 interface TradeMatch {
   cardId: string;
@@ -8,14 +7,24 @@ interface TradeMatch {
   setCode: string;
   setName: string;
   scryfallId: string | null;
+  rarity: string;
+  manaCost: string | null;
+  manaValue: number;
+  typeLine: string;
+  oracleText: string | null;
+  collectorNumber: string;
+  imageUri: string | null;
+  priceUsd: number | null;
+  priceUsdFoil: number | null;
   offererUserId: string;
   receiverUserId: string;
   availableQuantity: number;
   condition: CardCondition;
   isFoil: boolean;
-  priority: string;
+  priority: string | null;
   priceEur: number | null;
   tradePrice: number | null;
+  isMatch: boolean;
 }
 
 interface TradeMatchResult {
@@ -29,20 +38,26 @@ export async function computeTradeMatches(
   userAId: string,
   userBId: string
 ): Promise<TradeMatchResult> {
-  // Get what A has for trade and B wants
-  const userAOffersRaw = await prisma.$queryRaw<
+  // Get ALL cards User A has for trade
+  const userATradeableRaw = await prisma.$queryRaw<
     Array<{
       cardId: string;
       cardName: string;
       setCode: string;
       setName: string;
       scryfallId: string | null;
+      rarity: string;
+      manaCost: string | null;
+      manaValue: number;
+      typeLine: string;
+      oracleText: string | null;
+      collectorNumber: string;
+      imageUri: string | null;
+      priceUsd: number | null;
+      priceUsdFoil: number | null;
       forTrade: number;
       foilQuantity: number;
       condition: CardCondition;
-      priority: string;
-      minCondition: CardCondition | null;
-      foilOnly: boolean;
       priceEur: number | null;
       priceEurFoil: number | null;
       tradePrice: number | null;
@@ -54,37 +69,47 @@ export async function computeTradeMatches(
       c."setCode",
       c."setName",
       c."scryfallId",
+      c.rarity,
+      c."manaCost",
+      c."manaValue",
+      c."typeLine",
+      c."oracleText",
+      c."collectorNumber",
+      c."imageUri",
+      c."priceUsd",
+      c."priceUsdFoil",
       ci."forTrade",
       ci."foilQuantity",
       ci.condition,
       ci."tradePrice",
-      wi.priority,
-      wi."minCondition",
-      wi."foilOnly",
       c."priceEur",
       c."priceEurFoil"
     FROM collection_items ci
     JOIN cards c ON c.id = ci."cardId"
-    JOIN wishlist_items wi ON c.id = wi."cardId"
-    WHERE ci."userId" = ${userAId}::uuid
-      AND wi."userId" = ${userBId}::uuid
+    WHERE ci."userId"::text = ${userAId}
       AND ci."forTrade" > 0
   `;
 
-  // Get what B has for trade and A wants
-  const userBOffersRaw = await prisma.$queryRaw<
+  // Get ALL cards User B has for trade
+  const userBTradeableRaw = await prisma.$queryRaw<
     Array<{
       cardId: string;
       cardName: string;
       setCode: string;
       setName: string;
       scryfallId: string | null;
+      rarity: string;
+      manaCost: string | null;
+      manaValue: number;
+      typeLine: string;
+      oracleText: string | null;
+      collectorNumber: string;
+      imageUri: string | null;
+      priceUsd: number | null;
+      priceUsdFoil: number | null;
       forTrade: number;
       foilQuantity: number;
       condition: CardCondition;
-      priority: string;
-      minCondition: CardCondition | null;
-      foilOnly: boolean;
       priceEur: number | null;
       priceEurFoil: number | null;
       tradePrice: number | null;
@@ -96,85 +121,123 @@ export async function computeTradeMatches(
       c."setCode",
       c."setName",
       c."scryfallId",
+      c.rarity,
+      c."manaCost",
+      c."manaValue",
+      c."typeLine",
+      c."oracleText",
+      c."collectorNumber",
+      c."imageUri",
+      c."priceUsd",
+      c."priceUsdFoil",
       ci."forTrade",
       ci."foilQuantity",
       ci.condition,
       ci."tradePrice",
-      wi.priority,
-      wi."minCondition",
-      wi."foilOnly",
       c."priceEur",
       c."priceEurFoil"
     FROM collection_items ci
     JOIN cards c ON c.id = ci."cardId"
-    JOIN wishlist_items wi ON c.id = wi."cardId"
-    WHERE ci."userId" = ${userBId}::uuid
-      AND wi."userId" = ${userAId}::uuid
+    WHERE ci."userId"::text = ${userBId}
       AND ci."forTrade" > 0
   `;
 
-  // Filter and transform matches based on conditions
-  const userAOffers: TradeMatch[] = userAOffersRaw
-    .filter((item) => {
-      if (!isConditionAcceptable(item.condition, item.minCondition)) {
-        return false;
-      }
-      if (item.foilOnly && item.foilQuantity === 0) {
-        return false;
-      }
-      return true;
-    })
-    .map((item) => ({
+  // Get User B's wishlist card NAMES (for matching against User A's offers)
+  const userBWishlistNames = await prisma.$queryRaw<Array<{ cardName: string }>>`
+    SELECT DISTINCT c.name as "cardName"
+    FROM wishlist_items wi
+    JOIN cards c ON c.id = wi."cardId"
+    WHERE wi."userId"::text = ${userBId}
+  `;
+  const userBWantsNames = new Set(userBWishlistNames.map((w) => w.cardName.toLowerCase()));
+
+  // Get User A's wishlist card NAMES (for matching against User B's offers)
+  const userAWishlistNames = await prisma.$queryRaw<Array<{ cardName: string }>>`
+    SELECT DISTINCT c.name as "cardName"
+    FROM wishlist_items wi
+    JOIN cards c ON c.id = wi."cardId"
+    WHERE wi."userId"::text = ${userAId}
+  `;
+  const userAWantsNames = new Set(userAWishlistNames.map((w) => w.cardName.toLowerCase()));
+
+  // Transform User A's tradeable cards, marking matches by NAME
+  const userAOffers: TradeMatch[] = userATradeableRaw.map((item) => {
+    const isMatch = userBWantsNames.has(item.cardName.toLowerCase());
+    return {
       cardId: item.cardId,
       cardName: item.cardName,
       setCode: item.setCode,
       setName: item.setName,
       scryfallId: item.scryfallId,
+      rarity: item.rarity,
+      manaCost: item.manaCost,
+      manaValue: item.manaValue,
+      typeLine: item.typeLine,
+      oracleText: item.oracleText,
+      collectorNumber: item.collectorNumber,
+      imageUri: item.imageUri,
+      priceUsd: item.priceUsd,
+      priceUsdFoil: item.priceUsdFoil,
       offererUserId: userAId,
       receiverUserId: userBId,
-      availableQuantity: item.foilOnly ? Math.min(item.forTrade, item.foilQuantity) : item.forTrade,
+      availableQuantity: item.forTrade,
       condition: item.condition,
-      isFoil: item.foilOnly || item.foilQuantity > 0,
-      priority: item.priority,
-      priceEur: item.foilOnly ? item.priceEurFoil : item.priceEur,
+      isFoil: item.foilQuantity > 0,
+      priority: null,
+      priceEur: item.priceEur,
       tradePrice: item.tradePrice,
-    }));
+      isMatch,
+    };
+  });
 
-  const userBOffers: TradeMatch[] = userBOffersRaw
-    .filter((item) => {
-      if (!isConditionAcceptable(item.condition, item.minCondition)) {
-        return false;
-      }
-      if (item.foilOnly && item.foilQuantity === 0) {
-        return false;
-      }
-      return true;
-    })
-    .map((item) => ({
+  // Transform User B's tradeable cards, marking matches by NAME
+  const userBOffers: TradeMatch[] = userBTradeableRaw.map((item) => {
+    const isMatch = userAWantsNames.has(item.cardName.toLowerCase());
+    return {
       cardId: item.cardId,
       cardName: item.cardName,
       setCode: item.setCode,
       setName: item.setName,
       scryfallId: item.scryfallId,
+      rarity: item.rarity,
+      manaCost: item.manaCost,
+      manaValue: item.manaValue,
+      typeLine: item.typeLine,
+      oracleText: item.oracleText,
+      collectorNumber: item.collectorNumber,
+      imageUri: item.imageUri,
+      priceUsd: item.priceUsd,
+      priceUsdFoil: item.priceUsdFoil,
       offererUserId: userBId,
       receiverUserId: userAId,
-      availableQuantity: item.foilOnly ? Math.min(item.forTrade, item.foilQuantity) : item.forTrade,
+      availableQuantity: item.forTrade,
       condition: item.condition,
-      isFoil: item.foilOnly || item.foilQuantity > 0,
-      priority: item.priority,
-      priceEur: item.foilOnly ? item.priceEurFoil : item.priceEur,
+      isFoil: item.foilQuantity > 0,
+      priority: null,
+      priceEur: item.priceEur,
       tradePrice: item.tradePrice,
-    }));
+      isMatch,
+    };
+  });
 
-  // Calculate total values
-  const userATotalValue = userAOffers.reduce(
-    (sum, match) => sum + (match.priceEur || 0) * match.availableQuantity,
-    0
-  );
-  const userBTotalValue = userBOffers.reduce(
-    (sum, match) => sum + (match.priceEur || 0) * match.availableQuantity,
-    0
-  );
+  // Sort both arrays: matches first, then by card name
+  const sortByMatchThenName = (a: TradeMatch, b: TradeMatch) => {
+    if (a.isMatch !== b.isMatch) {
+      return a.isMatch ? -1 : 1;
+    }
+    return a.cardName.localeCompare(b.cardName);
+  };
+
+  userAOffers.sort(sortByMatchThenName);
+  userBOffers.sort(sortByMatchThenName);
+
+  // Calculate total values (only for matched cards)
+  const userATotalValue = userAOffers
+    .filter((match) => match.isMatch)
+    .reduce((sum, match) => sum + (match.priceEur || 0) * match.availableQuantity, 0);
+  const userBTotalValue = userBOffers
+    .filter((match) => match.isMatch)
+    .reduce((sum, match) => sum + (match.priceEur || 0) * match.availableQuantity, 0);
 
   return {
     userAOffers,

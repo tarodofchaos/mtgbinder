@@ -6,6 +6,7 @@ import {
   ListItem,
   Chip,
 } from '@mui/material';
+import { Star as StarIcon } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
 import { TradeMatch } from '@mtg-binder/shared';
 import { CardImage } from '../cards/CardImage';
@@ -50,6 +51,36 @@ const styles: Record<string, SxProps<Theme>> = {
       bgcolor: 'action.hover',
     },
   },
+  listItemMatch: {
+    display: 'flex',
+    alignItems: 'center',
+    p: 2,
+    bgcolor: '#e8f5e9', // Light green background (green-50)
+    borderLeft: '4px solid',
+    borderLeftColor: 'success.main',
+    '&:hover': {
+      bgcolor: '#c8e6c9', // Slightly darker on hover (green-100)
+    },
+    // Force dark text colors regardless of theme (dark mode has white text)
+    '& .MuiTypography-root': {
+      color: '#1f2937', // gray-800 - dark text
+    },
+    '& .MuiTypography-colorTextSecondary, & .MuiTypography-root.MuiTypography-colorTextSecondary': {
+      color: '#4b5563', // gray-600 - dark secondary text
+    },
+  },
+  matchBadge: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 0.5,
+    color: '#166534', // Dark green for good contrast (green-800)
+    fontWeight: 600,
+    fontSize: '0.75rem',
+    bgcolor: '#bbf7d0', // Light green chip background (green-200)
+    px: 0.75,
+    py: 0.25,
+    borderRadius: 1,
+  },
   cardImageWrapper: {
     width: 64,
     flexShrink: 0,
@@ -92,10 +123,17 @@ export function MatchList({
     );
   }
 
+  const matchCount = matches.filter((m) => m.isMatch).length;
+
   return (
     <Paper>
       <Box sx={styles.header}>
-        <Typography variant="h6">{title}</Typography>
+        <Box>
+          <Typography variant="h6">{title}</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {matchCount} match{matchCount !== 1 ? 'es' : ''} · {matches.length} total cards
+          </Typography>
+        </Box>
         <Typography variant="h6" sx={styles.totalValue}>
           Total: €{totalValue.toFixed(2)}
         </Typography>
@@ -106,7 +144,7 @@ export function MatchList({
           <ListItem
             key={`${match.card.id}-${index}`}
             divider={index < matches.length - 1}
-            sx={styles.listItem}
+            sx={match.isMatch ? styles.listItemMatch : styles.listItem}
           >
             <Box sx={styles.cardImageWrapper}>
               <CardImage
@@ -117,9 +155,17 @@ export function MatchList({
             </Box>
 
             <Box sx={styles.cardInfo}>
-              <Typography variant="subtitle2" noWrap>
-                {match.card.name}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="subtitle2" noWrap>
+                  {match.card.name}
+                </Typography>
+                {match.isMatch && (
+                  <Box sx={styles.matchBadge}>
+                    <StarIcon sx={{ fontSize: 14 }} />
+                    Match
+                  </Box>
+                )}
+              </Box>
               <Typography variant="body2" color="text.secondary">
                 {match.card.setName} ({match.card.setCode})
               </Typography>
@@ -127,11 +173,13 @@ export function MatchList({
                 <Typography variant="caption" color="text.secondary">
                   {match.condition} {match.isFoil && '(Foil)'}
                 </Typography>
-                <Chip
-                  label={priorityConfig[match.priority]?.label || match.priority}
-                  color={priorityConfig[match.priority]?.color || 'default'}
-                  size="small"
-                />
+                {match.priority && (
+                  <Chip
+                    label={priorityConfig[match.priority]?.label || match.priority}
+                    color={priorityConfig[match.priority]?.color || 'default'}
+                    size="small"
+                  />
+                )}
               </Box>
             </Box>
 

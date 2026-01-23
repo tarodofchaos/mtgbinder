@@ -11,9 +11,14 @@ import {
   Stack,
   Divider,
 } from '@mui/material';
-import { QrCodeScanner as ScanIcon, ContentCopy as CopyIcon } from '@mui/icons-material';
+import {
+  QrCodeScanner as ScanIcon,
+  ContentCopy as CopyIcon,
+  Share as ShareIcon,
+} from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
 import { createTradeSession, getActiveSessions, joinTradeSession } from '../services/trade-service';
+import { useAuth } from '../context/auth-context';
 import { QRCodeDisplay } from '../components/trading/QRCodeDisplay';
 import { QRScanner } from '../components/trading/QRScanner';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -68,8 +73,14 @@ const styles: Record<string, SxProps<Theme>> = {
 export function TradePage() {
   const [joinCode, setJoinCode] = useState('');
   const [showScanner, setShowScanner] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const publicTradesUrl = user?.shareCode
+    ? `${window.location.origin}/binder/${user.shareCode}`
+    : '';
 
   const { data: sessions } = useQuery({
     queryKey: ['tradeSessions'],
@@ -244,6 +255,63 @@ export function TradePage() {
           </Stack>
         )}
       </Paper>
+
+      {/* Share public trades */}
+      {user?.shareCode && (
+        <Paper sx={styles.section}>
+          <Typography variant="h5" gutterBottom>
+            <ShareIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+            Share My Trades
+          </Typography>
+
+          <Stack spacing={3} alignItems="center">
+            <Typography color="text.secondary" textAlign="center">
+              Share this QR code with anyone to let them browse your tradeable cards
+              - no account required!
+            </Typography>
+
+            <QRCodeDisplay value={publicTradesUrl} size={200} />
+
+            <Box textAlign="center">
+              <Typography
+                sx={{
+                  fontSize: '1rem',
+                  fontFamily: 'monospace',
+                  color: 'primary.main',
+                  wordBreak: 'break-all',
+                }}
+              >
+                {publicTradesUrl}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                This link never expires
+              </Typography>
+            </Box>
+
+            <Stack direction="row" spacing={1} sx={{ width: '100%' }}>
+              <Button
+                variant="outlined"
+                fullWidth
+                startIcon={<CopyIcon />}
+                onClick={() => {
+                  navigator.clipboard.writeText(publicTradesUrl);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+              >
+                {copied ? 'Copied!' : 'Copy Link'}
+              </Button>
+              <Button
+                variant="outlined"
+                fullWidth
+                onClick={() => navigate(`/binder/${user.shareCode}`)}
+              >
+                Preview
+              </Button>
+            </Stack>
+          </Stack>
+        </Paper>
+      )}
     </Stack>
   );
 }

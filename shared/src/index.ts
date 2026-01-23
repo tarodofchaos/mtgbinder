@@ -133,9 +133,10 @@ export interface TradeMatch {
   availableQuantity: number;
   condition: CardCondition;
   isFoil: boolean;
-  priority: WishlistPriority;
+  priority: WishlistPriority | null;
   priceEur: number | null;
   tradePrice: number | null;
+  isMatch: boolean;
 }
 
 export interface TradeMatchResult {
@@ -213,6 +214,24 @@ export function getScryfallImageUrl(
   const dir1 = scryfallId.charAt(0);
   const dir2 = scryfallId.charAt(1);
   return `https://cards.scryfall.io/${size}/front/${dir1}/${dir2}/${scryfallId}.jpg`;
+}
+
+// Generate Cardmarket search URL for a card
+// Uses search instead of direct URL because:
+// - Set names don't always match between MTGJSON and Cardmarket
+// - Digital-only sets (Alchemy, Arena) don't exist on Cardmarket
+// - Search shows all prints, which is helpful for collectors
+export function getCardmarketUrl(card: { name: string; setName: string }): string {
+  // Clean up the card name for search
+  // Handle split cards: "Fire // Ice" -> "Fire Ice"
+  const searchName = card.name
+    .replace(/\s*\/\/\s*/g, ' ')
+    .trim();
+
+  // URL encode the search term
+  const encodedName = encodeURIComponent(searchName);
+
+  return `https://www.cardmarket.com/en/Magic/Products/Search?searchString=${encodedName}&mode=gallery`;
 }
 
 // Condition ranking for comparison

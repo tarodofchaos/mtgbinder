@@ -14,6 +14,7 @@ import { WishlistPage } from './pages/WishlistPage';
 import { TradePage } from './pages/TradePage';
 import { TradeSessionPage } from './pages/TradeSessionPage';
 import { SearchPage } from './pages/SearchPage';
+import { PublicTradesPage } from './pages/PublicTradesPage';
 
 const styles: Record<string, SxProps<Theme>> = {
   root: {
@@ -65,6 +66,16 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+function MinimalLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Box sx={styles.root}>
+      <Container component="main" maxWidth="lg" sx={styles.main}>
+        {children}
+      </Container>
+    </Box>
+  );
+}
+
 export default function App() {
   return (
     <Routes>
@@ -83,6 +94,16 @@ export default function App() {
           <PublicRoute>
             <RegisterPage />
           </PublicRoute>
+        }
+      />
+
+      {/* Truly public route - no auth check, accessible by anyone */}
+      <Route
+        path="/binder/:shareCode"
+        element={
+          <MinimalLayout>
+            <PublicTradesPage />
+          </MinimalLayout>
         }
       />
 

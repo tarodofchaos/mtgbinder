@@ -176,16 +176,54 @@ router.get('/:code/matches', async (req: AuthenticatedRequest, res: Response, ne
 
     const matches = await computeTradeMatches(session.initiatorId, session.joinerId);
 
+    // Transform matches to include nested card object as expected by shared TradeMatch interface
+    const transformMatch = (match: typeof matches.userAOffers[0]) => ({
+      card: {
+        id: match.cardId,
+        name: match.cardName,
+        setCode: match.setCode,
+        setName: match.setName,
+        scryfallId: match.scryfallId,
+        rarity: match.rarity,
+        manaCost: match.manaCost,
+        manaValue: match.manaValue,
+        typeLine: match.typeLine,
+        oracleText: match.oracleText,
+        collectorNumber: match.collectorNumber,
+        imageUri: match.imageUri,
+        priceEur: match.priceEur,
+        priceEurFoil: null,
+        priceUsd: match.priceUsd,
+        priceUsdFoil: match.priceUsdFoil,
+      },
+      offererUserId: match.offererUserId,
+      receiverUserId: match.receiverUserId,
+      availableQuantity: match.availableQuantity,
+      condition: match.condition,
+      isFoil: match.isFoil,
+      priority: match.priority,
+      priceEur: match.priceEur,
+      tradePrice: match.tradePrice,
+      isMatch: match.isMatch,
+    });
+
+    const transformedMatches = {
+      userAOffers: matches.userAOffers.map(transformMatch),
+      userBOffers: matches.userBOffers.map(transformMatch),
+      userATotalValue: matches.userATotalValue,
+      userBTotalValue: matches.userBTotalValue,
+    };
+
     // Cache the matches
     await prisma.tradeSession.update({
       where: { id: session.id },
-      data: { matchesJson: JSON.stringify(matches) },
+      data: { matchesJson: JSON.stringify(transformedMatches) },
     });
 
     res.json({
       data: {
         session,
-        ...matches,
+        ...transformedMatches,
       },
     });
   } catch (error) {

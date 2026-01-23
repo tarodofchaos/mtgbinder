@@ -1,165 +1,226 @@
-# CLAUDE.md - Project Guide
+# CLAUDE.md - MTG Binder Project Guide
 
 ## Project Overview
 
-A full-stack application using Node.js, React, and Express.
+MTG Binder is a full-stack Magic: The Gathering card collection and trading application. Users can:
+- Track their card collections with condition, quantity, and trade availability
+- Maintain wishlists with priority levels and price limits
+- Share their trade binders via QR codes for public viewing
+- Match trades with other users in real-time trading sessions
+
+The application uses React (Vite) for the frontend, Express for the backend, and PostgreSQL with Prisma ORM for data persistence. Real-time features are powered by Socket.IO.
 
 ## Project Structure
 
 ```
-├── client/                 # React frontend
+├── client/                     # React frontend (Vite)
 │   ├── src/
-│   │   ├── components/     # Reusable UI components
-│   │   ├── pages/          # Route-level page components
-│   │   ├── hooks/          # Custom React hooks
-│   │   ├── services/       # API client functions
-│   │   ├── utils/          # Helper functions
-│   │   ├── context/        # React context providers
-│   │   ├── types/          # TypeScript type definitions
-│   │   ├── App.tsx         # Root component
-│   │   └── index.tsx       # Entry point
+│   │   ├── components/
+│   │   │   ├── cards/          # Card display components (CardImage, CardGrid, CardSearch)
+│   │   │   ├── collection/     # Collection management (CollectionCard, AddCardForm)
+│   │   │   ├── trading/        # Trading features (BinderView, PublicTradeCard, QRScanner)
+│   │   │   ├── wishlist/       # Wishlist components
+│   │   │   ├── layout/         # Header, BottomNav
+│   │   │   └── ui/             # Reusable UI (LoadingSpinner, Modal)
+│   │   ├── pages/              # Route-level pages
+│   │   │   ├── CollectionPage.tsx
+│   │   │   ├── WishlistPage.tsx
+│   │   │   ├── TradePage.tsx
+│   │   │   ├── TradeSessionPage.tsx
+│   │   │   ├── PublicTradesPage.tsx  # Public binder view (/binder/:shareCode)
+│   │   │   └── SearchPage.tsx
+│   │   ├── services/           # API clients (api.ts, card-service.ts, etc.)
+│   │   ├── context/            # React context (auth-context, theme-context)
+│   │   ├── App.tsx             # Root component with routing
+│   │   └── main.tsx            # Entry point
 │   └── package.json
-├── server/                 # Express backend
+├── server/                     # Express backend
 │   ├── src/
-│   │   ├── routes/         # API route handlers
-│   │   ├── controllers/    # Business logic
-│   │   ├── models/         # Database models
-│   │   ├── middleware/     # Express middleware
-│   │   ├── services/       # External service integrations
-│   │   ├── utils/          # Helper functions
-│   │   ├── types/          # TypeScript type definitions
-│   │   └── index.ts        # Server entry point
+│   │   ├── routes/             # API route handlers
+│   │   │   ├── auth.ts         # Authentication endpoints
+│   │   │   ├── cards.ts        # Card search/autocomplete
+│   │   │   ├── collection.ts   # Collection CRUD
+│   │   │   ├── wishlist.ts     # Wishlist CRUD
+│   │   │   ├── trade.ts        # Trade session management
+│   │   │   └── binder.ts       # Public binder endpoints
+│   │   ├── services/
+│   │   │   ├── match-service.ts    # Trade matching algorithm (by card NAME)
+│   │   │   └── socket-service.ts   # Socket.IO real-time events
+│   │   ├── middleware/         # Auth, validation, error handling
+│   │   ├── utils/              # Prisma client, logger, config
+│   │   └── index.ts            # Server entry point
+│   ├── prisma/
+│   │   └── schema.prisma       # Database schema
+│   ├── scripts/                # Utility scripts (add-test-trades.ts)
 │   └── package.json
-├── shared/                 # Shared types/utilities between client and server
-└── package.json            # Root package.json for workspace
+├── shared/                     # Shared types and utilities
+│   └── src/index.ts            # Enums, interfaces, helper functions
+├── docs/
+│   └── architecture/decisions/ # ADRs (Architecture Decision Records)
+└── package.json                # Root workspace configuration
 ```
+
+## Key Features
+
+### Public Binder Sharing
+- Each user has a unique `shareCode` for their trade binder
+- Public URL: `/binder/:shareCode` (e.g., `/binder/UG5ZH8N3`)
+- QR code generation for easy sharing
+- Two view modes: **Grid View** and **Binder View** (page-turning animation)
+- Click any card to see enlarged detail popup with Cardmarket link
+
+### Trade Matching
+- Matches are based on card **NAME only** (not specific print/set)
+- Compares User A's trade offers against User B's wishlist and vice versa
+- Considers condition requirements and price limits from wishlists
+- Real-time updates via Socket.IO during active trade sessions
+
+### Card Data
+- Uses Scryfall for card images: `https://cards.scryfall.io/{size}/front/{dir1}/{dir2}/{scryfallId}.jpg`
+- Links to Cardmarket via search: `https://www.cardmarket.com/en/Magic/Products/Search?searchString={cardName}`
+- Card conditions: M (Mint), NM (Near Mint), LP, MP, HP, DMG
 
 ## Common Commands
 
 ### Development
 ```bash
-npm run dev              # Start both client and server in development mode
-npm run dev:client       # Start React dev server only (port 3000)
-npm run dev:server       # Start Express server only (port 5000)
+npm run dev              # Start both client (port 3000) and server (port 5000)
+npm run dev:client       # Start Vite dev server only
+npm run dev:server       # Start Express server only (tsx watch)
+```
+
+### Database
+```bash
+npm run db:migrate       # Run Prisma migrations
+npm run db:generate      # Generate Prisma client
+npm run db:seed          # Seed database with initial data
+npm run import:cards     # Import card data from MTGJSON
 ```
 
 ### Testing
 ```bash
-npm test                 # Run all tests
-npm run test:client      # Run React tests (Jest + React Testing Library)
-npm run test:server      # Run server tests (Jest/Mocha)
-npm run test:e2e         # Run end-to-end tests (Cypress/Playwright)
+npm test                 # Run all tests (Vitest for client)
 npm run test:coverage    # Generate coverage report
 ```
 
 ### Build & Production
 ```bash
-npm run build            # Build both client and server
-npm run build:client     # Build React for production
-npm run build:server     # Compile TypeScript server
+npm run build            # Build shared, server, then client
 npm start                # Start production server
 ```
 
 ### Code Quality
 ```bash
-npm run lint             # Run ESLint
-npm run lint:fix         # Fix auto-fixable lint issues
-npm run format           # Run Prettier
+npm run lint             # Run ESLint across workspaces
+npm run lint:fix         # Auto-fix lint issues
 npm run typecheck        # Run TypeScript type checking
 ```
 
 ## Code Style Preferences
 
 ### General
-- Use TypeScript for both client and server
-- Use functional components with hooks (no class components)
-- Prefer named exports over default exports
-- Use async/await over raw promises
-- Keep functions small and focused (single responsibility)
+- TypeScript for all code (client and server)
+- Functional components with hooks (no class components)
+- Named exports over default exports
+- async/await over raw promises
+- Keep functions small and focused
 
 ### Naming Conventions
-- **Files**: kebab-case for files (`user-service.ts`), PascalCase for React components (`UserProfile.tsx`)
+- **Files**: kebab-case (`card-service.ts`), PascalCase for components (`CardGrid.tsx`)
 - **Variables/Functions**: camelCase (`getUserById`, `isLoading`)
-- **Constants**: UPPER_SNAKE_CASE (`MAX_RETRY_COUNT`)
-- **Types/Interfaces**: PascalCase with descriptive names (`UserResponse`, `CreateCardInput`)
-- **React Components**: PascalCase (`CardList`, `NavigationBar`)
+- **Constants**: UPPER_SNAKE_CASE (`CARDS_PER_PAGE`)
+- **Types/Interfaces**: PascalCase (`CollectionItem`, `TradeMatch`)
+- **Enums**: PascalCase with UPPER_SNAKE_CASE values (`CardCondition.NEAR_MINT`)
 
 ### React Patterns
-- Co-locate component styles and tests with components
-- Use custom hooks to extract reusable logic
-- Prefer controlled components for forms
-- Use React Query or SWR for server state management
-- Keep components under 200 lines; extract sub-components if larger
+- MUI (Material-UI v7) for styling via `sx` prop
+- TanStack Query for server state management
+- React Hook Form for form handling
+- Socket.IO client for real-time features
+- Co-locate component styles using `styles` object with `SxProps<Theme>`
 
 ### Express Patterns
-- Use router-level middleware for route groups
-- Validate request input at the controller level
-- Return consistent error response shapes
-- Use dependency injection for testability
+- Router-level middleware for route groups
+- Zod for request validation
+- Prisma for database operations
+- Winston for logging
 
 ## Things to Avoid
 
-- **No `any` types** - Use `unknown` and narrow with type guards if needed
-- **No console.log in production code** - Use a proper logger (winston, pino)
-- **No secrets in code** - Use environment variables via `.env` files
-- **No synchronous file operations** - Use async fs methods
-- **No nested ternaries** - Use early returns or switch statements
-- **No magic numbers/strings** - Define constants with meaningful names
-- **No business logic in route handlers** - Move to controllers/services
-- **No direct DOM manipulation in React** - Use refs when necessary
-- **No index.ts barrel files that re-export everything** - Causes circular dependencies and bundle bloat
-- **Avoid prop drilling** - Use context or composition patterns
+- **No `any` types** - Use `unknown` and narrow with type guards
+- **No console.log in production** - Use the logger utility
+- **No secrets in code** - Use environment variables
+- **No business logic in route handlers** - Move to services
+- **No direct DOM manipulation** - Use React refs when necessary
+- **No barrel files** - Causes circular dependencies
 
 ## Key Dependencies
 
 ### Frontend (client)
 | Package | Purpose |
 |---------|---------|
-| `react` | UI library |
+| `react` + `react-dom` | UI library |
 | `react-router-dom` | Client-side routing |
-| `axios` or `fetch` | HTTP client for API calls |
-| `@tanstack/react-query` | Server state management and caching |
-| `tailwindcss` or `styled-components` | Styling |
-| `zod` | Runtime schema validation |
-| `react-hook-form` | Form state management |
+| `@mui/material` + `@mui/icons-material` | UI components |
+| `@tanstack/react-query` | Server state and caching |
+| `axios` | HTTP client |
+| `socket.io-client` | Real-time communication |
+| `react-hook-form` + `zod` | Form handling and validation |
+| `qrcode` + `html5-qrcode` | QR code generation and scanning |
 
 ### Backend (server)
 | Package | Purpose |
 |---------|---------|
 | `express` | Web framework |
-| `cors` | Cross-origin resource sharing |
-| `helmet` | Security headers |
-| `dotenv` | Environment variable loading |
+| `@prisma/client` | Database ORM |
+| `socket.io` | Real-time server |
+| `jsonwebtoken` + `bcrypt` | Authentication |
 | `zod` | Request validation |
-| `prisma` or `mongoose` | Database ORM/ODM |
-| `jsonwebtoken` | JWT authentication |
-| `bcrypt` | Password hashing |
-| `winston` or `pino` | Logging |
+| `winston` | Logging |
+| `cors` + `helmet` | Security |
 
-### Development
-| Package | Purpose |
-|---------|---------|
-| `typescript` | Type safety |
-| `eslint` | Linting |
-| `prettier` | Code formatting |
-| `jest` | Testing framework |
-| `supertest` | HTTP assertion testing |
-| `nodemon` or `tsx` | Development server with hot reload |
+### Shared
+| Export | Purpose |
+|--------|---------|
+| `CardCondition`, `WishlistPriority`, `TradeSessionStatus` | Enums |
+| `Card`, `User`, `CollectionItem`, `WishlistItem`, `TradeMatch` | Interfaces |
+| `getScryfallImageUrl()` | Build Scryfall image URLs |
+| `getCardmarketUrl()` | Build Cardmarket search URLs |
+| `isConditionAcceptable()` | Compare card conditions |
 
 ## Environment Variables
 
-Required variables in `.env`:
+Required in `.env`:
 ```
 NODE_ENV=development
 PORT=5000
-DATABASE_URL=<connection-string>
+DATABASE_URL=postgresql://user:pass@localhost:5432/mtg_binder
 JWT_SECRET=<secret-key>
 CLIENT_URL=http://localhost:3000
 ```
 
 ## API Conventions
 
-- RESTful endpoints: `GET /api/cards`, `POST /api/cards`, `PUT /api/cards/:id`
-- Return JSON with consistent shape: `{ data, error, message }`
-- Use HTTP status codes correctly (200, 201, 400, 401, 404, 500)
-- Version APIs if needed: `/api/v1/...`
+- RESTful endpoints under `/api/`
+- Authentication via JWT Bearer token
+- Response shape: `{ data?, error?, message? }`
+- Pagination: `{ data[], total, page, pageSize, totalPages }`
+
+### Key Endpoints
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/auth/register` | Create account |
+| `POST` | `/api/auth/login` | Get JWT token |
+| `GET` | `/api/collection` | Get user's collection |
+| `GET` | `/api/wishlist` | Get user's wishlist |
+| `POST` | `/api/trade/sessions` | Create trade session |
+| `GET` | `/api/binder/:shareCode` | Get public trade binder |
+
+## Architecture Decisions
+
+See `/docs/architecture/decisions/` for ADRs:
+- **ADR-001**: Monolithic Architecture
+- **ADR-002**: PostgreSQL as Primary Database
+- **ADR-003**: Socket.IO for Real-Time Trading
+- **ADR-004**: JWT for Authentication
+- **ADR-005**: Trade Matching by Card Name Only

@@ -51,3 +51,9 @@ dev-dist/
 # Misc
 *.tsbuildinfo
 .eslintcache
+
+# Claude Code
+.claude/
+
+# Debug/test files at root
+test-*.ts

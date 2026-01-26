@@ -16,13 +16,14 @@ import {
   IconButton,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { Add as AddIcon, Close as CloseIcon } from '@mui/icons-material';
+import { Add as AddIcon, Close as CloseIcon, Upload as UploadIcon } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
 import { CollectionItem, CardCondition, Card } from '@mtg-binder/shared';
 import { getCollection, getCollectionStats, removeFromCollection, updateCollectionItem } from '../services/collection-service';
 import { CardGrid, CardGridItem } from '../components/cards/CardGrid';
 import { CollectionCard } from '../components/collection/CollectionCard';
 import { AddCardForm } from '../components/collection/AddCardForm';
+import { ImportCollectionModal } from '../components/collection/ImportCollectionModal';
 import { CardImage } from '../components/cards/CardImage';
 import { PrintingSelector } from '../components/cards/PrintingSelector';
 import { Modal } from '../components/ui/Modal';
@@ -132,6 +133,7 @@ const styles: Record<string, SxProps<Theme>> = {
 
 export function CollectionPage() {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [editingItem, setEditingItem] = useState<CollectionItem | null>(null);
   const [editPendingCardName, setEditPendingCardName] = useState<string | null>(null);
   const [editSelectedCard, setEditSelectedCard] = useState<Card | null>(null);
@@ -285,6 +287,13 @@ export function CollectionPage() {
           }
           label="For Trade Only"
         />
+        <Button
+          variant="outlined"
+          startIcon={<UploadIcon />}
+          onClick={() => setShowImportModal(true)}
+        >
+          Import CSV
+        </Button>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -533,6 +542,16 @@ export function CollectionPage() {
           onClose={() => setEditPendingCardName(null)}
         />
       </Modal>
+
+      {/* Import CSV modal */}
+      <ImportCollectionModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['collection'] });
+          queryClient.invalidateQueries({ queryKey: ['collectionStats'] });
+        }}
+      />
     </Box>
   );
 }

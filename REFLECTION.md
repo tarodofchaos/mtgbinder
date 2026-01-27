@@ -52,7 +52,7 @@ a sophisticated pipeline without writing traditional orchestration code.
 ## Challenges Faced
 
 ### Understanding the Hooks System
-**Challenge:** Hookify's syntax and event model took time to grasp.
+**Challenge:** Hooks syntax and event model took time to grasp.
 
 **Solution:** Started with simple file-based hooks (`warn-debugger-statement`)
 before progressing to tool-call hooks (`workflow-gate-reminder`). The key
@@ -105,12 +105,11 @@ Custom agents stood out as the most valuable feature because they:
 
 ---
 
-## Recommendations for Others
+## Training Feedback
 
-- Invest time in writing a comprehensive CLAUDE.md first
-- Create agents for repetitive workflows you do weekly
-- Use hooks to enforce team coding standards automatically
-- Explore MCP integrations for your specific toolchain
+- I would like more info on use/setup of MCP servers. I think it is an incredibly powerful feature and having proper knowledge of it would be great.
+- A bit more guided entry for the training would be great. It would leverage some of the doubts and would allow us to focus more on the use of the tool.
+- A showcase of interesting things achieved by other people during training would be cool.
 
 ---
 

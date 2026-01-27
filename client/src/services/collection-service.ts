@@ -6,6 +6,10 @@ export interface CollectionListParams {
   pageSize?: number;
   search?: string;
   setCode?: string;
+  colors?: string;
+  rarity?: string;
+  priceMin?: number;
+  priceMax?: number;
   forTrade?: boolean;
   sortBy?: 'name' | 'setCode' | 'priceEur' | 'updatedAt';
   sortOrder?: 'asc' | 'desc';

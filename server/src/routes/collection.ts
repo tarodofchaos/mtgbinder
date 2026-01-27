@@ -33,6 +33,10 @@ const listQuerySchema = z.object({
   pageSize: z.string().transform(Number).default('50'),
   search: z.string().optional(),
   setCode: z.string().optional(),
+  colors: z.string().optional().transform((v) => v?.split(',').filter(Boolean)),
+  rarity: z.string().optional(),
+  priceMin: z.string().transform(Number).optional(),
+  priceMax: z.string().transform(Number).optional(),
   forTrade: z.string().transform((v) => v === 'true').optional(),
   sortBy: z.enum(['name', 'setCode', 'priceEur', 'updatedAt']).default('name'),
   sortOrder: z.enum(['asc', 'desc']).default('asc'),
@@ -42,11 +46,15 @@ router.use(authMiddleware);
 
 router.get('/', validateQuery(listQuerySchema), async (req: AuthenticatedRequest, res: Response, next) => {
   try {
-    const { page, pageSize, search, setCode, forTrade, sortBy, sortOrder } = req.query as unknown as {
+    const { page, pageSize, search, setCode, colors, rarity, priceMin, priceMax, forTrade, sortBy, sortOrder } = req.query as unknown as {
       page: number;
       pageSize: number;
       search?: string;
       setCode?: string;
+      colors?: string[];
+      rarity?: string;
+      priceMin?: number;
+      priceMax?: number;
       forTrade?: boolean;
       sortBy: string;
       sortOrder: 'asc' | 'desc';
@@ -64,6 +72,23 @@ router.get('/', validateQuery(listQuerySchema), async (req: AuthenticatedRequest
     }
     if (setCode) {
       cardWhere.setCode = setCode.toUpperCase();
+    }
+    // Color filter uses AND logic: card must have ALL selected colors
+    // e.g., colors=U,R matches cards with BOTH blue AND red in their color identity
+    if (colors && colors.length > 0) {
+      cardWhere.colors = { hasEvery: colors };
+    }
+    if (rarity) {
+      cardWhere.rarity = rarity;
+    }
+    if (priceMin !== undefined || priceMax !== undefined) {
+      cardWhere.priceEur = {};
+      if (priceMin !== undefined) {
+        (cardWhere.priceEur as Record<string, unknown>).gte = priceMin;
+      }
+      if (priceMax !== undefined) {
+        (cardWhere.priceEur as Record<string, unknown>).lte = priceMax;
+      }
     }
 
     if (Object.keys(cardWhere).length > 0) {

@@ -31,6 +31,7 @@ export interface Card {
   setCode: string;
   setName: string;
   rarity: string;
+  colors: string[];
   manaCost: string | null;
   manaValue: number;
   typeLine: string;

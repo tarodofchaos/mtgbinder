@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
 import {
@@ -14,9 +15,12 @@ import {
   Stack,
   MenuItem,
   IconButton,
+  ToggleButton,
+  ToggleButtonGroup,
+  Chip,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { Add as AddIcon, Close as CloseIcon, Upload as UploadIcon } from '@mui/icons-material';
+import { Add as AddIcon, Close as CloseIcon, Upload as UploadIcon, FilterAltOff as FilterAltOffIcon } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
 import { CollectionItem, CardCondition, Card } from '@mtg-binder/shared';
 import { getCollection, getCollectionStats, removeFromCollection, updateCollectionItem } from '../services/collection-service';
@@ -59,6 +63,16 @@ const languages = [
   { value: 'RU', label: 'Russian' },
   { value: 'ZH', label: 'Chinese' },
 ];
+
+const MTG_COLORS = [
+  { value: 'W', label: 'White', symbol: '{W}' },
+  { value: 'U', label: 'Blue', symbol: '{U}' },
+  { value: 'B', label: 'Black', symbol: '{B}' },
+  { value: 'R', label: 'Red', symbol: '{R}' },
+  { value: 'G', label: 'Green', symbol: '{G}' },
+];
+
+const RARITIES = ['common', 'uncommon', 'rare', 'mythic'];
 
 const styles: Record<string, SxProps<Theme>> = {
   container: {
@@ -132,15 +146,40 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 export function CollectionPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [editingItem, setEditingItem] = useState<CollectionItem | null>(null);
   const [editPendingCardName, setEditPendingCardName] = useState<string | null>(null);
   const [editSelectedCard, setEditSelectedCard] = useState<Card | null>(null);
-  const [search, setSearch] = useState('');
-  const [forTradeOnly, setForTradeOnly] = useState(false);
-  const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
+
+  // Extract filter state from URL params
+  const search = searchParams.get('search') || '';
+  const setCode = searchParams.get('setCode') || '';
+  const colors = searchParams.get('colors')?.split(',').filter(Boolean) || [];
+  const rarity = searchParams.get('rarity') || '';
+  const priceMin = searchParams.get('priceMin') || '';
+  const priceMax = searchParams.get('priceMax') || '';
+  const forTradeOnly = searchParams.get('forTrade') === 'true';
+  const page = parseInt(searchParams.get('page') || '1', 10);
+
+  // Helper to update URL params
+  const updateFilters = (updates: Record<string, string | null>) => {
+    const newParams = new URLSearchParams(searchParams);
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null || value === '' || value === 'false') {
+        newParams.delete(key);
+      } else {
+        newParams.set(key, value);
+      }
+    });
+    // Reset to page 1 when filters change
+    if (!updates.page) {
+      newParams.delete('page');
+    }
+    setSearchParams(newParams);
+  };
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm<EditFormData>();
 
@@ -165,8 +204,18 @@ export function CollectionPage() {
   });
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['collection', { search, forTrade: forTradeOnly, page }],
-    queryFn: () => getCollection({ search, forTrade: forTradeOnly, page, pageSize: 24 }),
+    queryKey: ['collection', { search, setCode, colors, rarity, priceMin, priceMax, forTrade: forTradeOnly, page }],
+    queryFn: () => getCollection({
+      search,
+      setCode,
+      colors: colors.length > 0 ? colors.join(',') : undefined,
+      rarity: rarity || undefined,
+      priceMin: priceMin ? parseFloat(priceMin) : undefined,
+      priceMax: priceMax ? parseFloat(priceMax) : undefined,
+      forTrade: forTradeOnly,
+      page,
+      pageSize: 24
+    }),
   });
 
   const removeMutation = useMutation({
@@ -264,58 +313,177 @@ export function CollectionPage() {
       </Box>
 
       {/* Filters */}
-      <Box sx={styles.filtersRow}>
-        <TextField
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          placeholder="Search your collection..."
-          fullWidth
-          sx={{ flexGrow: 1 }}
-        />
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={forTradeOnly}
-              onChange={(e) => {
-                setForTradeOnly(e.target.checked);
-                setPage(1);
-              }}
-            />
-          }
-          label="For Trade Only"
-        />
-        <Button
-          variant="outlined"
-          startIcon={<UploadIcon />}
-          onClick={() => setShowImportModal(true)}
-        >
-          Import CSV
-        </Button>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setShowAddModal(true)}
-        >
-          Add Card
-        </Button>
-      </Box>
-
-      {/* Collection grid */}
-      {items.length === 0 ? (
-        <Box sx={styles.emptyState}>
-          <Typography color="text.secondary" gutterBottom>
-            Your collection is empty
-          </Typography>
+      <Stack spacing={2} sx={{ mb: 3 }}>
+        {/* Search and Actions Row */}
+        <Box sx={styles.filtersRow}>
+          <TextField
+            value={search}
+            onChange={(e) => updateFilters({ search: e.target.value })}
+            placeholder="Search your collection..."
+            fullWidth
+            sx={{ flexGrow: 1 }}
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={forTradeOnly}
+                onChange={(e) => updateFilters({ forTrade: e.target.checked ? 'true' : null })}
+              />
+            }
+            label="For Trade Only"
+          />
+          <Button
+            variant="outlined"
+            startIcon={<UploadIcon />}
+            onClick={() => setShowImportModal(true)}
+          >
+            Import CSV
+          </Button>
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setShowAddModal(true)}
           >
-            Add Your First Card
+            Add Card
           </Button>
+        </Box>
+
+        {/* Advanced Filters Row */}
+        <Paper sx={{ p: 2 }}>
+          <Stack spacing={2}>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+              {/* Color Filter */}
+              <Box sx={{ minWidth: 200 }}>
+                <Typography variant="caption" sx={{ mb: 0.5, display: 'block' }}>
+                  Color (cards with ALL selected)
+                </Typography>
+                <ToggleButtonGroup
+                  value={colors}
+                  onChange={(_, newColors) => updateFilters({ colors: newColors.join(',') || null })}
+                  size="small"
+                >
+                  {MTG_COLORS.map(color => (
+                    <ToggleButton
+                      key={color.value}
+                      value={color.value}
+                      aria-label={color.label}
+                      title={color.label}
+                    >
+                      {color.value}
+                    </ToggleButton>
+                  ))}
+                </ToggleButtonGroup>
+              </Box>
+
+              {/* Rarity Filter */}
+              <TextField
+                select
+                label="Rarity"
+                value={rarity}
+                onChange={(e) => updateFilters({ rarity: e.target.value })}
+                sx={{ minWidth: 150 }}
+                size="small"
+              >
+                <MenuItem value="">All</MenuItem>
+                {RARITIES.map(r => (
+                  <MenuItem key={r} value={r}>
+                    {r.charAt(0).toUpperCase() + r.slice(1)}
+                  </MenuItem>
+                ))}
+              </TextField>
+
+              {/* Set Filter */}
+              <TextField
+                label="Set Code"
+                value={setCode}
+                onChange={(e) => updateFilters({ setCode: e.target.value.toUpperCase() })}
+                placeholder="e.g., MH3"
+                sx={{ minWidth: 150 }}
+                size="small"
+              />
+
+              {/* Price Range */}
+              <TextField
+                label="Min Price (€)"
+                type="number"
+                value={priceMin}
+                onChange={(e) => updateFilters({ priceMin: e.target.value })}
+                inputProps={{ min: 0, step: 0.01 }}
+                sx={{ minWidth: 120 }}
+                size="small"
+              />
+              <TextField
+                label="Max Price (€)"
+                type="number"
+                value={priceMax}
+                onChange={(e) => updateFilters({ priceMax: e.target.value })}
+                inputProps={{ min: 0, step: 0.01 }}
+                sx={{ minWidth: 120 }}
+                size="small"
+              />
+
+              {/* Clear Filters Button */}
+              <Button
+                variant="outlined"
+                startIcon={<FilterAltOffIcon />}
+                onClick={() => setSearchParams({})}
+                disabled={!search && !setCode && colors.length === 0 && !rarity && !priceMin && !priceMax && !forTradeOnly}
+                size="small"
+                sx={{ mt: 'auto' }}
+              >
+                Clear Filters
+              </Button>
+            </Box>
+
+            {/* Active Filters Display */}
+            {(search || setCode || colors.length > 0 || rarity || priceMin || priceMax || forTradeOnly) && (
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                <Typography variant="caption" sx={{ alignSelf: 'center', mr: 1 }}>Active filters:</Typography>
+                {search && <Chip label={`Search: ${search}`} size="small" onDelete={() => updateFilters({ search: null })} />}
+                {setCode && <Chip label={`Set: ${setCode}`} size="small" onDelete={() => updateFilters({ setCode: null })} />}
+                {colors.map(c => (
+                  <Chip
+                    key={c}
+                    label={`Color: ${c}`}
+                    size="small"
+                    onDelete={() => updateFilters({ colors: colors.filter(col => col !== c).join(',') || null })}
+                  />
+                ))}
+                {rarity && <Chip label={`Rarity: ${rarity}`} size="small" onDelete={() => updateFilters({ rarity: null })} />}
+                {priceMin && <Chip label={`Min: €${priceMin}`} size="small" onDelete={() => updateFilters({ priceMin: null })} />}
+                {priceMax && <Chip label={`Max: €${priceMax}`} size="small" onDelete={() => updateFilters({ priceMax: null })} />}
+                {forTradeOnly && <Chip label="For Trade Only" size="small" onDelete={() => updateFilters({ forTrade: null })} />}
+              </Box>
+            )}
+          </Stack>
+        </Paper>
+      </Stack>
+
+      {/* Collection grid */}
+      {items.length === 0 ? (
+        <Box sx={styles.emptyState}>
+          <Typography color="text.secondary" gutterBottom>
+            {search || setCode || colors.length > 0 || rarity || priceMin || priceMax || forTradeOnly
+              ? 'No cards match your filters'
+              : 'Your collection is empty'}
+          </Typography>
+          {!(search || setCode || colors.length > 0 || rarity || priceMin || priceMax || forTradeOnly) ? (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setShowAddModal(true)}
+            >
+              Add Your First Card
+            </Button>
+          ) : (
+            <Button
+              variant="outlined"
+              startIcon={<FilterAltOffIcon />}
+              onClick={() => setSearchParams({})}
+            >
+              Clear Filters
+            </Button>
+          )}
         </Box>
       ) : (
         <>
@@ -333,7 +501,7 @@ export function CollectionPage() {
               <Pagination
                 count={totalPages}
                 page={page}
-                onChange={(_e, value) => setPage(value)}
+                onChange={(_e, value) => updateFilters({ page: value.toString() })}
                 color="primary"
               />
             </Box>

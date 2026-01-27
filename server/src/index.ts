@@ -22,6 +22,7 @@ import { collectionRouter } from './routes/collection';
 import { wishlistRouter } from './routes/wishlist';
 import { tradeRouter } from './routes/trade';
 import { binderRouter } from './routes/binder';
+import { importRouter } from './routes/import';
 
 const app = express();
 const httpServer = createServer(app);
@@ -102,6 +103,7 @@ app.use('/api/collection', collectionRouter);
 app.use('/api/wishlist', wishlistRouter);
 app.use('/api/trade', tradeRouter);
 app.use('/api/binder', binderRouter);
+app.use('/api/import', importRouter);
 
 // Error handling
 app.use(notFoundHandler);

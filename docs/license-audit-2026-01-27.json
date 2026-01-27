@@ -1,0 +1,90 @@
+{
+  "auditDate": "2026-01-27",
+  "auditor": "License Guardian (Automated)",
+  "projectName": "MTG Binder",
+  "totalPackages": 1019,
+  "complianceStatus": "COMPLIANT",
+  "summary": {
+    "lowRiskPermissive": 1015,
+    "requiresReview": 0,
+    "forbiddenCopyleft": 0,
+    "internalUnlicensed": 4
+  },
+  "violations": [],
+  "warnings": [
+    {
+      "type": "APPROVAL_REQUIRED",
+      "severity": "MEDIUM",
+      "message": "All dependencies require Technical Lead approval before use",
+      "affectedPackages": "ALL"
+    },
+    {
+      "type": "ATTRIBUTION_REQUIRED",
+      "severity": "LOW",
+      "message": "Apache-2.0 packages require NOTICE file attribution",
+      "affectedPackages": 30
+    }
+  ],
+  "licenseBreakdown": {
+    "MIT": 848,
+    "ISC": 72,
+    "Apache-2.0": 30,
+    "BSD-3-Clause": 29,
+    "BSD-2-Clause": 16,
+    "BlueOak-1.0.0": 8,
+    "MIT OR CC0-1.0": 4,
+    "UNLICENSED": 4,
+    "MIT-0": 2,
+    "CC0-1.0": 1,
+    "0BSD": 1,
+    "AFL-2.1 OR BSD-3-Clause": 1,
+    "Python-2.0": 1,
+    "CC-BY-4.0": 1,
+    "MIT*": 1
+  },
+  "criticalDependencies": {
+    "client": [
+      {"package": "react", "version": "18.3.1", "license": "MIT", "risk": "LOW"},
+      {"package": "react-dom", "version": "18.3.1", "license": "MIT", "risk": "LOW"},
+      {"package": "axios", "version": "1.13.2", "license": "MIT", "risk": "LOW"},
+      {"package": "@mui/material", "version": "7.3.7", "license": "MIT", "risk": "LOW"},
+      {"package": "html5-qrcode", "version": "2.3.8", "license": "Apache-2.0", "risk": "LOW"}
+    ],
+    "server": [
+      {"package": "express", "version": "4.22.1", "license": "MIT", "risk": "LOW"},
+      {"package": "@prisma/client", "version": "5.22.0", "license": "Apache-2.0", "risk": "LOW"},
+      {"package": "bcrypt", "version": "5.1.1", "license": "MIT", "risk": "LOW"},
+      {"package": "jsonwebtoken", "version": "9.0.3", "license": "MIT", "risk": "LOW"},
+      {"package": "socket.io", "version": "4.8.3", "license": "MIT", "risk": "LOW"}
+    ]
+  },
+  "actionItems": [
+    {
+      "priority": "HIGH",
+      "action": "Obtain Technical Lead approval for all dependencies",
+      "assignee": "Developer",
+      "status": "PENDING"
+    },
+    {
+      "priority": "HIGH",
+      "action": "Create NOTICE file with Apache-2.0 attributions",
+      "assignee": "Developer",
+      "status": "PENDING"
+    },
+    {
+      "priority": "MEDIUM",
+      "action": "Document approval in audit log",
+      "assignee": "Developer",
+      "status": "PENDING"
+    },
+    {
+      "priority": "LOW",
+      "action": "Integrate license-checker into CI/CD pipeline",
+      "assignee": "DevOps",
+      "status": "PENDING"
+    }
+  ],
+  "nextAuditDate": "2026-04-27",
+  "scanMethod": "npm license-checker",
+  "scanDepth": "full-transitive"
+}

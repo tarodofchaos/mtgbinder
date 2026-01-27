@@ -1,0 +1,71 @@
+MTG Binder
+Copyright 2026 [Your Organization Name]
+
+This product includes software developed by third parties under various open-source licenses.
+
+================================================================================
+Apache License 2.0 Components
+================================================================================
+
+This product includes the following components licensed under the Apache License 2.0:
+
+1. Prisma Client (https://github.com/prisma/prisma)
+   Copyright (c) Prisma Data, Inc.
+   Licensed under the Apache License, Version 2.0
+   Used for: Database ORM and query building
+
+2. html5-qrcode (https://github.com/mebjas/html5-qrcode)
+   Copyright (c) Minhaz Khan
+   Licensed under the Apache License, Version 2.0
+   Used for: QR code scanning functionality
+
+3. TypeScript (https://github.com/microsoft/TypeScript)
+   Copyright (c) Microsoft Corporation
+   Licensed under the Apache License, Version 2.0
+   Used for: Language compiler and type system
+
+For the complete Apache License 2.0 text, see:
+https://www.apache.org/licenses/LICENSE-2.0
+
+================================================================================
+MIT License Components
+================================================================================
+
+This product includes numerous components licensed under the MIT License, including:
+
+- React and React DOM (Facebook, Inc.)
+- Express (TJ Holowaychuk and contributors)
+- Material-UI (MUI SAS)
+- Axios (Matt Zabriskie and contributors)
+- Socket.IO (Guillermo Rauch and contributors)
+- Zod (Colin McDonnell)
+- and many others
+
+For the complete list of MIT-licensed components, see docs/DEPENDENCY_LICENSES.md
+
+The MIT License permits use, modification, and distribution with copyright notice preservation.
+
+================================================================================
+BSD License Components
+================================================================================
+
+This product includes components licensed under BSD 2-Clause and 3-Clause licenses:
+
+- dotenv (BSD-2-Clause)
+- stream-json (BSD-3-Clause)
+- and others
+
+For the complete list, see docs/DEPENDENCY_LICENSES.md
+
+================================================================================
+Other Permissive Licenses
+================================================================================
+
+This product also includes components under ISC, BlueOak-1.0.0, CC0-1.0, and other
+permissive open-source licenses. See docs/DEPENDENCY_LICENSES.md for the complete list.
+
+================================================================================
+
+All third-party licenses are available in the node_modules directories of their
+respective packages. For questions about licensing, please contact your organization's
+legal or compliance team.

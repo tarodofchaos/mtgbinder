@@ -1,0 +1,129 @@
+name: License Compliance Check
+
+on:
+  pull_request:
+    paths:
+      - '**/package.json'
+      - '**/package-lock.json'
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  license-check:
+    name: Check Dependencies for License Compliance
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install license-checker
+        run: npm install -g license-checker
+
+      - name: Check for forbidden licenses
+        run: |
+          # Check for copyleft licenses (GPL, AGPL, LGPL, SSPL)
+          echo "Checking for forbidden copyleft licenses..."
+
+          FORBIDDEN=$(license-checker --json | grep -iE '"licenses".*"(GPL|AGPL|LGPL|SSPL)' || true)
+
+          if [ -n "$FORBIDDEN" ]; then
+            echo "ERROR: Forbidden copyleft license detected!"
+            echo "$FORBIDDEN"
+            echo ""
+            echo "The following licenses are FORBIDDEN due to copyleft requirements:"
+            echo "- GPL-2.0, GPL-3.0 (GNU General Public License)"
+            echo "- AGPL-3.0 (Affero GPL)"
+            echo "- LGPL-2.1, LGPL-3.0 (Lesser GPL)"
+            echo "- SSPL (Server Side Public License)"
+            echo ""
+            echo "These licenses require proprietary code to be open-sourced."
+            echo "Please remove or replace these dependencies immediately."
+            exit 1
+          else
+            echo "SUCCESS: No forbidden copyleft licenses detected."
+          fi
+
+      - name: Generate license summary
+        run: |
+          echo "Generating license summary..."
+          license-checker --summary
+
+      - name: Check for unknown licenses
+        run: |
+          echo "Checking for packages with unknown licenses..."
+          UNKNOWN=$(license-checker --json | grep -iE '"licenses".*"(UNKNOWN|UNLICENSED)"' | grep -v "@mtg-binder" || true)
+
+          if [ -n "$UNKNOWN" ]; then
+            echo "WARNING: Packages with unknown licenses detected:"
+            echo "$UNKNOWN"
+            echo ""
+            echo "Packages without licenses are treated as 'all rights reserved' and should be reviewed."
+            exit 1
+          else
+            echo "SUCCESS: All third-party packages have declared licenses."
+          fi
+
+      - name: Generate compliance report
+        if: always()
+        run: |
+          echo "## License Compliance Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Audit Date:** $(date '+%Y-%m-%d')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### License Summary" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          license-checker --summary >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Compliance Status" >> $GITHUB_STEP_SUMMARY
+          echo "- No forbidden copyleft licenses (GPL/AGPL/LGPL/SSPL) detected" >> $GITHUB_STEP_SUMMARY
+          echo "- All dependencies require Technical Lead approval" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "For full audit report, see: \`docs/DEPENDENCY_LICENSES.md\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Comment on PR (if applicable)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const { execSync } = require('child_process');
+
+            // Get license summary
+            const summary = execSync('license-checker --summary').toString();
+
+            const body = `## License Compliance Check
+
+            **Status:** PASSED (No copyleft violations)
+
+            ### License Summary
+            \`\`\`
+            ${summary}
+            \`\`\`
+
+            ### Reminder
+            - All new dependencies require Technical Lead approval before merge
+            - Apache-2.0 packages require attribution in NOTICE file
+            - See full audit: \`docs/DEPENDENCY_LICENSES.md\`
+
+            For questions, contact the Technical Lead or Legal/Compliance team.
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });

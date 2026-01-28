@@ -14,8 +14,9 @@
 | Working project with complete feature | ✅ Advanced Collection Filters (MTG-003) |
 | CLAUDE.md documenting project | ✅ 280+ lines |
 | At least 2 custom commands | ✅ `/test`, `/comeonteamdostuff` |
-| At least 1 custom agent | ✅ `story-conflict-checker`, `code-reviewer` |
+| At least 1 custom agent | ✅ `story-conflict-checker` |
 | At least 1 automated workflow | ✅ License compliance GitHub Action |
+| At least 1 skill | ✅  `code-reviewer` |
 | Reflection document | ✅ This document |
 
 ### Bonus Items ✅

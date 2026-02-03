@@ -131,7 +131,7 @@ app.use('/api/notifications', notificationsRouter);
 
 // Static file serving for production (serves React frontend)
 if (config.isProduction) {
-  const clientDistPath = path.join(__dirname, '../../client/dist');
+  const clientDistPath = path.join(__dirname, '../../../client/dist');
   app.use(express.static(clientDistPath));
 
   // SPA fallback - serve index.html for non-API routes

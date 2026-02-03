@@ -69,9 +69,11 @@ app.use(
             fontSrc: ["'self'", 'https://fonts.gstatic.com'],
             imgSrc: ["'self'", 'data:', 'https://cards.scryfall.io'],
             connectSrc: ["'self'", 'wss:', 'ws:'],
+            upgradeInsecureRequests: null, // Disable HTTPS upgrade for HTTP deployments
           },
         }
       : false,
+    crossOriginOpenerPolicy: false, // Disable COOP for simpler setup
   })
 );
 app.use(

@@ -1,8 +1,10 @@
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Paper, BottomNavigation, BottomNavigationAction } from '@mui/material';
 import {
   Inventory2 as CollectionIcon,
   FavoriteBorder as WishlistIcon,
+  LibraryBooks as SetsIcon,
   SwapHoriz as TradeIcon,
   Search as SearchIcon,
 } from '@mui/icons-material';
@@ -33,13 +35,15 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 const navItems = [
-  { path: '/collection', label: 'Collection', icon: <CollectionIcon /> },
-  { path: '/wishlist', label: 'Wishlist', icon: <WishlistIcon /> },
-  { path: '/trade', label: 'Trade', icon: <TradeIcon /> },
-  { path: '/search', label: 'Search', icon: <SearchIcon /> },
+  { path: '/collection', labelKey: 'nav.collection', icon: <CollectionIcon /> },
+  { path: '/wishlist', labelKey: 'nav.wishlist', icon: <WishlistIcon /> },
+  { path: '/sets', labelKey: 'nav.sets', icon: <SetsIcon /> },
+  { path: '/trade', labelKey: 'nav.trade', icon: <TradeIcon /> },
+  { path: '/search', labelKey: 'nav.search', icon: <SearchIcon /> },
 ];
 
 export function BottomNav() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -62,7 +66,7 @@ export function BottomNav() {
         {navItems.map((item) => (
           <BottomNavigationAction
             key={item.path}
-            label={item.label}
+            label={t(item.labelKey)}
             icon={item.icon}
             sx={styles.action}
           />

@@ -31,6 +31,7 @@ model Card {
 
   collectionItems CollectionItem[]
   wishlistItems   WishlistItem[]
+  priceAlerts     PriceAlert[]
 
   @@index([name])
   @@index([setCode])
@@ -52,6 +53,8 @@ model User {
   wishlistItems      WishlistItem[]
   initiatedSessions  TradeSession[]   @relation("TradeSessionInitiator")
   joinedSessions     TradeSession[]   @relation("TradeSessionJoiner")
+  priceAlerts        PriceAlert[]
+  tradeMessages      TradeMessage[]
 
   @@map("users")
 }
@@ -136,10 +139,45 @@ model TradeSession {
 
   initiator User  @relation("TradeSessionInitiator", fields: [initiatorId], references: [id], onDelete: Cascade)
   joiner    User? @relation("TradeSessionJoiner", fields: [joinerId], references: [id], onDelete: SetNull)
+  messages  TradeMessage[]
 
   @@index([sessionCode])
   @@index([initiatorId])
   @@index([joinerId])
   @@index([status])
   @@map("trade_sessions")
+}
+
+model TradeMessage {
+  id        String   @id @default(uuid())
+  sessionId String
+  senderId  String
+  content   String
+  createdAt DateTime @default(now())
+
+  session TradeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sender  User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@map("trade_messages")
+}
+
+model PriceAlert {
+  id        String   @id @default(uuid())
+  userId    String
+  cardId    String
+  oldPrice  Float
+  newPrice  Float
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([cardId])
+  @@index([read])
+  @@map("price_alerts")
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
   Paper,
   Typography,
@@ -35,26 +36,26 @@ interface FormData {
   tradePrice: number | null;
 }
 
-const conditions: Array<{ value: CardCondition; label: string }> = [
-  { value: CardCondition.MINT, label: 'Mint' },
-  { value: CardCondition.NEAR_MINT, label: 'Near Mint' },
-  { value: CardCondition.LIGHTLY_PLAYED, label: 'Lightly Played' },
-  { value: CardCondition.MODERATELY_PLAYED, label: 'Moderately Played' },
-  { value: CardCondition.HEAVILY_PLAYED, label: 'Heavily Played' },
-  { value: CardCondition.DAMAGED, label: 'Damaged' },
+const CONDITIONS: Array<{ value: CardCondition; labelKey: string }> = [
+  { value: CardCondition.MINT, labelKey: 'conditions.mint' },
+  { value: CardCondition.NEAR_MINT, labelKey: 'conditions.nearMint' },
+  { value: CardCondition.LIGHTLY_PLAYED, labelKey: 'conditions.lightlyPlayed' },
+  { value: CardCondition.MODERATELY_PLAYED, labelKey: 'conditions.moderatelyPlayed' },
+  { value: CardCondition.HEAVILY_PLAYED, labelKey: 'conditions.heavilyPlayed' },
+  { value: CardCondition.DAMAGED, labelKey: 'conditions.damaged' },
 ];
 
-const languages = [
-  { value: 'EN', label: 'English' },
-  { value: 'ES', label: 'Spanish' },
-  { value: 'DE', label: 'German' },
-  { value: 'FR', label: 'French' },
-  { value: 'IT', label: 'Italian' },
-  { value: 'PT', label: 'Portuguese' },
-  { value: 'JA', label: 'Japanese' },
-  { value: 'KO', label: 'Korean' },
-  { value: 'RU', label: 'Russian' },
-  { value: 'ZH', label: 'Chinese' },
+const LANGUAGES = [
+  { value: 'EN', labelKey: 'languages.en' },
+  { value: 'ES', labelKey: 'languages.es' },
+  { value: 'DE', labelKey: 'languages.de' },
+  { value: 'FR', labelKey: 'languages.fr' },
+  { value: 'IT', labelKey: 'languages.it' },
+  { value: 'PT', labelKey: 'languages.pt' },
+  { value: 'JA', labelKey: 'languages.ja' },
+  { value: 'KO', labelKey: 'languages.ko' },
+  { value: 'RU', labelKey: 'languages.ru' },
+  { value: 'ZH', labelKey: 'languages.zh' },
 ];
 
 const styles: Record<string, SxProps<Theme>> = {
@@ -92,6 +93,7 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 export function AddCardForm({ onSuccess, onCancel }: AddCardFormProps) {
+  const { t } = useTranslation();
   const [pendingCardName, setPendingCardName] = useState<string | null>(null);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const queryClient = useQueryClient();
@@ -148,18 +150,18 @@ export function AddCardForm({ onSuccess, onCancel }: AddCardFormProps) {
   return (
     <Paper sx={styles.card}>
       <Typography variant="h5" sx={styles.title}>
-        Add Card to Collection
+        {t('collection.addToCollection')}
       </Typography>
 
       <Stack spacing={3}>
         {!selectedCard && (
           <Box>
             <Typography variant="subtitle2" sx={{ mb: 1 }}>
-              Search Card
+              {t('collection.searchCard')}
             </Typography>
             <CardSearch
               onSelect={handleCardNameSelected}
-              placeholder="Type card name..."
+              placeholder={t('collection.typeCardName')}
             />
           </Box>
         )}
@@ -211,11 +213,11 @@ export function AddCardForm({ onSuccess, onCancel }: AddCardFormProps) {
                         <TextField
                           {...field}
                           type="number"
-                          label="Quantity"
+                          label={t('collection.quantity')}
                           fullWidth
                           slotProps={{ htmlInput: { min: 1 } }}
                           error={!!errors.quantity}
-                          helperText={errors.quantity ? 'Required' : ''}
+                          helperText={errors.quantity ? t('common.required') : ''}
                         />
                       )}
                     />
@@ -229,7 +231,7 @@ export function AddCardForm({ onSuccess, onCancel }: AddCardFormProps) {
                         <TextField
                           {...field}
                           type="number"
-                          label="Foil Quantity"
+                          label={t('collection.foilQuantity')}
                           fullWidth
                           slotProps={{ htmlInput: { min: 0 } }}
                         />
@@ -247,12 +249,12 @@ export function AddCardForm({ onSuccess, onCancel }: AddCardFormProps) {
                         <TextField
                           {...field}
                           select
-                          label="Condition"
+                          label={t('collection.condition')}
                           fullWidth
                         >
-                          {conditions.map((c) => (
+                          {CONDITIONS.map((c) => (
                             <MenuItem key={c.value} value={c.value}>
-                              {c.label}
+                              {t(c.labelKey)}
                             </MenuItem>
                           ))}
                         </TextField>
@@ -267,12 +269,12 @@ export function AddCardForm({ onSuccess, onCancel }: AddCardFormProps) {
                         <TextField
                           {...field}
                           select
-                          label="Language"
+                          label={t('collection.language')}
                           fullWidth
                         >
-                          {languages.map((l) => (
+                          {LANGUAGES.map((l) => (
                             <MenuItem key={l.value} value={l.value}>
-                              {l.label}
+                              {t(l.labelKey)}
                             </MenuItem>
                           ))}
                         </TextField>
@@ -291,10 +293,10 @@ export function AddCardForm({ onSuccess, onCancel }: AddCardFormProps) {
                         <TextField
                           {...field}
                           type="number"
-                          label="For Trade"
+                          label={t('collection.forTrade')}
                           fullWidth
                           slotProps={{ htmlInput: { min: 0 } }}
-                          helperText="Copies available for trading"
+                          helperText={t('collection.forTradeHelp')}
                         />
                       )}
                     />
@@ -313,10 +315,10 @@ export function AddCardForm({ onSuccess, onCancel }: AddCardFormProps) {
                             field.onChange(val === '' ? null : parseFloat(val));
                           }}
                           type="number"
-                          label="Asking Price (€)"
+                          label={`${t('collection.askingPrice')} (€)`}
                           fullWidth
                           slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
-                          helperText="Your price for trade"
+                          helperText={t('collection.askingPriceHelp')}
                         />
                       )}
                     />
@@ -325,14 +327,14 @@ export function AddCardForm({ onSuccess, onCancel }: AddCardFormProps) {
 
                 {mutation.isError && (
                   <Alert severity="error">
-                    Failed to add card. Please try again.
+                    {t('collection.failedToAdd')}
                   </Alert>
                 )}
 
                 <Box sx={styles.buttonGroup}>
                   {onCancel && (
                     <Button variant="outlined" onClick={onCancel}>
-                      Cancel
+                      {t('common.cancel')}
                     </Button>
                   )}
                   <Button
@@ -340,7 +342,7 @@ export function AddCardForm({ onSuccess, onCancel }: AddCardFormProps) {
                     variant="contained"
                     disabled={mutation.isPending}
                   >
-                    {mutation.isPending ? 'Adding...' : 'Add to Collection'}
+                    {mutation.isPending ? t('collection.addingToCollection') : t('collection.addToCollection')}
                   </Button>
                 </Box>
               </Stack>

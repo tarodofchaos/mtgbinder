@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -11,10 +12,13 @@ import {
 import Grid from '@mui/material/Grid';
 import { Check as CheckIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { getTradeMatches, completeTradeSession, deleteTradeSession } from '../services/trade-service';
 import { useAuth } from '../context/auth-context';
 import { MatchList } from '../components/trading/MatchList';
 import { LoadingPage } from '../components/ui/LoadingSpinner';
+import { TradeChatPanel } from '../components/trading/TradeChatPanel';
+import { joinTradeSessionRoom, leaveTradeSessionRoom } from '../services/socket-service';
 
 const styles: Record<string, SxProps<Theme>> = {
   container: {
@@ -66,9 +70,13 @@ const styles: Record<string, SxProps<Theme>> = {
     py: 6,
     textAlign: 'center',
   },
+  chatPanel: {
+    height: '500px',
+  },
 };
 
 export function TradeSessionPage() {
+  const { t } = useTranslation();
   const { code } = useParams<{ code: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -97,17 +105,29 @@ export function TradeSessionPage() {
     },
   });
 
+  useEffect(() => {
+    if (code) {
+      joinTradeSessionRoom(code);
+    }
+
+    return () => {
+      if (code) {
+        leaveTradeSessionRoom(code);
+      }
+    };
+  }, [code]);
+
   if (isLoading) return <LoadingPage />;
 
   if (error || !data) {
     return (
       <Box sx={styles.emptyState}>
         <Alert severity="error" sx={{ mb: 2, display: 'inline-flex' }}>
-          Failed to load trade session
+          {t('trade.failedToLoad')}
         </Alert>
         <Box>
           <Button variant="contained" onClick={() => navigate('/trade')}>
-            Back to Trade
+            {t('trade.backToTrade')}
           </Button>
         </Box>
       </Box>
@@ -130,10 +150,10 @@ export function TradeSessionPage() {
       <Box sx={styles.header}>
         <Box>
           <Typography variant="h4" fontWeight={700}>
-            Trade with {partner?.displayName}
+            {t('trade.tradeWith', { name: partner?.displayName })}
           </Typography>
           <Typography color="text.secondary">
-            Session: {session.sessionCode}
+            {t('trade.session', { code: session.sessionCode })}
           </Typography>
         </Box>
 
@@ -144,40 +164,45 @@ export function TradeSessionPage() {
               color="success"
               startIcon={<CheckIcon />}
               onClick={() => {
-                if (confirm('Complete this trade session?')) {
+                if (confirm(t('trade.confirmComplete'))) {
                   completeMutation.mutate();
                 }
               }}
             >
-              Complete
+              {t('trade.completeSession')}
             </Button>
             <Button
               variant="contained"
               color="error"
               startIcon={<DeleteIcon />}
               onClick={() => {
-                if (confirm('Delete this trade session?')) {
+                if (confirm(t('trade.confirmDelete'))) {
                   deleteMutation.mutate();
                 }
               }}
             >
-              Delete
+              {t('trade.deleteSession')}
             </Button>
           </Box>
         )}
+      </Box>
+
+      {/* Chat Panel */}
+      <Box sx={styles.chatPanel}>
+        <TradeChatPanel sessionCode={code!} partnerName={partner?.displayName || 'Partner'} />
       </Box>
 
       {/* Value comparison */}
       <Paper sx={styles.comparisonCard}>
         <Box sx={styles.comparisonGrid}>
           <Box>
-            <Typography sx={styles.comparisonLabel}>You Offer</Typography>
+            <Typography sx={styles.comparisonLabel}>{t('trade.youOffer')}</Typography>
             <Typography sx={{ ...styles.comparisonValue, color: 'success.main' }}>
               €{myTotalValue.toFixed(2)}
             </Typography>
           </Box>
           <Box>
-            <Typography sx={styles.comparisonLabel}>Difference</Typography>
+            <Typography sx={styles.comparisonLabel}>{t('trade.difference')}</Typography>
             <Typography
               sx={{
                 ...styles.comparisonValue,
@@ -188,7 +213,7 @@ export function TradeSessionPage() {
             </Typography>
           </Box>
           <Box>
-            <Typography sx={styles.comparisonLabel}>They Offer</Typography>
+            <Typography sx={styles.comparisonLabel}>{t('trade.theyOffer')}</Typography>
             <Typography sx={{ ...styles.comparisonValue, color: 'primary.main' }}>
               €{theirTotalValue.toFixed(2)}
             </Typography>
@@ -204,7 +229,7 @@ export function TradeSessionPage() {
               {myOffers.filter((m) => m.isMatch).length}
             </Typography>
             <Typography sx={styles.summaryLabel}>
-              Matching cards you can offer ({myOffers.length} total)
+              {t('trade.matchingCardsYouOffer', { total: myOffers.length })}
             </Typography>
           </Paper>
         </Grid>
@@ -214,7 +239,7 @@ export function TradeSessionPage() {
               {theirOffers.filter((m) => m.isMatch).length}
             </Typography>
             <Typography sx={styles.summaryLabel}>
-              Matching cards they can offer ({theirOffers.length} total)
+              {t('trade.matchingCardsTheyOffer', { total: theirOffers.length })}
             </Typography>
           </Paper>
         </Grid>
@@ -224,15 +249,15 @@ export function TradeSessionPage() {
       <MatchList
         matches={myOffers}
         totalValue={myTotalValue}
-        title="Cards You Can Offer"
-        emptyMessage="None of your tradeable cards match their wishlist"
+        title={t('trade.cardsYouCanOffer')}
+        emptyMessage={t('trade.noMatchYourCards')}
       />
 
       <MatchList
         matches={theirOffers}
         totalValue={theirTotalValue}
-        title="Cards They Can Offer"
-        emptyMessage="None of their tradeable cards match your wishlist"
+        title={t('trade.cardsTheyCanOffer')}
+        emptyMessage={t('trade.noMatchTheirCards')}
       />
     </Stack>
   );

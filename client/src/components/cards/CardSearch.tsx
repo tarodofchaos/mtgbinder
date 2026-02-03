@@ -15,6 +15,7 @@ import { Search as SearchIcon } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
 import { CardAutocompleteResult } from '@mtg-binder/shared';
 import { autocompleteCards } from '../../services/card-service';
+import { useTranslation } from 'react-i18next';
 
 interface CardSearchProps {
   onSelect: (card: CardAutocompleteResult) => void;
@@ -51,7 +52,8 @@ const styles: Record<string, SxProps<Theme>> = {
   },
 };
 
-export function CardSearch({ onSelect, placeholder = 'Search for a card...' }: CardSearchProps) {
+export function CardSearch({ onSelect, placeholder }: CardSearchProps) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -111,7 +113,7 @@ export function CardSearch({ onSelect, placeholder = 'Search for a card...' }: C
         onFocus={() => setIsOpen(query.length >= 2)}
         onBlur={() => setTimeout(() => setIsOpen(false), 200)}
         onKeyDown={handleKeyDown}
-        placeholder={placeholder}
+        placeholder={placeholder || t('search.searchForCard')}
         fullWidth
         slotProps={{
           input: {
@@ -149,7 +151,7 @@ export function CardSearch({ onSelect, placeholder = 'Search for a card...' }: C
 
       {isOpen && query.length >= 2 && results.length === 0 && !isLoading && (
         <Paper sx={styles.dropdown} elevation={8}>
-          <Typography sx={styles.emptyState}>No cards found</Typography>
+          <Typography sx={styles.emptyState}>{t('search.noCardsFound')}</Typography>
         </Paper>
       )}
     </Box>

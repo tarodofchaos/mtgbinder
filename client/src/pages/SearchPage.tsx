@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Paper,
@@ -69,6 +70,7 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 export function SearchPage() {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [setCode, setSetCode] = useState('');
   const [rarity, setRarity] = useState('');
@@ -102,7 +104,7 @@ export function SearchPage() {
   return (
     <Box sx={styles.container}>
       <Typography variant="h4" fontWeight={700} sx={{ mb: 3 }}>
-        Search Cards
+        {t('search.title')}
       </Typography>
 
       {/* Search form */}
@@ -112,7 +114,7 @@ export function SearchPage() {
             <TextField
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Card name..."
+              placeholder={t('search.cardNamePlaceholder')}
               fullWidth
             />
           </Grid>
@@ -120,7 +122,7 @@ export function SearchPage() {
             <TextField
               value={setCode}
               onChange={(e) => setSetCode(e.target.value.toUpperCase())}
-              placeholder="Set code (e.g. MH2)"
+              placeholder={t('search.setCodePlaceholder')}
               fullWidth
             />
           </Grid>
@@ -131,17 +133,17 @@ export function SearchPage() {
               onChange={(e) => setRarity(e.target.value)}
               fullWidth
             >
-              <MenuItem value="">Any rarity</MenuItem>
-              <MenuItem value="common">Common</MenuItem>
-              <MenuItem value="uncommon">Uncommon</MenuItem>
-              <MenuItem value="rare">Rare</MenuItem>
-              <MenuItem value="mythic">Mythic</MenuItem>
+              <MenuItem value="">{t('rarities.anyRarity')}</MenuItem>
+              <MenuItem value="common">{t('rarities.common')}</MenuItem>
+              <MenuItem value="uncommon">{t('rarities.uncommon')}</MenuItem>
+              <MenuItem value="rare">{t('rarities.rare')}</MenuItem>
+              <MenuItem value="mythic">{t('rarities.mythic')}</MenuItem>
             </TextField>
           </Grid>
         </Grid>
         <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
           <Button type="submit" variant="contained" disabled={isFetching}>
-            {isFetching ? <LoadingSpinner size="sm" /> : 'Search'}
+            {isFetching ? <LoadingSpinner size="sm" /> : t('common.search')}
           </Button>
         </Box>
       </Paper>
@@ -150,7 +152,7 @@ export function SearchPage() {
       {!hasSearch ? (
         <Box sx={styles.emptyState}>
           <Typography color="text.secondary">
-            Enter a search term to find cards
+            {t('search.enterSearchTerm')}
           </Typography>
         </Box>
       ) : isLoading ? (
@@ -158,13 +160,13 @@ export function SearchPage() {
       ) : cards.length === 0 ? (
         <Box sx={styles.emptyState}>
           <Typography color="text.secondary">
-            No cards found matching your search
+            {t('search.noResults')}
           </Typography>
         </Box>
       ) : (
         <>
           <Typography color="text.secondary" sx={{ mb: 2 }}>
-            Found {data?.total || 0} cards
+            {t('search.foundCards', { count: data?.total || 0 })}
           </Typography>
 
           <CardGrid>
@@ -232,7 +234,7 @@ export function SearchPage() {
               {selectedCard.manaCost && (
                 <Typography sx={{ mb: 1 }}>
                   <Typography component="span" color="text.secondary">
-                    Mana Cost:
+                    {t('search.manaCost')}
                   </Typography>{' '}
                   {selectedCard.manaCost}
                 </Typography>
@@ -247,26 +249,26 @@ export function SearchPage() {
               <Box sx={styles.detailGrid}>
                 <Typography variant="body2">
                   <Typography component="span" color="text.secondary">
-                    Set:
+                    {t('search.setLabel')}
                   </Typography>{' '}
                   {selectedCard.setName}
                 </Typography>
                 <Typography variant="body2">
                   <Typography component="span" color="text.secondary">
-                    Rarity:
+                    {t('search.rarityLabel')}
                   </Typography>{' '}
                   {selectedCard.rarity}
                 </Typography>
                 <Typography variant="body2">
                   <Typography component="span" color="text.secondary">
-                    Collector #:
+                    {t('search.collectorNumber')}
                   </Typography>{' '}
                   {selectedCard.collectorNumber}
                 </Typography>
                 {selectedCard.priceEur && (
                   <Typography variant="body2">
                     <Typography component="span" color="text.secondary">
-                      Price (EUR):
+                      {t('search.priceEur')}
                     </Typography>{' '}
                     <Typography component="span" sx={{ color: 'success.main' }}>
                       €{selectedCard.priceEur.toFixed(2)}

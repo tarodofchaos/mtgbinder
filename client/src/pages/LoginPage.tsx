@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Paper,
@@ -46,6 +47,7 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 export function LoginPage() {
+  const { t } = useTranslation();
   const { login } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +68,7 @@ export function LoginPage() {
       await login(data.email, data.password);
       navigate('/collection');
     } catch {
-      setError('Invalid email or password');
+      setError(t('auth.invalidCredentials'));
     } finally {
       setIsLoading(false);
     }
@@ -76,7 +78,7 @@ export function LoginPage() {
     <Box sx={styles.container}>
       <Paper sx={styles.card}>
         <Typography variant="h4" sx={styles.title}>
-          Login to MTG Binder
+          {t('auth.loginTitle')}
         </Typography>
 
         <Box component="form" onSubmit={handleSubmit(onSubmit)}>
@@ -84,13 +86,13 @@ export function LoginPage() {
             <Controller
               name="email"
               control={control}
-              rules={{ required: 'Email is required' }}
+              rules={{ required: t('auth.emailRequired') }}
               render={({ field }) => (
                 <TextField
                   {...field}
                   type="email"
-                  label="Email"
-                  placeholder="your@email.com"
+                  label={t('auth.email')}
+                  placeholder={t('auth.emailPlaceholder')}
                   fullWidth
                   error={!!errors.email}
                   helperText={errors.email?.message}
@@ -101,13 +103,13 @@ export function LoginPage() {
             <Controller
               name="password"
               control={control}
-              rules={{ required: 'Password is required' }}
+              rules={{ required: t('auth.passwordRequired') }}
               render={({ field }) => (
                 <TextField
                   {...field}
                   type="password"
-                  label="Password"
-                  placeholder="********"
+                  label={t('auth.password')}
+                  placeholder={t('auth.passwordPlaceholder')}
                   fullWidth
                   error={!!errors.password}
                   helperText={errors.password?.message}
@@ -124,15 +126,15 @@ export function LoginPage() {
               fullWidth
               disabled={isLoading}
             >
-              {isLoading ? 'Logging in...' : 'Login'}
+              {isLoading ? t('auth.loggingIn') : t('auth.loginButton')}
             </Button>
           </Stack>
         </Box>
 
         <Typography sx={styles.footer}>
-          Don't have an account?{' '}
+          {t('auth.noAccount')}{' '}
           <Link component={RouterLink} to="/register">
-            Register
+            {t('header.register')}
           </Link>
         </Typography>
       </Paper>

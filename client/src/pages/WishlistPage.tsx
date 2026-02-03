@@ -29,6 +29,7 @@ import { Modal } from '../components/ui/Modal';
 import { LoadingPage } from '../components/ui/LoadingSpinner';
 import { ImportDecklistModal } from '../components/wishlist/ImportDecklistModal';
 import { ImportWishlistModal } from '../components/wishlist/ImportWishlistModal';
+import { useTranslation } from 'react-i18next';
 
 interface AddWishlistForm {
   priority: WishlistPriority;
@@ -98,6 +99,7 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 export function WishlistPage() {
+  const { t } = useTranslation();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showCSVImportModal, setShowCSVImportModal] = useState(false);
@@ -232,7 +234,7 @@ export function WishlistPage() {
   };
 
   const handleRemove = (item: WishlistItem) => {
-    if (confirm(`Remove ${item.card?.name} from wishlist?`)) {
+    if (confirm(t('wishlist.confirmRemove', { cardName: item.card?.name }))) {
       removeMutation.mutate(item.id);
     }
   };
@@ -253,7 +255,7 @@ export function WishlistPage() {
   if (error) {
     return (
       <Box sx={styles.emptyState}>
-        <Alert severity="error">Failed to load wishlist</Alert>
+        <Alert severity="error">{t('wishlist.failedToLoad')}</Alert>
       </Box>
     );
   }
@@ -271,7 +273,7 @@ export function WishlistPage() {
             setSearch(e.target.value);
             setPage(1);
           }}
-          placeholder="Search wishlist..."
+          placeholder={t('wishlist.searchPlaceholder')}
           fullWidth
           sx={{ flexGrow: 1 }}
         />
@@ -284,32 +286,32 @@ export function WishlistPage() {
           }}
           sx={{ minWidth: 150 }}
         >
-          <MenuItem value="">All Priorities</MenuItem>
-          <MenuItem value="URGENT">Urgent</MenuItem>
-          <MenuItem value="HIGH">High</MenuItem>
-          <MenuItem value="NORMAL">Normal</MenuItem>
-          <MenuItem value="LOW">Low</MenuItem>
+          <MenuItem value="">{t('wishlist.allPriorities')}</MenuItem>
+          <MenuItem value="URGENT">{t('priorities.urgent')}</MenuItem>
+          <MenuItem value="HIGH">{t('priorities.high')}</MenuItem>
+          <MenuItem value="NORMAL">{t('priorities.normal')}</MenuItem>
+          <MenuItem value="LOW">{t('priorities.low')}</MenuItem>
         </TextField>
         <Button
           variant="outlined"
           startIcon={<UploadIcon />}
           onClick={() => setShowImportModal(true)}
         >
-          Import Decklist
+          {t('wishlist.importDecklist')}
         </Button>
         <Button
           variant="outlined"
           startIcon={<CloudUploadIcon />}
           onClick={() => setShowCSVImportModal(true)}
         >
-          Import CSV
+          {t('wishlist.importCsv')}
         </Button>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => setShowAddModal(true)}
         >
-          Add Card
+          {t('wishlist.addCard')}
         </Button>
       </Box>
 
@@ -317,14 +319,14 @@ export function WishlistPage() {
       {items.length === 0 ? (
         <Box sx={styles.emptyState}>
           <Typography color="text.secondary" gutterBottom>
-            Your wishlist is empty
+            {t('wishlist.emptyWishlist')}
           </Typography>
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setShowAddModal(true)}
           >
-            Add Your First Card
+            {t('wishlist.addFirstCard')}
           </Button>
         </Box>
       ) : (
@@ -355,14 +357,14 @@ export function WishlistPage() {
       <Modal
         isOpen={showAddModal}
         onClose={handleCloseAddModal}
-        title="Add Card to Wishlist"
+        title={t('wishlist.addToWishlist')}
         size="lg"
       >
         <Stack spacing={3}>
           {!selectedCard && (
             <CardSearch
               onSelect={handleCardNameSelected}
-              placeholder="Search for a card..."
+              placeholder={t('collection.typeCardName')}
             />
           )}
 
@@ -408,11 +410,11 @@ export function WishlistPage() {
                       name="priority"
                       control={addControl}
                       render={({ field }) => (
-                        <TextField {...field} select label="Priority" fullWidth>
-                          <MenuItem value="URGENT">Urgent</MenuItem>
-                          <MenuItem value="HIGH">High</MenuItem>
-                          <MenuItem value="NORMAL">Normal</MenuItem>
-                          <MenuItem value="LOW">Low</MenuItem>
+                        <TextField {...field} select label={t('wishlist.priority')} fullWidth>
+                          <MenuItem value="URGENT">{t('priorities.urgent')}</MenuItem>
+                          <MenuItem value="HIGH">{t('priorities.high')}</MenuItem>
+                          <MenuItem value="NORMAL">{t('priorities.normal')}</MenuItem>
+                          <MenuItem value="LOW">{t('priorities.low')}</MenuItem>
                         </TextField>
                       )}
                     />
@@ -426,7 +428,7 @@ export function WishlistPage() {
                         <TextField
                           {...field}
                           type="number"
-                          label="Quantity"
+                          label={t('collection.quantity')}
                           fullWidth
                           slotProps={{ htmlInput: { min: 1 } }}
                         />
@@ -444,7 +446,7 @@ export function WishlistPage() {
                         <TextField
                           {...field}
                           type="number"
-                          label="Max Price (EUR)"
+                          label={t('wishlist.maxPrice')}
                           placeholder="Optional"
                           fullWidth
                           slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
@@ -460,7 +462,7 @@ export function WishlistPage() {
                         render={({ field }) => (
                           <FormControlLabel
                             control={<Checkbox {...field} checked={field.value} />}
-                            label="Foil Only"
+                            label={t('wishlist.foilOnly')}
                           />
                         )}
                       />
@@ -470,20 +472,20 @@ export function WishlistPage() {
 
                 {addMutation.isError && (
                   <Alert severity="error">
-                    Failed to add card. It may already be in your wishlist.
+                    {t('wishlist.failedToAdd')}
                   </Alert>
                 )}
 
                 <Box sx={styles.buttonGroup}>
                   <Button variant="outlined" onClick={handleCloseAddModal}>
-                    Cancel
+                    {t('common.cancel')}
                   </Button>
                   <Button
                     type="submit"
                     variant="contained"
                     disabled={addMutation.isPending}
                   >
-                    {addMutation.isPending ? 'Adding...' : 'Add to Wishlist'}
+                    {addMutation.isPending ? t('wishlist.addingToWishlist') : t('wishlist.addToWishlist')}
                   </Button>
                 </Box>
               </Stack>
@@ -502,7 +504,7 @@ export function WishlistPage() {
       <Modal
         isOpen={!!editingItem}
         onClose={handleCloseEditModal}
-        title="Edit Wishlist Item"
+        title={t('wishlist.editItem')}
         size="lg"
       >
         {editingItem && (
@@ -530,11 +532,11 @@ export function WishlistPage() {
                   </Typography>
                   {editSelectedCard ? (
                     <Typography variant="caption" color="primary.main">
-                      New printing selected
+                      {t('collection.newPrintingSelected')}
                     </Typography>
                   ) : (
                     <Typography variant="caption" color="text.secondary">
-                      Click image to change printing
+                      {t('collection.clickToChangePrinting')}
                     </Typography>
                   )}
                 </Box>
@@ -555,11 +557,11 @@ export function WishlistPage() {
                     name="priority"
                     control={editControl}
                     render={({ field }) => (
-                      <TextField {...field} select label="Priority" fullWidth>
-                        <MenuItem value="URGENT">Urgent</MenuItem>
-                        <MenuItem value="HIGH">High</MenuItem>
-                        <MenuItem value="NORMAL">Normal</MenuItem>
-                        <MenuItem value="LOW">Low</MenuItem>
+                      <TextField {...field} select label={t('wishlist.priority')} fullWidth>
+                        <MenuItem value="URGENT">{t('priorities.urgent')}</MenuItem>
+                        <MenuItem value="HIGH">{t('priorities.high')}</MenuItem>
+                        <MenuItem value="NORMAL">{t('priorities.normal')}</MenuItem>
+                        <MenuItem value="LOW">{t('priorities.low')}</MenuItem>
                       </TextField>
                     )}
                   />
@@ -573,7 +575,7 @@ export function WishlistPage() {
                       <TextField
                         {...field}
                         type="number"
-                        label="Quantity"
+                        label={t('collection.quantity')}
                         fullWidth
                         slotProps={{ htmlInput: { min: 1 } }}
                       />
@@ -591,7 +593,7 @@ export function WishlistPage() {
                       <TextField
                         {...field}
                         type="number"
-                        label="Max Price (EUR)"
+                        label={t('wishlist.maxPrice')}
                         placeholder="Optional"
                         fullWidth
                         slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
@@ -607,7 +609,7 @@ export function WishlistPage() {
                       render={({ field }) => (
                         <FormControlLabel
                           control={<Checkbox {...field} checked={field.value} />}
-                          label="Foil Only"
+                          label={t('wishlist.foilOnly')}
                         />
                       )}
                     />
@@ -616,19 +618,19 @@ export function WishlistPage() {
               </Grid>
 
               {updateMutation.isError && (
-                <Alert severity="error">Failed to update. Please try again.</Alert>
+                <Alert severity="error">{t('wishlist.failedToUpdate')}</Alert>
               )}
 
               <Box sx={styles.buttonGroup}>
                 <Button variant="outlined" onClick={handleCloseEditModal}>
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button
                   type="submit"
                   variant="contained"
                   disabled={updateMutation.isPending}
                 >
-                  {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+                  {updateMutation.isPending ? t('common.saving') : t('common.saveChanges')}
                 </Button>
               </Box>
             </Stack>

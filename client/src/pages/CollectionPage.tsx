@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Paper,
@@ -20,10 +21,10 @@ import {
   Chip,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { Add as AddIcon, Close as CloseIcon, Upload as UploadIcon, FilterAltOff as FilterAltOffIcon } from '@mui/icons-material';
+import { Add as AddIcon, Close as CloseIcon, Upload as UploadIcon, Download as DownloadIcon, FilterAltOff as FilterAltOffIcon } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
 import { CollectionItem, CardCondition, Card } from '@mtg-binder/shared';
-import { getCollection, getCollectionStats, removeFromCollection, updateCollectionItem } from '../services/collection-service';
+import { getCollection, getCollectionStats, removeFromCollection, updateCollectionItem, exportCollection } from '../services/collection-service';
 import { CardGrid, CardGridItem } from '../components/cards/CardGrid';
 import { CollectionCard } from '../components/collection/CollectionCard';
 import { AddCardForm } from '../components/collection/AddCardForm';
@@ -42,37 +43,44 @@ interface EditFormData {
   tradePrice: number | null;
 }
 
-const conditions: Array<{ value: CardCondition; label: string }> = [
-  { value: CardCondition.MINT, label: 'Mint' },
-  { value: CardCondition.NEAR_MINT, label: 'Near Mint' },
-  { value: CardCondition.LIGHTLY_PLAYED, label: 'Lightly Played' },
-  { value: CardCondition.MODERATELY_PLAYED, label: 'Moderately Played' },
-  { value: CardCondition.HEAVILY_PLAYED, label: 'Heavily Played' },
-  { value: CardCondition.DAMAGED, label: 'Damaged' },
+const CONDITIONS: Array<{ value: CardCondition; labelKey: string }> = [
+  { value: CardCondition.MINT, labelKey: 'conditions.mint' },
+  { value: CardCondition.NEAR_MINT, labelKey: 'conditions.nearMint' },
+  { value: CardCondition.LIGHTLY_PLAYED, labelKey: 'conditions.lightlyPlayed' },
+  { value: CardCondition.MODERATELY_PLAYED, labelKey: 'conditions.moderatelyPlayed' },
+  { value: CardCondition.HEAVILY_PLAYED, labelKey: 'conditions.heavilyPlayed' },
+  { value: CardCondition.DAMAGED, labelKey: 'conditions.damaged' },
 ];
 
-const languages = [
-  { value: 'EN', label: 'English' },
-  { value: 'ES', label: 'Spanish' },
-  { value: 'DE', label: 'German' },
-  { value: 'FR', label: 'French' },
-  { value: 'IT', label: 'Italian' },
-  { value: 'PT', label: 'Portuguese' },
-  { value: 'JA', label: 'Japanese' },
-  { value: 'KO', label: 'Korean' },
-  { value: 'RU', label: 'Russian' },
-  { value: 'ZH', label: 'Chinese' },
+const LANGUAGES = [
+  { value: 'EN', labelKey: 'languages.en' },
+  { value: 'ES', labelKey: 'languages.es' },
+  { value: 'DE', labelKey: 'languages.de' },
+  { value: 'FR', labelKey: 'languages.fr' },
+  { value: 'IT', labelKey: 'languages.it' },
+  { value: 'PT', labelKey: 'languages.pt' },
+  { value: 'JA', labelKey: 'languages.ja' },
+  { value: 'KO', labelKey: 'languages.ko' },
+  { value: 'RU', labelKey: 'languages.ru' },
+  { value: 'ZH', labelKey: 'languages.zh' },
 ];
 
 const MTG_COLORS = [
-  { value: 'W', label: 'White', symbol: '{W}' },
-  { value: 'U', label: 'Blue', symbol: '{U}' },
-  { value: 'B', label: 'Black', symbol: '{B}' },
-  { value: 'R', label: 'Red', symbol: '{R}' },
-  { value: 'G', label: 'Green', symbol: '{G}' },
+  { value: 'W', labelKey: 'colors.white', symbol: '{W}' },
+  { value: 'U', labelKey: 'colors.blue', symbol: '{U}' },
+  { value: 'B', labelKey: 'colors.black', symbol: '{B}' },
+  { value: 'R', labelKey: 'colors.red', symbol: '{R}' },
+  { value: 'G', labelKey: 'colors.green', symbol: '{G}' },
+  { value: 'C', labelKey: 'colors.colorless', symbol: '{C}' },
+  { value: 'L', labelKey: 'colors.land', symbol: '{L}' },
 ];
 
-const RARITIES = ['common', 'uncommon', 'rare', 'mythic'];
+const RARITIES = [
+  { value: 'common', labelKey: 'rarities.common' },
+  { value: 'uncommon', labelKey: 'rarities.uncommon' },
+  { value: 'rare', labelKey: 'rarities.rare' },
+  { value: 'mythic', labelKey: 'rarities.mythic' },
+];
 
 const styles: Record<string, SxProps<Theme>> = {
   container: {
@@ -146,12 +154,14 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 export function CollectionPage() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [editingItem, setEditingItem] = useState<CollectionItem | null>(null);
   const [editPendingCardName, setEditPendingCardName] = useState<string | null>(null);
   const [editSelectedCard, setEditSelectedCard] = useState<Card | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const queryClient = useQueryClient();
 
   // Extract filter state from URL params
@@ -267,8 +277,27 @@ export function CollectionPage() {
   };
 
   const handleRemove = (item: CollectionItem) => {
-    if (confirm(`Remove ${item.card?.name} from collection?`)) {
+    if (confirm(t('collection.confirmRemove', { cardName: item.card?.name }))) {
       removeMutation.mutate(item.id);
+    }
+  };
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      await exportCollection({
+        search,
+        setCode,
+        colors: colors.length > 0 ? colors.join(',') : undefined,
+        rarity: rarity || undefined,
+        priceMin: priceMin ? parseFloat(priceMin) : undefined,
+        priceMax: priceMax ? parseFloat(priceMax) : undefined,
+        forTrade: forTradeOnly,
+      });
+    } catch (error) {
+      alert(t('collection.failedToExport'));
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -277,7 +306,7 @@ export function CollectionPage() {
   if (error) {
     return (
       <Box sx={styles.emptyState}>
-        <Alert severity="error">Failed to load collection</Alert>
+        <Alert severity="error">{t('collection.failedToLoad')}</Alert>
       </Box>
     );
   }
@@ -292,23 +321,23 @@ export function CollectionPage() {
       <Box sx={styles.statsGrid}>
         <Paper sx={styles.statCard}>
           <Typography sx={styles.statValue}>{stats?.uniqueCards || 0}</Typography>
-          <Typography sx={styles.statLabel}>Unique Cards</Typography>
+          <Typography sx={styles.statLabel}>{t('collection.uniqueCards')}</Typography>
         </Paper>
         <Paper sx={styles.statCard}>
           <Typography sx={styles.statValue}>{stats?.totalCards || 0}</Typography>
-          <Typography sx={styles.statLabel}>Total Cards</Typography>
+          <Typography sx={styles.statLabel}>{t('collection.totalCards')}</Typography>
         </Paper>
         <Paper sx={styles.statCard}>
           <Typography sx={{ ...styles.statValue, color: 'success.main' }}>
             €{((stats?.totalValue || 0) + (stats?.totalValueFoil || 0)).toFixed(2)}
           </Typography>
-          <Typography sx={styles.statLabel}>Total Value</Typography>
+          <Typography sx={styles.statLabel}>{t('collection.totalValue')}</Typography>
         </Paper>
         <Paper sx={styles.statCard}>
           <Typography sx={{ ...styles.statValue, color: 'primary.main' }}>
             {stats?.forTradeCount || 0}
           </Typography>
-          <Typography sx={styles.statLabel}>For Trade</Typography>
+          <Typography sx={styles.statLabel}>{t('collection.forTrade')}</Typography>
         </Paper>
       </Box>
 
@@ -319,7 +348,7 @@ export function CollectionPage() {
           <TextField
             value={search}
             onChange={(e) => updateFilters({ search: e.target.value })}
-            placeholder="Search your collection..."
+            placeholder={t('collection.searchPlaceholder')}
             fullWidth
             sx={{ flexGrow: 1 }}
           />
@@ -330,21 +359,29 @@ export function CollectionPage() {
                 onChange={(e) => updateFilters({ forTrade: e.target.checked ? 'true' : null })}
               />
             }
-            label="For Trade Only"
+            label={t('collection.forTradeOnly')}
           />
+          <Button
+            variant="outlined"
+            startIcon={<DownloadIcon />}
+            onClick={handleExport}
+            disabled={isExporting || items.length === 0}
+          >
+            {isExporting ? t('collection.exporting') : t('collection.exportCsv')}
+          </Button>
           <Button
             variant="outlined"
             startIcon={<UploadIcon />}
             onClick={() => setShowImportModal(true)}
           >
-            Import CSV
+            {t('collection.importCsv')}
           </Button>
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setShowAddModal(true)}
           >
-            Add Card
+            {t('collection.addCard')}
           </Button>
         </Box>
 
@@ -355,7 +392,7 @@ export function CollectionPage() {
               {/* Color Filter */}
               <Box sx={{ minWidth: 200 }}>
                 <Typography variant="caption" sx={{ mb: 0.5, display: 'block' }}>
-                  Color (cards with ALL selected)
+                  {t('colors.filterLabel')}
                 </Typography>
                 <ToggleButtonGroup
                   value={colors}
@@ -366,8 +403,8 @@ export function CollectionPage() {
                     <ToggleButton
                       key={color.value}
                       value={color.value}
-                      aria-label={color.label}
-                      title={color.label}
+                      aria-label={t(color.labelKey)}
+                      title={t(color.labelKey)}
                     >
                       {color.value}
                     </ToggleButton>
@@ -378,33 +415,33 @@ export function CollectionPage() {
               {/* Rarity Filter */}
               <TextField
                 select
-                label="Rarity"
+                label={t('filters.rarity')}
                 value={rarity}
                 onChange={(e) => updateFilters({ rarity: e.target.value })}
                 sx={{ minWidth: 150 }}
                 size="small"
               >
-                <MenuItem value="">All</MenuItem>
+                <MenuItem value="">{t('common.all')}</MenuItem>
                 {RARITIES.map(r => (
-                  <MenuItem key={r} value={r}>
-                    {r.charAt(0).toUpperCase() + r.slice(1)}
+                  <MenuItem key={r.value} value={r.value}>
+                    {t(r.labelKey)}
                   </MenuItem>
                 ))}
               </TextField>
 
               {/* Set Filter */}
               <TextField
-                label="Set Code"
+                label={t('filters.setCode')}
                 value={setCode}
                 onChange={(e) => updateFilters({ setCode: e.target.value.toUpperCase() })}
-                placeholder="e.g., MH3"
+                placeholder={t('filters.setCodePlaceholder')}
                 sx={{ minWidth: 150 }}
                 size="small"
               />
 
               {/* Price Range */}
               <TextField
-                label="Min Price (€)"
+                label={`${t('filters.minPrice')} (€)`}
                 type="number"
                 value={priceMin}
                 onChange={(e) => updateFilters({ priceMin: e.target.value })}
@@ -413,7 +450,7 @@ export function CollectionPage() {
                 size="small"
               />
               <TextField
-                label="Max Price (€)"
+                label={`${t('filters.maxPrice')} (€)`}
                 type="number"
                 value={priceMax}
                 onChange={(e) => updateFilters({ priceMax: e.target.value })}
@@ -431,28 +468,28 @@ export function CollectionPage() {
                 size="small"
                 sx={{ mt: 'auto' }}
               >
-                Clear Filters
+                {t('common.clearFilters')}
               </Button>
             </Box>
 
             {/* Active Filters Display */}
             {(search || setCode || colors.length > 0 || rarity || priceMin || priceMax || forTradeOnly) && (
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                <Typography variant="caption" sx={{ alignSelf: 'center', mr: 1 }}>Active filters:</Typography>
-                {search && <Chip label={`Search: ${search}`} size="small" onDelete={() => updateFilters({ search: null })} />}
-                {setCode && <Chip label={`Set: ${setCode}`} size="small" onDelete={() => updateFilters({ setCode: null })} />}
+                <Typography variant="caption" sx={{ alignSelf: 'center', mr: 1 }}>{t('common.activeFilters')}</Typography>
+                {search && <Chip label={t('filters.search', { term: search })} size="small" onDelete={() => updateFilters({ search: null })} />}
+                {setCode && <Chip label={t('filters.set', { code: setCode })} size="small" onDelete={() => updateFilters({ setCode: null })} />}
                 {colors.map(c => (
                   <Chip
                     key={c}
-                    label={`Color: ${c}`}
+                    label={t('filters.color', { color: c })}
                     size="small"
                     onDelete={() => updateFilters({ colors: colors.filter(col => col !== c).join(',') || null })}
                   />
                 ))}
-                {rarity && <Chip label={`Rarity: ${rarity}`} size="small" onDelete={() => updateFilters({ rarity: null })} />}
+                {rarity && <Chip label={t('filters.rarityFilter', { rarity })} size="small" onDelete={() => updateFilters({ rarity: null })} />}
                 {priceMin && <Chip label={`Min: €${priceMin}`} size="small" onDelete={() => updateFilters({ priceMin: null })} />}
                 {priceMax && <Chip label={`Max: €${priceMax}`} size="small" onDelete={() => updateFilters({ priceMax: null })} />}
-                {forTradeOnly && <Chip label="For Trade Only" size="small" onDelete={() => updateFilters({ forTrade: null })} />}
+                {forTradeOnly && <Chip label={t('collection.forTradeOnly')} size="small" onDelete={() => updateFilters({ forTrade: null })} />}
               </Box>
             )}
           </Stack>
@@ -464,8 +501,8 @@ export function CollectionPage() {
         <Box sx={styles.emptyState}>
           <Typography color="text.secondary" gutterBottom>
             {search || setCode || colors.length > 0 || rarity || priceMin || priceMax || forTradeOnly
-              ? 'No cards match your filters'
-              : 'Your collection is empty'}
+              ? t('collection.noMatchingCards')
+              : t('collection.emptyCollection')}
           </Typography>
           {!(search || setCode || colors.length > 0 || rarity || priceMin || priceMax || forTradeOnly) ? (
             <Button
@@ -473,7 +510,7 @@ export function CollectionPage() {
               startIcon={<AddIcon />}
               onClick={() => setShowAddModal(true)}
             >
-              Add Your First Card
+              {t('collection.addFirstCard')}
             </Button>
           ) : (
             <Button
@@ -481,7 +518,7 @@ export function CollectionPage() {
               startIcon={<FilterAltOffIcon />}
               onClick={() => setSearchParams({})}
             >
-              Clear Filters
+              {t('common.clearFilters')}
             </Button>
           )}
         </Box>
@@ -513,7 +550,7 @@ export function CollectionPage() {
       <Modal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        title="Add Card to Collection"
+        title={t('collection.addToCollection')}
         size="lg"
       >
         <AddCardForm
@@ -526,7 +563,7 @@ export function CollectionPage() {
       <Modal
         isOpen={!!editingItem}
         onClose={handleCloseEditModal}
-        title="Edit Collection Item"
+        title={t('collection.editItem')}
         size="lg"
       >
         {editingItem && (
@@ -537,7 +574,7 @@ export function CollectionPage() {
                 <Box
                   sx={styles.clickableImage}
                   onClick={() => setEditPendingCardName(editingItem.card?.name || null)}
-                  title="Click to change printing"
+                  title={t('collection.clickToChangePrinting')}
                 >
                   <CardImage
                     scryfallId={editSelectedCard?.scryfallId || editingItem.card?.scryfallId || null}
@@ -554,11 +591,11 @@ export function CollectionPage() {
                   </Typography>
                   {editSelectedCard ? (
                     <Typography variant="caption" color="primary.main">
-                      New printing selected
+                      {t('collection.newPrintingSelected')}
                     </Typography>
                   ) : (
                     <Typography variant="caption" color="text.secondary">
-                      Click image to change printing
+                      {t('collection.clickToChangePrinting')}
                     </Typography>
                   )}
                 </Box>
@@ -583,7 +620,7 @@ export function CollectionPage() {
                       <TextField
                         {...field}
                         type="number"
-                        label="Quantity"
+                        label={t('collection.quantity')}
                         fullWidth
                         slotProps={{ htmlInput: { min: 0 } }}
                         error={!!errors.quantity}
@@ -600,7 +637,7 @@ export function CollectionPage() {
                       <TextField
                         {...field}
                         type="number"
-                        label="Foil Quantity"
+                        label={t('collection.foilQuantity')}
                         fullWidth
                         slotProps={{ htmlInput: { min: 0 } }}
                       />
@@ -615,10 +652,10 @@ export function CollectionPage() {
                     name="condition"
                     control={control}
                     render={({ field }) => (
-                      <TextField {...field} select label="Condition" fullWidth>
-                        {conditions.map((c) => (
+                      <TextField {...field} select label={t('collection.condition')} fullWidth>
+                        {CONDITIONS.map((c) => (
                           <MenuItem key={c.value} value={c.value}>
-                            {c.label}
+                            {t(c.labelKey)}
                           </MenuItem>
                         ))}
                       </TextField>
@@ -630,10 +667,10 @@ export function CollectionPage() {
                     name="language"
                     control={control}
                     render={({ field }) => (
-                      <TextField {...field} select label="Language" fullWidth>
-                        {languages.map((l) => (
+                      <TextField {...field} select label={t('collection.language')} fullWidth>
+                        {LANGUAGES.map((l) => (
                           <MenuItem key={l.value} value={l.value}>
-                            {l.label}
+                            {t(l.labelKey)}
                           </MenuItem>
                         ))}
                       </TextField>
@@ -652,10 +689,10 @@ export function CollectionPage() {
                       <TextField
                         {...field}
                         type="number"
-                        label="For Trade"
+                        label={t('collection.forTrade')}
                         fullWidth
                         slotProps={{ htmlInput: { min: 0 } }}
-                        helperText="Copies available for trading"
+                        helperText={t('collection.forTradeHelp')}
                       />
                     )}
                   />
@@ -674,10 +711,10 @@ export function CollectionPage() {
                           field.onChange(val === '' ? null : parseFloat(val));
                         }}
                         type="number"
-                        label="Asking Price (€)"
+                        label={`${t('collection.askingPrice')} (€)`}
                         fullWidth
                         slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
-                        helperText="Your price for trade"
+                        helperText={t('collection.askingPriceHelp')}
                       />
                     )}
                   />
@@ -685,19 +722,19 @@ export function CollectionPage() {
               </Grid>
 
               {updateMutation.isError && (
-                <Alert severity="error">Failed to update. Please try again.</Alert>
+                <Alert severity="error">{t('collection.failedToUpdate')}</Alert>
               )}
 
               <Box sx={styles.buttonGroup}>
                 <Button variant="outlined" onClick={handleCloseEditModal}>
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button
                   type="submit"
                   variant="contained"
                   disabled={updateMutation.isPending}
                 >
-                  {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+                  {updateMutation.isPending ? t('common.saving') : t('common.saveChanges')}
                 </Button>
               </Box>
             </Stack>

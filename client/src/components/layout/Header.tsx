@@ -1,4 +1,5 @@
 import { Link as RouterLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   AppBar,
   Toolbar,
@@ -15,6 +16,7 @@ import {
 import type { SxProps, Theme } from '@mui/material';
 import { useAuth } from '../../context/auth-context';
 import { useTheme } from '../../context/theme-context';
+import { NotificationBell } from '../notifications/NotificationBell';
 
 const styles: Record<string, SxProps<Theme>> = {
   appBar: {
@@ -53,6 +55,7 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 export function Header() {
+  const { t } = useTranslation();
   const { user, logout, isAuthenticated } = useAuth();
   const { mode, toggleTheme } = useTheme();
 
@@ -61,14 +64,14 @@ export function Header() {
       <Toolbar sx={styles.toolbar}>
         <Link component={RouterLink} to="/" sx={styles.logo}>
           <Typography variant="h6" component="span" sx={{ fontWeight: 700 }}>
-            MTG Binder
+            {t('header.title')}
           </Typography>
         </Link>
 
         <Box sx={styles.actionsContainer}>
           <IconButton
             onClick={toggleTheme}
-            aria-label="Toggle theme"
+            aria-label={t('header.toggleTheme')}
             color="inherit"
           >
             {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
@@ -76,19 +79,20 @@ export function Header() {
 
           {isAuthenticated ? (
             <>
+              <NotificationBell />
               <Typography sx={styles.userName}>{user?.displayName}</Typography>
               <Link
                 component="button"
                 onClick={logout}
                 sx={styles.textLink}
               >
-                Logout
+                {t('header.logout')}
               </Link>
             </>
           ) : (
             <>
               <Link component={RouterLink} to="/login" sx={styles.textLink}>
-                Login
+                {t('header.login')}
               </Link>
               <Button
                 component={RouterLink}
@@ -96,7 +100,7 @@ export function Header() {
                 variant="contained"
                 size="small"
               >
-                Register
+                {t('header.register')}
               </Button>
             </>
           )}

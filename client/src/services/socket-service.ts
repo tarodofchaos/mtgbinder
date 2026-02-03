@@ -55,4 +55,6 @@ export const TradeEvents = {
   MATCHES_UPDATED: 'trade:matches-updated',
   SESSION_COMPLETED: 'trade:session-completed',
   SESSION_EXPIRED: 'trade:session-expired',
+  MESSAGE: 'trade-message',
+  TYPING: 'trade-typing',
 } as const;

@@ -125,6 +125,17 @@ export interface TradeSession {
   createdAt: Date;
   initiator?: UserPublic;
   joiner?: UserPublic;
+  matchCount?: number; // For history view
+  matchesJson?: unknown; // Cached match results
+}
+
+export interface TradeMessage {
+  id: string;
+  sessionId: string;
+  senderId: string;
+  content: string;
+  createdAt: Date;
+  sender?: UserPublic;
 }
 
 export interface TradeMatch {
@@ -204,6 +215,46 @@ export interface ImportResult {
   success: number;
   failed: number;
   errors: string[];
+}
+
+// Set completion types
+export interface SetCompletionSummary {
+  setCode: string;
+  setName: string;
+  ownedCount: number;
+  totalCount: number;
+  completionPercentage: number;
+}
+
+export interface SetCompletionDetail {
+  setCode: string;
+  setName: string;
+  ownedCount: number;
+  totalCount: number;
+  completionPercentage: number;
+  missingCards: Card[];
+}
+
+// Price alert types
+export interface PriceAlert {
+  id: string;
+  userId: string;
+  cardId: string;
+  oldPrice: number;
+  newPrice: number;
+  read: boolean;
+  createdAt: Date;
+  card?: Card;
+}
+
+export interface PriceAlertNotification {
+  id: string;
+  cardId: string;
+  cardName: string;
+  oldPrice: number;
+  newPrice: number;
+  createdAt: Date;
+  card: Card;
 }
 
 // Helper to get Scryfall image URL

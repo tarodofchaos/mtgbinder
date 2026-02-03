@@ -5,6 +5,7 @@ import { prisma } from '../utils/prisma';
 import { validate, validateQuery } from '../middleware/validate';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import { AppError } from '../middleware/error-handler';
+import { parseDecklist } from '../utils/decklist-parser';
 
 const router = Router();
 
@@ -33,6 +34,11 @@ const listQuerySchema = z.object({
   priority: z.nativeEnum(WishlistPriority).optional(),
   sortBy: z.enum(['name', 'priority', 'priceEur', 'updatedAt']).default('priority'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+
+const importDecklistSchema = z.object({
+  decklistText: z.string().min(1),
+  priority: z.nativeEnum(WishlistPriority).default(WishlistPriority.NORMAL),
 });
 
 const priorityOrder = {
@@ -192,6 +198,180 @@ router.delete('/:id', async (req: AuthenticatedRequest, res: Response, next) => 
     await prisma.wishlistItem.delete({ where: { id } });
 
     res.json({ message: 'Item removed from wishlist' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/import-decklist', validate(importDecklistSchema), async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const { decklistText, priority } = req.body;
+
+    // Parse the decklist
+    const parsed = parseDecklist(decklistText);
+
+    if (parsed.entries.length === 0) {
+      throw new AppError('No valid cards found in decklist', 400);
+    }
+
+    // Search for each card in the database
+    const cardSearchResults = await Promise.all(
+      parsed.entries.map(async (entry) => {
+        // Try to find exact match by name
+        const cardQuery: Record<string, unknown> = {
+          name: { equals: entry.cardName, mode: 'insensitive' },
+        };
+
+        // If set code provided, prefer that printing
+        if (entry.setCode) {
+          cardQuery.setCode = entry.setCode.toUpperCase();
+        }
+
+        const cards = await prisma.card.findMany({
+          where: cardQuery,
+          orderBy: entry.setCode ? undefined : { setName: 'desc' }, // Get most recent printing if no set specified
+          take: 1,
+        });
+
+        return {
+          entry,
+          card: cards[0] || null,
+        };
+      })
+    );
+
+    // Get user's current collection to check what they already own
+    const collectionItems = await prisma.collectionItem.findMany({
+      where: { userId: req.userId },
+      include: { card: true },
+    });
+
+    // Build a map of card name -> owned quantity
+    const ownedQuantityMap = new Map<string, number>();
+    for (const item of collectionItems) {
+      const cardName = item.card.name.toLowerCase();
+      const currentOwned = ownedQuantityMap.get(cardName) || 0;
+      ownedQuantityMap.set(cardName, currentOwned + item.quantity + item.foilQuantity);
+    }
+
+    // Get user's current wishlist to avoid duplicates
+    const existingWishlistItems = await prisma.wishlistItem.findMany({
+      where: { userId: req.userId },
+      select: { cardId: true },
+    });
+    const existingCardIds = new Set(existingWishlistItems.map(item => item.cardId));
+
+    // Prepare preview data
+    const preview = cardSearchResults.map(({ entry, card }) => {
+      const ownedQuantity = card ? ownedQuantityMap.get(card.name.toLowerCase()) || 0 : 0;
+      const alreadyInWishlist = card ? existingCardIds.has(card.id) : false;
+
+      return {
+        cardName: entry.cardName,
+        setCode: entry.setCode,
+        quantity: entry.quantity,
+        ownedQuantity,
+        matchedCard: card ? {
+          id: card.id,
+          name: card.name,
+          setCode: card.setCode,
+          setName: card.setName,
+          scryfallId: card.scryfallId,
+          priceEur: card.priceEur,
+        } : null,
+        alreadyInWishlist,
+      };
+    });
+
+    res.json({
+      data: {
+        preview,
+        priority,
+        parseErrors: parsed.errors,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/import-decklist/confirm', validate(z.object({
+  cards: z.array(z.object({
+    cardId: z.string().uuid(),
+    quantity: z.number().int().min(1),
+  })),
+  priority: z.nativeEnum(WishlistPriority).default(WishlistPriority.NORMAL),
+})), async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const { cards, priority } = req.body;
+
+    if (cards.length === 0) {
+      throw new AppError('No cards to import', 400);
+    }
+
+    // Validate all card IDs exist
+    const cardIds = cards.map((c: { cardId: string; quantity: number }) => c.cardId);
+    const foundCards = await prisma.card.findMany({
+      where: { id: { in: cardIds } },
+      select: { id: true },
+    });
+
+    if (foundCards.length !== cards.length) {
+      throw new AppError('Some cards were not found', 400);
+    }
+
+    // Get existing wishlist items to avoid duplicates
+    const existingItems = await prisma.wishlistItem.findMany({
+      where: {
+        userId: req.userId,
+        cardId: { in: cardIds },
+      },
+      select: { cardId: true, quantity: true, id: true },
+    });
+
+    const existingMap = new Map(existingItems.map(item => [item.cardId, item]));
+
+    // Bulk create new items and update existing ones
+    const toCreate = [];
+    const toUpdate = [];
+
+    for (const card of cards) {
+      const existing = existingMap.get(card.cardId);
+      if (existing) {
+        // Update quantity for existing items
+        toUpdate.push(
+          prisma.wishlistItem.update({
+            where: { id: existing.id },
+            data: { quantity: existing.quantity + card.quantity },
+          })
+        );
+      } else {
+        // Create new wishlist item
+        toCreate.push({
+          userId: req.userId!,
+          cardId: card.cardId,
+          quantity: card.quantity,
+          priority,
+          foilOnly: false,
+          maxPrice: null,
+          minCondition: null,
+        });
+      }
+    }
+
+    // Execute bulk operations
+    const [created] = await Promise.all([
+      toCreate.length > 0 ? prisma.wishlistItem.createMany({ data: toCreate }) : { count: 0 },
+      ...toUpdate,
+    ]);
+
+    res.json({
+      data: {
+        imported: created.count,
+        updated: toUpdate.length,
+        total: cards.length,
+      },
+    });
   } catch (error) {
     next(error);
   }

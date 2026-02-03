@@ -75,8 +75,23 @@ router.get('/', validateQuery(listQuerySchema), async (req: AuthenticatedRequest
     }
     // Color filter uses AND logic: card must have ALL selected colors
     // e.g., colors=U,R matches cards with BOTH blue AND red in their color identity
+    // Special filters: C = colorless (empty colors array), L = lands (typeLine contains "Land")
     if (colors && colors.length > 0) {
-      cardWhere.colors = { hasEvery: colors };
+      const standardColors = colors.filter(c => ['W', 'U', 'B', 'R', 'G'].includes(c));
+      const hasColorless = colors.includes('C');
+      const hasLand = colors.includes('L');
+
+      if (hasColorless) {
+        // Colorless cards have empty colors array
+        cardWhere.colors = { isEmpty: true };
+      } else if (standardColors.length > 0) {
+        cardWhere.colors = { hasEvery: standardColors };
+      }
+
+      if (hasLand) {
+        // Lands have "Land" in their typeLine
+        cardWhere.typeLine = { contains: 'Land', mode: 'insensitive' };
+      }
     }
     if (rarity) {
       cardWhere.rarity = rarity;
@@ -274,6 +289,237 @@ router.delete('/:id', async (req: AuthenticatedRequest, res: Response, next) => 
     await prisma.collectionItem.delete({ where: { id } });
 
     res.json({ message: 'Item removed from collection' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/sets', async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    // Get all collection items for user with their cards
+    const collectionItems = await prisma.collectionItem.findMany({
+      where: { userId: req.userId },
+      include: { card: true },
+    });
+
+    // Group by set
+    const setMap = new Map<string, { setCode: string; setName: string; ownedCards: Set<string> }>();
+
+    for (const item of collectionItems) {
+      const { setCode, setName } = item.card;
+      if (!setMap.has(setCode)) {
+        setMap.set(setCode, { setCode, setName, ownedCards: new Set() });
+      }
+      setMap.get(setCode)!.ownedCards.add(item.card.name);
+    }
+
+    // Get total card counts for each set (unique card names per set)
+    const setCodes = Array.from(setMap.keys());
+    const setTotals = await Promise.all(
+      setCodes.map(async (setCode) => {
+        const count = await prisma.card.findMany({
+          where: { setCode },
+          distinct: ['name'],
+          select: { name: true },
+        });
+        return { setCode, total: count.length };
+      })
+    );
+
+    const totalMap = new Map(setTotals.map(st => [st.setCode, st.total]));
+
+    // Build response
+    const sets = Array.from(setMap.values()).map(set => {
+      const totalCount = totalMap.get(set.setCode) || 0;
+      const ownedCount = set.ownedCards.size;
+      return {
+        setCode: set.setCode,
+        setName: set.setName,
+        ownedCount,
+        totalCount,
+        completionPercentage: totalCount > 0 ? Math.round((ownedCount / totalCount) * 100) : 0,
+      };
+    });
+
+    // Sort by completion percentage desc, then by set name
+    sets.sort((a, b) => {
+      if (b.completionPercentage !== a.completionPercentage) {
+        return b.completionPercentage - a.completionPercentage;
+      }
+      return a.setName.localeCompare(b.setName);
+    });
+
+    res.json({ data: sets });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/sets/:setCode/completion', async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const { setCode } = req.params;
+    const upperSetCode = setCode.toUpperCase();
+
+    // Get user's collection items for this set
+    const collectionItems = await prisma.collectionItem.findMany({
+      where: {
+        userId: req.userId,
+        card: { setCode: upperSetCode },
+      },
+      include: { card: true },
+    });
+
+    // Get owned card names
+    const ownedCardNames = new Set(collectionItems.map(item => item.card.name));
+
+    // Get all unique card names in the set
+    const allCardsInSet = await prisma.card.findMany({
+      where: { setCode: upperSetCode },
+      distinct: ['name'],
+      orderBy: { name: 'asc' },
+    });
+
+    // Find missing cards
+    const missingCards = allCardsInSet.filter(card => !ownedCardNames.has(card.name));
+
+    const setName = allCardsInSet.length > 0 ? allCardsInSet[0].setName : upperSetCode;
+    const totalCount = allCardsInSet.length;
+    const ownedCount = ownedCardNames.size;
+
+    res.json({
+      data: {
+        setCode: upperSetCode,
+        setName,
+        ownedCount,
+        totalCount,
+        completionPercentage: totalCount > 0 ? Math.round((ownedCount / totalCount) * 100) : 0,
+        missingCards,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/export', validateQuery(listQuerySchema), async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const { search, setCode, colors, rarity, priceMin, priceMax, forTrade } = req.query as unknown as {
+      search?: string;
+      setCode?: string;
+      colors?: string[];
+      rarity?: string;
+      priceMin?: number;
+      priceMax?: number;
+      forTrade?: boolean;
+    };
+
+    const where: Record<string, unknown> = { userId: req.userId };
+
+    if (forTrade) {
+      where.forTrade = { gt: 0 };
+    }
+
+    const cardWhere: Record<string, unknown> = {};
+    if (search) {
+      cardWhere.name = { contains: search, mode: 'insensitive' };
+    }
+    if (setCode) {
+      cardWhere.setCode = setCode.toUpperCase();
+    }
+    // Color filter uses AND logic: card must have ALL selected colors
+    // Special filters: C = colorless (empty colors array), L = lands (typeLine contains "Land")
+    if (colors && colors.length > 0) {
+      const standardColors = colors.filter(c => ['W', 'U', 'B', 'R', 'G'].includes(c));
+      const hasColorless = colors.includes('C');
+      const hasLand = colors.includes('L');
+
+      if (hasColorless) {
+        cardWhere.colors = { isEmpty: true };
+      } else if (standardColors.length > 0) {
+        cardWhere.colors = { hasEvery: standardColors };
+      }
+
+      if (hasLand) {
+        cardWhere.typeLine = { contains: 'Land', mode: 'insensitive' };
+      }
+    }
+    if (rarity) {
+      cardWhere.rarity = rarity;
+    }
+    if (priceMin !== undefined || priceMax !== undefined) {
+      cardWhere.priceEur = {};
+      if (priceMin !== undefined) {
+        (cardWhere.priceEur as Record<string, unknown>).gte = priceMin;
+      }
+      if (priceMax !== undefined) {
+        (cardWhere.priceEur as Record<string, unknown>).lte = priceMax;
+      }
+    }
+
+    if (Object.keys(cardWhere).length > 0) {
+      where.card = cardWhere;
+    }
+
+    // Fetch all items matching the filters (no pagination for export)
+    const items = await prisma.collectionItem.findMany({
+      where,
+      include: { card: true },
+      orderBy: { card: { name: 'asc' } },
+    });
+
+    // Helper function to escape CSV fields
+    const escapeCSV = (value: string | number | null | undefined): string => {
+      if (value === null || value === undefined) {
+        return '';
+      }
+      const stringValue = String(value);
+      // If field contains comma, quote, or newline, wrap in quotes and escape existing quotes
+      if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }
+      return stringValue;
+    };
+
+    // Build CSV content
+    const headers = [
+      'name',
+      'set_code',
+      'quantity',
+      'foil_quantity',
+      'condition',
+      'language',
+      'for_trade',
+      'trade_price',
+      'scryfall_id',
+    ];
+
+    const csvRows = [headers.join(',')];
+
+    for (const item of items) {
+      const row = [
+        escapeCSV(item.card.name),
+        escapeCSV(item.card.setCode),
+        escapeCSV(item.quantity),
+        escapeCSV(item.foilQuantity),
+        escapeCSV(item.condition),
+        escapeCSV(item.language),
+        escapeCSV(item.forTrade),
+        escapeCSV(item.tradePrice),
+        escapeCSV(item.card.scryfallId),
+      ];
+      csvRows.push(row.join(','));
+    }
+
+    const csvContent = csvRows.join('\n');
+
+    // Generate filename with current date
+    const date = new Date().toISOString().split('T')[0];
+    const filename = `mtg-collection-${date}.csv`;
+
+    // Set response headers for file download
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csvContent);
   } catch (error) {
     next(error);
   }

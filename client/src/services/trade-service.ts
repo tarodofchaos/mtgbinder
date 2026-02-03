@@ -1,4 +1,4 @@
-import { TradeSession, TradeMatchResult } from '@mtg-binder/shared';
+import { TradeSession, TradeMatchResult, TradeMessage } from '@mtg-binder/shared';
 import { api } from './api';
 
 export async function createTradeSession(): Promise<TradeSession> {
@@ -28,4 +28,27 @@ export async function completeTradeSession(code: string): Promise<TradeSession> 
 
 export async function deleteTradeSession(code: string): Promise<void> {
   await api.delete(`/trade/${code}`);
+}
+
+export interface TradeHistoryParams {
+  startDate?: string;
+  endDate?: string;
+  sort?: 'asc' | 'desc';
+}
+
+export async function getTradeHistory(params?: TradeHistoryParams): Promise<TradeSession[]> {
+  const response = await api.get('/trade/history', { params });
+  return response.data.data;
+}
+
+export async function getTradeHistoryDetail(id: string): Promise<TradeSession> {
+  const response = await api.get(`/trade/history/${id}`);
+  return response.data.data;
+}
+
+export async function getTradeMessages(code: string, limit = 50): Promise<TradeMessage[]> {
+  const response = await api.get(`/trade/${code}/messages`, {
+    params: { limit },
+  });
+  return response.data.data;
 }

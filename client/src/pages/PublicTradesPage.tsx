@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Paper,
@@ -82,6 +83,7 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 export function PublicTradesPage() {
+  const { t } = useTranslation();
   const { shareCode } = useParams<{ shareCode: string }>();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -116,7 +118,7 @@ export function PublicTradesPage() {
     return (
       <Box sx={styles.emptyState}>
         <Alert severity="error" sx={{ mb: 2, display: 'inline-flex' }}>
-          Could not find this trader's collection. The share code may be invalid.
+          {t('publicBinder.invalidShareCode')}
         </Alert>
       </Box>
     );
@@ -136,20 +138,20 @@ export function PublicTradesPage() {
       <Paper sx={styles.header}>
         <StorefrontIcon sx={styles.headerIcon} />
         <Typography variant="h4" fontWeight={700}>
-          {user.displayName}'s Trade Binder
+          {t('publicBinder.tradeBinder', { name: user.displayName })}
         </Typography>
         <Typography color="text.secondary" sx={{ mt: 1 }}>
-          Browse cards available for trade
+          {t('publicBinder.browseCards')}
         </Typography>
 
         <Box sx={styles.statsRow}>
           <Chip
-            label={`${total} cards available`}
+            label={t('publicBinder.cardsAvailable', { count: total })}
             color="primary"
             variant="outlined"
           />
           <Chip
-            label={`Total value: €${totalValue.toFixed(2)}`}
+            label={t('publicBinder.totalValueLabel', { value: `€${totalValue.toFixed(2)}` })}
             color="success"
             variant="outlined"
           />
@@ -160,7 +162,7 @@ export function PublicTradesPage() {
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
         <TextField
           fullWidth
-          placeholder="Search cards..."
+          placeholder={t('publicBinder.searchPlaceholder')}
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
@@ -183,12 +185,12 @@ export function PublicTradesPage() {
           size="small"
         >
           <ToggleButton value="grid">
-            <Tooltip title="Grid View">
+            <Tooltip title={t('publicBinder.gridView')}>
               <GridViewIcon />
             </Tooltip>
           </ToggleButton>
           <ToggleButton value="binder">
-            <Tooltip title="Binder View">
+            <Tooltip title={t('publicBinder.binderView')}>
               <BinderIcon />
             </Tooltip>
           </ToggleButton>
@@ -206,7 +208,7 @@ export function PublicTradesPage() {
       {items.length === 0 ? (
         <Paper sx={styles.emptyState}>
           <Typography variant="h6" color="text.secondary">
-            {search ? 'No cards match your search' : 'No cards available for trade'}
+            {search ? t('publicBinder.noCardsMatch') : t('publicBinder.noCardsAvailable')}
           </Typography>
         </Paper>
       ) : viewMode === 'binder' ? (
@@ -229,16 +231,16 @@ export function PublicTradesPage() {
           {totalPages > 1 && (
             <Box sx={styles.pagination}>
               <Chip
-                label="Previous"
+                label={t('common.previous')}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
                 clickable
               />
               <Typography color="text.secondary" sx={{ alignSelf: 'center' }}>
-                Page {page} of {totalPages}
+                {t('common.page', { current: page, total: totalPages })}
               </Typography>
               <Chip
-                label="Next"
+                label={t('common.next')}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
                 clickable
@@ -251,7 +253,7 @@ export function PublicTradesPage() {
       {/* Contact info */}
       <Paper sx={{ p: 2, textAlign: 'center' }}>
         <Typography variant="body2" color="text.secondary">
-          Interested in trading? Contact {user.displayName} with their share code:{' '}
+          {t('publicBinder.contactTrader', { name: user.displayName })}{' '}
           <Typography component="span" fontWeight={600} color="primary.main" fontFamily="monospace">
             {user.shareCode}
           </Typography>

@@ -9,6 +9,7 @@ import {
 import { Star as StarIcon } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
 import { TradeMatch } from '@mtg-binder/shared';
+import { useTranslation } from 'react-i18next';
 import { CardImage } from '../cards/CardImage';
 
 interface MatchListProps {
@@ -20,11 +21,11 @@ interface MatchListProps {
 
 type ChipColor = 'error' | 'warning' | 'primary' | 'default';
 
-const priorityConfig: Record<string, { color: ChipColor; label: string }> = {
-  URGENT: { color: 'error', label: 'Urgent' },
-  HIGH: { color: 'warning', label: 'High' },
-  NORMAL: { color: 'primary', label: 'Normal' },
-  LOW: { color: 'default', label: 'Low' },
+const priorityConfig: Record<string, { color: ChipColor; key: string }> = {
+  URGENT: { color: 'error', key: 'wishlist.priority.urgent' },
+  HIGH: { color: 'warning', key: 'wishlist.priority.high' },
+  NORMAL: { color: 'primary', key: 'wishlist.priority.normal' },
+  LOW: { color: 'default', key: 'wishlist.priority.low' },
 };
 
 const styles: Record<string, SxProps<Theme>> = {
@@ -110,15 +111,19 @@ export function MatchList({
   matches,
   totalValue,
   title,
-  emptyMessage = 'No matches found',
+  emptyMessage,
 }: MatchListProps) {
+  const { t } = useTranslation();
+
   if (matches.length === 0) {
     return (
       <Paper sx={styles.emptyCard}>
         <Typography variant="h6" gutterBottom>
           {title}
         </Typography>
-        <Typography color="text.secondary">{emptyMessage}</Typography>
+        <Typography color="text.secondary">
+          {emptyMessage || t('matchList.noMatches')}
+        </Typography>
       </Paper>
     );
   }
@@ -131,11 +136,14 @@ export function MatchList({
         <Box>
           <Typography variant="h6">{title}</Typography>
           <Typography variant="body2" color="text.secondary">
-            {matchCount} match{matchCount !== 1 ? 'es' : ''} · {matches.length} total cards
+            {t('matchList.summary', {
+              matchCount,
+              totalCards: matches.length,
+            })}
           </Typography>
         </Box>
         <Typography variant="h6" sx={styles.totalValue}>
-          Total: €{totalValue.toFixed(2)}
+          {t('matchList.totalValue', { value: totalValue.toFixed(2) })}
         </Typography>
       </Box>
 
@@ -162,7 +170,7 @@ export function MatchList({
                 {match.isMatch && (
                   <Box sx={styles.matchBadge}>
                     <StarIcon sx={{ fontSize: 14 }} />
-                    Match
+                    {t('matchList.match')}
                   </Box>
                 )}
               </Box>
@@ -171,11 +179,15 @@ export function MatchList({
               </Typography>
               <Box sx={styles.metaRow}>
                 <Typography variant="caption" color="text.secondary">
-                  {match.condition} {match.isFoil && '(Foil)'}
+                  {match.condition} {match.isFoil && t('matchList.foil')}
                 </Typography>
                 {match.priority && (
                   <Chip
-                    label={priorityConfig[match.priority]?.label || match.priority}
+                    label={
+                      priorityConfig[match.priority]?.key
+                        ? t(priorityConfig[match.priority].key)
+                        : match.priority
+                    }
                     color={priorityConfig[match.priority]?.color || 'default'}
                     size="small"
                   />

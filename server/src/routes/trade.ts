@@ -282,4 +282,130 @@ router.delete('/:code', async (req: AuthenticatedRequest, res: Response, next) =
   }
 });
 
+router.get('/history', async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const { startDate, endDate, sort = 'desc' } = req.query;
+
+    const where: any = {
+      OR: [
+        { initiatorId: req.userId },
+        { joinerId: req.userId },
+      ],
+      status: TradeSessionStatus.COMPLETED,
+      joinerId: { not: null }, // Only completed sessions with a partner
+    };
+
+    // Add date range filters if provided
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) {
+        where.createdAt.gte = new Date(startDate as string);
+      }
+      if (endDate) {
+        // Include the entire end date
+        const end = new Date(endDate as string);
+        end.setHours(23, 59, 59, 999);
+        where.createdAt.lte = end;
+      }
+    }
+
+    const sessions = await prisma.tradeSession.findMany({
+      where,
+      include: {
+        initiator: {
+          select: { id: true, displayName: true, shareCode: true },
+        },
+        joiner: {
+          select: { id: true, displayName: true, shareCode: true },
+        },
+      },
+      orderBy: { createdAt: sort === 'asc' ? 'asc' : 'desc' },
+    });
+
+    // Compute match counts from matchesJson
+    const sessionsWithCounts = sessions.map((session) => {
+      let matchCount = 0;
+      if (session.matchesJson) {
+        const matches = session.matchesJson as any;
+        const userAMatches = matches.userAOffers?.filter((m: any) => m.isMatch).length || 0;
+        const userBMatches = matches.userBOffers?.filter((m: any) => m.isMatch).length || 0;
+        matchCount = userAMatches + userBMatches;
+      }
+      return {
+        ...session,
+        matchCount,
+      };
+    });
+
+    res.json({ data: sessionsWithCounts });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/history/:id', async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const { id } = req.params;
+
+    const session = await prisma.tradeSession.findUnique({
+      where: { id },
+      include: {
+        initiator: {
+          select: { id: true, displayName: true, shareCode: true },
+        },
+        joiner: {
+          select: { id: true, displayName: true, shareCode: true },
+        },
+      },
+    });
+
+    if (!session) {
+      throw new AppError('Trade session not found', 404);
+    }
+
+    // Verify user has access to this session
+    if (session.initiatorId !== req.userId && session.joinerId !== req.userId) {
+      throw new AppError('Not authorized to view this session', 403);
+    }
+
+    res.json({ data: session });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/:code/messages', async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const { code } = req.params;
+    const limit = parseInt(req.query.limit as string) || 50;
+
+    const session = await prisma.tradeSession.findUnique({
+      where: { sessionCode: code.toUpperCase() },
+    });
+
+    if (!session) {
+      throw new AppError('Trade session not found', 404);
+    }
+
+    if (session.initiatorId !== req.userId && session.joinerId !== req.userId) {
+      throw new AppError('Not authorized to view messages in this session', 403);
+    }
+
+    const messages = await prisma.tradeMessage.findMany({
+      where: { sessionId: session.id },
+      include: {
+        sender: {
+          select: { id: true, displayName: true, shareCode: true },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+      take: Math.min(limit, 100),
+    });
+
+    res.json({ data: messages });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export { router as tradeRouter };

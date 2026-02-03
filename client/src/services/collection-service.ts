@@ -1,4 +1,4 @@
-import { CollectionItem, CollectionItemInput, CollectionStats, PaginatedResponse } from '@mtg-binder/shared';
+import { CollectionItem, CollectionItemInput, CollectionStats, PaginatedResponse, SetCompletionSummary, SetCompletionDetail } from '@mtg-binder/shared';
 import { api } from './api';
 
 export interface CollectionListParams {
@@ -37,4 +37,44 @@ export async function updateCollectionItem(id: string, data: Partial<CollectionI
 
 export async function removeFromCollection(id: string): Promise<void> {
   await api.delete(`/collection/${id}`);
+}
+
+export async function exportCollection(params: CollectionListParams = {}): Promise<void> {
+  const response = await api.get('/collection/export', {
+    params,
+    responseType: 'blob',
+  });
+
+  // Create download link
+  const blob = new Blob([response.data], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+
+  // Extract filename from Content-Disposition header or use default
+  const contentDisposition = response.headers['content-disposition'];
+  let filename = `mtg-collection-${new Date().toISOString().split('T')[0]}.csv`;
+
+  if (contentDisposition) {
+    const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+    if (filenameMatch && filenameMatch[1]) {
+      filename = filenameMatch[1];
+    }
+  }
+
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+}
+
+export async function getSetCompletions(): Promise<SetCompletionSummary[]> {
+  const response = await api.get('/collection/sets');
+  return response.data.data;
+}
+
+export async function getSetCompletion(setCode: string): Promise<SetCompletionDetail> {
+  const response = await api.get(`/collection/sets/${setCode}/completion`);
+  return response.data.data;
 }

@@ -11,6 +11,8 @@ import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { CollectionPage } from './pages/CollectionPage';
 import { WishlistPage } from './pages/WishlistPage';
+import { SetsPage } from './pages/SetsPage';
+import { SetDetailPage } from './pages/SetDetailPage';
 import { TradePage } from './pages/TradePage';
 import { TradeSessionPage } from './pages/TradeSessionPage';
 import { SearchPage } from './pages/SearchPage';
@@ -124,6 +126,26 @@ export default function App() {
           <ProtectedRoute>
             <AppLayout>
               <WishlistPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sets"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <SetsPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sets/:setCode"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <SetDetailPage />
             </AppLayout>
           </ProtectedRoute>
         }

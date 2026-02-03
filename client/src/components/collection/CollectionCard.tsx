@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { CollectionItem, CardCondition } from '@mtg-binder/shared';
 import { CardImage } from '../cards/CardImage';
 
@@ -17,14 +18,6 @@ interface CollectionCardProps {
   onRemove?: (item: CollectionItem) => void;
 }
 
-const conditionLabels: Record<CardCondition, string> = {
-  M: 'Mint',
-  NM: 'Near Mint',
-  LP: 'Lightly Played',
-  MP: 'Moderately Played',
-  HP: 'Heavily Played',
-  DMG: 'Damaged',
-};
 
 const styles: Record<string, SxProps<Theme>> = {
   card: {
@@ -106,9 +99,22 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 export function CollectionCard({ item, onEdit, onRemove }: CollectionCardProps) {
+  const { t } = useTranslation();
   const card = item.card!;
   const price = card.priceEur;
   const totalValue = price ? price * item.quantity : null;
+
+  const getConditionLabel = (condition: CardCondition): string => {
+    const labels: Record<CardCondition, string> = {
+      M: t('conditions.mint'),
+      NM: t('conditions.nearMint'),
+      LP: t('conditions.lightlyPlayed'),
+      MP: t('conditions.moderatelyPlayed'),
+      HP: t('conditions.heavilyPlayed'),
+      DMG: t('conditions.damaged'),
+    };
+    return labels[condition] || condition;
+  };
 
   return (
     <Card sx={styles.card}>
@@ -119,7 +125,7 @@ export function CollectionCard({ item, onEdit, onRemove }: CollectionCardProps) 
           x{item.quantity}
           {item.foilQuantity > 0 && (
             <Box component="span" sx={styles.foilText}>
-              ({item.foilQuantity} foil)
+              ({t('collection.foilCount', { count: item.foilQuantity })})
             </Box>
           )}
         </Box>
@@ -129,7 +135,7 @@ export function CollectionCard({ item, onEdit, onRemove }: CollectionCardProps) 
             label={
               item.tradePrice !== null
                 ? `${item.forTrade} @ €${item.tradePrice.toFixed(2)}`
-                : `${item.forTrade} for trade`
+                : t('collection.copiesForTrade', { count: item.forTrade })
             }
             color="success"
             size="small"
@@ -170,7 +176,7 @@ export function CollectionCard({ item, onEdit, onRemove }: CollectionCardProps) 
         </Typography>
         <Box sx={styles.footer}>
           <Typography variant="caption" color="text.secondary">
-            {conditionLabels[item.condition as CardCondition]}
+            {getConditionLabel(item.condition as CardCondition)}
           </Typography>
           {totalValue !== null && (
             <Typography variant="body2" sx={styles.price}>

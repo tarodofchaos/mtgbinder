@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { WishlistItem, WishlistPriority } from '@mtg-binder/shared';
 import { CardImage } from '../cards/CardImage';
 
@@ -19,11 +20,11 @@ interface WishlistCardProps {
 
 type ChipColor = 'error' | 'warning' | 'primary' | 'default';
 
-const priorityConfig: Record<WishlistPriority, { color: ChipColor; label: string }> = {
-  URGENT: { color: 'error', label: 'Urgent' },
-  HIGH: { color: 'warning', label: 'High' },
-  NORMAL: { color: 'primary', label: 'Normal' },
-  LOW: { color: 'default', label: 'Low' },
+const PRIORITY_CONFIG: Record<WishlistPriority, { color: ChipColor; labelKey: string }> = {
+  URGENT: { color: 'error', labelKey: 'priorities.urgent' },
+  HIGH: { color: 'warning', labelKey: 'priorities.high' },
+  NORMAL: { color: 'primary', labelKey: 'priorities.normal' },
+  LOW: { color: 'default', labelKey: 'priorities.low' },
 };
 
 const styles: Record<string, SxProps<Theme>> = {
@@ -107,9 +108,10 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 export function WishlistCard({ item, onEdit, onRemove }: WishlistCardProps) {
+  const { t } = useTranslation();
   const card = item.card!;
   const price = card.priceEur;
-  const priorityStyle = priorityConfig[item.priority as WishlistPriority];
+  const priorityStyle = PRIORITY_CONFIG[item.priority as WishlistPriority];
 
   return (
     <Card sx={styles.card}>
@@ -117,7 +119,7 @@ export function WishlistCard({ item, onEdit, onRemove }: WishlistCardProps) {
         <CardImage scryfallId={card.scryfallId} name={card.name} size="normal" />
 
         <Chip
-          label={priorityStyle.label}
+          label={t(priorityStyle.labelKey)}
           color={priorityStyle.color}
           size="small"
           sx={styles.priorityBadge}
@@ -129,7 +131,7 @@ export function WishlistCard({ item, onEdit, onRemove }: WishlistCardProps) {
 
         {item.foilOnly && (
           <Chip
-            label="Foil Only"
+            label={t('wishlist.foilOnly')}
             color="warning"
             size="small"
             sx={styles.foilBadge}
@@ -170,7 +172,7 @@ export function WishlistCard({ item, onEdit, onRemove }: WishlistCardProps) {
         <Box sx={styles.footer}>
           {item.maxPrice && (
             <Typography variant="caption" color="text.secondary">
-              Max: €{item.maxPrice.toFixed(2)}
+              {t('wishlist.maxPriceLabel', { price: `€${item.maxPrice.toFixed(2)}` })}
             </Typography>
           )}
           {price !== null && (

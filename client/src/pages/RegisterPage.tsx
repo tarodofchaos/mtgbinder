@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Paper,
@@ -48,6 +49,7 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 export function RegisterPage() {
+  const { t } = useTranslation();
   const { register: registerUser } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +73,7 @@ export function RegisterPage() {
       await registerUser(data.email, data.password, data.displayName);
       navigate('/collection');
     } catch {
-      setError('Registration failed. Email may already be registered.');
+      setError(t('auth.registrationFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -81,7 +83,7 @@ export function RegisterPage() {
     <Box sx={styles.container}>
       <Paper sx={styles.card}>
         <Typography variant="h4" sx={styles.title}>
-          Create Account
+          {t('auth.registerTitle')}
         </Typography>
 
         <Box component="form" onSubmit={handleSubmit(onSubmit)}>
@@ -90,14 +92,14 @@ export function RegisterPage() {
               name="displayName"
               control={control}
               rules={{
-                required: 'Display name is required',
-                minLength: { value: 2, message: 'Must be at least 2 characters' },
+                required: t('auth.displayNameRequired'),
+                minLength: { value: 2, message: t('auth.minLength', { count: 2 }) },
               }}
               render={({ field }) => (
                 <TextField
                   {...field}
-                  label="Display Name"
-                  placeholder="Your name"
+                  label={t('auth.displayName')}
+                  placeholder={t('auth.displayNamePlaceholder')}
                   fullWidth
                   error={!!errors.displayName}
                   helperText={errors.displayName?.message}
@@ -108,13 +110,13 @@ export function RegisterPage() {
             <Controller
               name="email"
               control={control}
-              rules={{ required: 'Email is required' }}
+              rules={{ required: t('auth.emailRequired') }}
               render={({ field }) => (
                 <TextField
                   {...field}
                   type="email"
-                  label="Email"
-                  placeholder="your@email.com"
+                  label={t('auth.email')}
+                  placeholder={t('auth.emailPlaceholder')}
                   fullWidth
                   error={!!errors.email}
                   helperText={errors.email?.message}
@@ -126,15 +128,15 @@ export function RegisterPage() {
               name="password"
               control={control}
               rules={{
-                required: 'Password is required',
-                minLength: { value: 8, message: 'Must be at least 8 characters' },
+                required: t('auth.passwordRequired'),
+                minLength: { value: 8, message: t('auth.minLength', { count: 8 }) },
               }}
               render={({ field }) => (
                 <TextField
                   {...field}
                   type="password"
-                  label="Password"
-                  placeholder="********"
+                  label={t('auth.password')}
+                  placeholder={t('auth.passwordPlaceholder')}
                   fullWidth
                   error={!!errors.password}
                   helperText={errors.password?.message}
@@ -146,15 +148,15 @@ export function RegisterPage() {
               name="confirmPassword"
               control={control}
               rules={{
-                required: 'Please confirm your password',
-                validate: (value) => value === password || 'Passwords do not match',
+                required: t('auth.confirmPasswordRequired'),
+                validate: (value) => value === password || t('auth.passwordsDoNotMatch'),
               }}
               render={({ field }) => (
                 <TextField
                   {...field}
                   type="password"
-                  label="Confirm Password"
-                  placeholder="********"
+                  label={t('auth.confirmPassword')}
+                  placeholder={t('auth.passwordPlaceholder')}
                   fullWidth
                   error={!!errors.confirmPassword}
                   helperText={errors.confirmPassword?.message}
@@ -171,15 +173,15 @@ export function RegisterPage() {
               fullWidth
               disabled={isLoading}
             >
-              {isLoading ? 'Creating account...' : 'Create Account'}
+              {isLoading ? t('auth.creatingAccount') : t('auth.registerButton')}
             </Button>
           </Stack>
         </Box>
 
         <Typography sx={styles.footer}>
-          Already have an account?{' '}
+          {t('auth.hasAccount')}{' '}
           <Link component={RouterLink} to="/login">
-            Login
+            {t('header.login')}
           </Link>
         </Typography>
       </Paper>

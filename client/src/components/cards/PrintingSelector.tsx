@@ -11,6 +11,7 @@ import {
   Alert,
 } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { Card } from '@mtg-binder/shared';
 import { getCardPrintings } from '../../services/card-service';
 import { CardImage } from './CardImage';
@@ -58,6 +59,7 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 export function PrintingSelector({ cardName, onSelect, onClose }: PrintingSelectorProps) {
+  const { t } = useTranslation();
   const { data: printings, isLoading, error } = useQuery({
     queryKey: ['cardPrintings', cardName],
     queryFn: () => getCardPrintings(cardName!),
@@ -72,7 +74,7 @@ export function PrintingSelector({ cardName, onSelect, onClose }: PrintingSelect
   return (
     <Dialog open={!!cardName} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>
-        Select Printing
+        {t('printing.selectPrinting')}
         {cardName && (
           <Typography variant="body2" color="text.secondary">
             {cardName}
@@ -86,7 +88,7 @@ export function PrintingSelector({ cardName, onSelect, onClose }: PrintingSelect
           </Box>
         ) : error ? (
           <Alert severity="error" sx={{ m: 2 }}>
-            Failed to load printings
+            {t('printing.loadingError')}
           </Alert>
         ) : printings && printings.length > 0 ? (
           <List disablePadding>
@@ -122,7 +124,7 @@ export function PrintingSelector({ cardName, onSelect, onClose }: PrintingSelect
           </List>
         ) : (
           <Typography color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
-            No printings found
+            {t('printing.noPrintings')}
           </Typography>
         )}
       </DialogContent>

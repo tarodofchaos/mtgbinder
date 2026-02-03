@@ -6,6 +6,7 @@ import { CssBaseline } from '@mui/material';
 import { AuthProvider } from './context/auth-context';
 import { ThemeProvider } from './context/theme-context';
 import App from './App';
+import './i18n'; // Initialize i18n
 
 const queryClient = new QueryClient({
   defaultOptions: {

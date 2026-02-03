@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Paper,
@@ -10,11 +11,15 @@ import {
   Alert,
   Stack,
   Divider,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import {
   QrCodeScanner as ScanIcon,
   ContentCopy as CopyIcon,
   Share as ShareIcon,
+  History as HistoryIcon,
+  SwapHoriz as TradeIcon,
 } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
 import { createTradeSession, getActiveSessions, joinTradeSession } from '../services/trade-service';
@@ -22,6 +27,7 @@ import { useAuth } from '../context/auth-context';
 import { QRCodeDisplay } from '../components/trading/QRCodeDisplay';
 import { QRScanner } from '../components/trading/QRScanner';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { TradeHistoryTab } from '../components/trading/TradeHistoryTab';
 
 const styles: Record<string, SxProps<Theme>> = {
   container: {
@@ -71,6 +77,8 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 export function TradePage() {
+  const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState(0);
   const [joinCode, setJoinCode] = useState('');
   const [showScanner, setShowScanner] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -119,25 +127,41 @@ export function TradePage() {
   return (
     <Stack spacing={3} sx={styles.container}>
       <Typography variant="h4" fontWeight={700}>
-        Trade
+        {t('trade.title')}
       </Typography>
 
-      {/* Active session notice */}
-      {activeSession && (
+      {/* Tabs */}
+      <Paper>
+        <Tabs
+          value={activeTab}
+          onChange={(_, newValue) => setActiveTab(newValue)}
+          variant="fullWidth"
+        >
+          <Tab icon={<TradeIcon />} label={t('trade.active')} iconPosition="start" />
+          <Tab icon={<HistoryIcon />} label={t('trade.history')} iconPosition="start" />
+        </Tabs>
+      </Paper>
+
+      {/* Active tab content */}
+      {activeTab === 0 && (
+        <Stack spacing={3}>
+          {/* Active session notice */}
+          {activeSession && (
         <Paper sx={styles.activeSession}>
           <Typography variant="h6" gutterBottom>
-            Active Trade Session
+            {t('trade.activeSession')}
           </Typography>
           <Typography variant="body2" sx={{ mb: 2 }}>
-            You have an active trade session with{' '}
-            {activeSession.joiner?.displayName || activeSession.initiator?.displayName}
+            {t('trade.tradingWith', {
+              name: activeSession.joiner?.displayName || activeSession.initiator?.displayName
+            })}
           </Typography>
           <Button
             variant="contained"
             color="inherit"
             onClick={() => navigate(`/trade/${activeSession.sessionCode}`)}
           >
-            View Matches
+            {t('trade.viewMatches')}
           </Button>
         </Paper>
       )}
@@ -145,13 +169,13 @@ export function TradePage() {
       {/* Create new session */}
       <Paper sx={styles.section}>
         <Typography variant="h5" gutterBottom>
-          Start a Trade
+          {t('trade.startTrade')}
         </Typography>
 
         {pendingSession ? (
           <Stack spacing={3} alignItems="center">
             <Typography color="text.secondary">
-              Share this code or QR with someone to start trading:
+              {t('trade.shareCodeOrQr')}
             </Typography>
 
             <QRCodeDisplay
@@ -164,7 +188,7 @@ export function TradePage() {
                 {pendingSession.sessionCode}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Session expires in 24 hours
+                {t('trade.sessionExpires')}
               </Typography>
             </Box>
 
@@ -176,13 +200,13 @@ export function TradePage() {
                 navigator.clipboard.writeText(pendingSession.sessionCode);
               }}
             >
-              Copy Code
+              {t('trade.copyCode')}
             </Button>
           </Stack>
         ) : (
           <Box textAlign="center">
             <Typography color="text.secondary" sx={{ mb: 2 }}>
-              Create a trade session to find matches with other collectors
+              {t('trade.createSessionDescription')}
             </Typography>
             <Button
               variant="contained"
@@ -190,7 +214,7 @@ export function TradePage() {
               disabled={createMutation.isPending}
               startIcon={createMutation.isPending ? <LoadingSpinner size="sm" /> : undefined}
             >
-              {createMutation.isPending ? 'Creating...' : 'Create Trade Session'}
+              {createMutation.isPending ? t('common.creating') : t('trade.createSession')}
             </Button>
           </Box>
         )}
@@ -199,7 +223,7 @@ export function TradePage() {
       {/* Join existing session */}
       <Paper sx={styles.section}>
         <Typography variant="h5" gutterBottom>
-          Join a Trade
+          {t('trade.joinTrade')}
         </Typography>
 
         {showScanner ? (
@@ -209,7 +233,7 @@ export function TradePage() {
               onError={(error) => console.error('Scan error:', error)}
             />
             <Button variant="outlined" fullWidth onClick={() => setShowScanner(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
           </Stack>
         ) : (
@@ -220,13 +244,13 @@ export function TradePage() {
               startIcon={<ScanIcon />}
               onClick={() => setShowScanner(true)}
             >
-              Scan QR Code
+              {t('trade.scanQrCode')}
             </Button>
 
             <Box sx={styles.dividerContainer}>
               <Divider />
               <Typography variant="body2" sx={styles.dividerText}>
-                or enter code
+                {t('trade.enterCode')}
               </Typography>
             </Box>
 
@@ -234,7 +258,7 @@ export function TradePage() {
               <TextField
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                placeholder="Enter 6-character code"
+                placeholder={t('trade.enterCodePlaceholder')}
                 slotProps={{ htmlInput: { maxLength: 6 } }}
                 sx={{ ...styles.joinCodeInput, flexGrow: 1 }}
               />
@@ -243,75 +267,79 @@ export function TradePage() {
                 onClick={handleJoin}
                 disabled={joinCode.length < 6 || joinMutation.isPending}
               >
-                {joinMutation.isPending ? 'Joining...' : 'Join'}
+                {joinMutation.isPending ? t('common.joining') : t('common.join')}
               </Button>
             </Stack>
 
             {joinMutation.isError && (
               <Alert severity="error">
-                Failed to join session. Check the code and try again.
+                {t('trade.joinFailed')}
               </Alert>
             )}
           </Stack>
         )}
       </Paper>
 
-      {/* Share public trades */}
-      {user?.shareCode && (
-        <Paper sx={styles.section}>
-          <Typography variant="h5" gutterBottom>
-            <ShareIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-            Share My Trades
-          </Typography>
-
-          <Stack spacing={3} alignItems="center">
-            <Typography color="text.secondary" textAlign="center">
-              Share this QR code with anyone to let them browse your tradeable cards
-              - no account required!
-            </Typography>
-
-            <QRCodeDisplay value={publicTradesUrl} size={200} />
-
-            <Box textAlign="center">
-              <Typography
-                sx={{
-                  fontSize: '1rem',
-                  fontFamily: 'monospace',
-                  color: 'primary.main',
-                  wordBreak: 'break-all',
-                }}
-              >
-                {publicTradesUrl}
+          {/* Share public trades */}
+          {user?.shareCode && (
+            <Paper sx={styles.section}>
+              <Typography variant="h5" gutterBottom>
+                <ShareIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                {t('trade.shareMyTrades')}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                This link never expires
-              </Typography>
-            </Box>
 
-            <Stack direction="row" spacing={1} sx={{ width: '100%' }}>
-              <Button
-                variant="outlined"
-                fullWidth
-                startIcon={<CopyIcon />}
-                onClick={() => {
-                  navigator.clipboard.writeText(publicTradesUrl);
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 2000);
-                }}
-              >
-                {copied ? 'Copied!' : 'Copy Link'}
-              </Button>
-              <Button
-                variant="outlined"
-                fullWidth
-                onClick={() => navigate(`/binder/${user.shareCode}`)}
-              >
-                Preview
-              </Button>
-            </Stack>
-          </Stack>
-        </Paper>
+              <Stack spacing={3} alignItems="center">
+                <Typography color="text.secondary" textAlign="center">
+                  {t('trade.shareQrDescription')}
+                </Typography>
+
+                <QRCodeDisplay value={publicTradesUrl} size={200} />
+
+                <Box textAlign="center">
+                  <Typography
+                    sx={{
+                      fontSize: '1rem',
+                      fontFamily: 'monospace',
+                      color: 'primary.main',
+                      wordBreak: 'break-all',
+                    }}
+                  >
+                    {publicTradesUrl}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('trade.linkNeverExpires')}
+                  </Typography>
+                </Box>
+
+                <Stack direction="row" spacing={1} sx={{ width: '100%' }}>
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    startIcon={<CopyIcon />}
+                    onClick={() => {
+                      navigator.clipboard.writeText(publicTradesUrl);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                  >
+                    {copied ? t('common.copied') : t('common.copyLink')}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    onClick={() => navigate(`/binder/${user.shareCode}`)}
+                  >
+                    {t('common.preview')}
+                  </Button>
+                </Stack>
+              </Stack>
+            </Paper>
+          )}
+        </Stack>
       )}
+
+      {/* History tab content */}
+      {activeTab === 1 && <TradeHistoryTab />}
     </Stack>
   );
 }

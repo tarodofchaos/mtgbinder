@@ -33,8 +33,10 @@ COPY --from=builder /app/shared/dist ./shared/dist
 COPY --from=builder /app/server/dist ./server/dist
 COPY --from=builder /app/client/dist ./client/dist
 COPY server/prisma ./server/prisma
+COPY server/scripts/docker-entrypoint.sh ./docker-entrypoint.sh
 
 RUN npx prisma generate --schema=./server/prisma/schema.prisma
+RUN chmod +x ./docker-entrypoint.sh
 
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001 -G nodejs
 RUN mkdir -p /app/data && chown -R nodejs:nodejs /app/data
@@ -47,4 +49,4 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:5000/health || exit 1
 
-CMD ["node", "server/dist/index.js"]
+CMD ["./docker-entrypoint.sh"]

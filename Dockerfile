@@ -1,10 +1,10 @@
 # Stage 1: Build
 FROM node:20-alpine AS builder
-RUN apk add --no-cache python3 make g++
+RUN apk add --no-cache python3 make g++ openssl
 WORKDIR /app
 
-# Add node_modules/.bin to PATH for tsc and other binaries
-ENV PATH=/app/node_modules/.bin:$PATH
+# Install TypeScript globally for build scripts
+RUN npm install -g typescript
 
 COPY package*.json ./
 COPY client/package*.json ./client/
@@ -21,7 +21,7 @@ RUN npm run build
 
 # Stage 2: Production
 FROM node:20-alpine AS production
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl openssl
 WORKDIR /app
 
 COPY package*.json ./

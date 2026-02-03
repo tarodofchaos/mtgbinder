@@ -118,11 +118,13 @@ Once the deployment shows "Running" and "Healthy":
 The Docker entrypoint script (`docker-entrypoint.sh`) automatically handles:
 
 1. **Database Migrations**: Runs `prisma migrate deploy` on every startup
-2. **Card Data Import**:
+2. **Card Data Import** (runs in background):
    - Checks if the `Card` table is empty
-   - If empty, downloads card data from MTGJSON (~155MB compressed)
+   - If empty, starts downloading card data from MTGJSON (~155MB compressed) **in the background**
+   - The server starts immediately while import continues
    - Imports ~100,000+ cards (takes 5-10 minutes)
    - Subsequent startups skip this if data exists
+   - **Note**: Card search may return limited results until import completes
 
 ## Troubleshooting
 
@@ -154,17 +156,19 @@ CLIENT_URL=https://your-actual-domain.com
 2. Ensure the database container is running and healthy
 3. Check database credentials match what's configured in Coolify
 
-### Card Import Taking Too Long
+### Card Search Returns No Results
 
-**Symptom**: First startup hangs for extended periods
+**Symptom**: Card search returns empty results right after first deployment
 
-**Explanation**: Initial card import downloads ~155MB and processes 100k+ cards. This is normal and only happens once.
+**Explanation**: The card import runs in the background and takes 5-10 minutes. During this time, card search will return limited or no results.
 
 **Check progress**: View container logs in Coolify:
 ```
-Importing card data from MTGJSON...
+Importing card data from MTGJSON in background...
 Imported 50000 cards from 200 sets...
 ```
+
+**Solution**: Wait for the import to complete. You can verify by checking if searches return results.
 
 ### Container Unhealthy
 

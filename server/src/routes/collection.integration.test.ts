@@ -534,4 +534,190 @@ describe('Collection Routes - Filter Integration Tests', () => {
       expect(response.body.pageSize).toBe(50);
     });
   });
+
+  describe('GET /collection/export - CSV Export Tests', () => {
+    it('should export all collection items as CSV', async () => {
+      mockFindMany.mockResolvedValue(mockCollectionItems);
+
+      const response = await request(app)
+        .get('/collection/export')
+        .expect(200);
+
+      expect(response.headers['content-type']).toContain('text/csv');
+      expect(response.headers['content-disposition']).toMatch(/attachment; filename="mtg-collection-.*\.csv"/);
+
+      const csvLines = response.text.split('\n');
+      expect(csvLines[0]).toBe('name,set_code,quantity,foil_quantity,condition,language,for_trade,trade_price,scryfall_id');
+      expect(csvLines.length).toBe(4); // header + 3 items
+    });
+
+    it('should export CSV with proper escaping for card names with commas', async () => {
+      const itemWithComma = {
+        ...mockCollectionItems[0],
+        card: { ...mockCollectionItems[0].card, name: 'Urza, Lord High Artificer' },
+      };
+      mockFindMany.mockResolvedValue([itemWithComma]);
+
+      const response = await request(app)
+        .get('/collection/export')
+        .expect(200);
+
+      const csvLines = response.text.split('\n');
+      expect(csvLines[1]).toContain('"Urza, Lord High Artificer"');
+    });
+
+    it('should export CSV with proper escaping for card names with quotes', async () => {
+      const itemWithQuote = {
+        ...mockCollectionItems[0],
+        card: { ...mockCollectionItems[0].card, name: 'Card with "quotes"' },
+      };
+      mockFindMany.mockResolvedValue([itemWithQuote]);
+
+      const response = await request(app)
+        .get('/collection/export')
+        .expect(200);
+
+      const csvLines = response.text.split('\n');
+      expect(csvLines[1]).toContain('"Card with ""quotes"""');
+    });
+
+    it('should export filtered collection items', async () => {
+      mockFindMany.mockResolvedValue([mockCollectionItems[0]]);
+
+      const response = await request(app)
+        .get('/collection/export')
+        .query({ colors: 'R', forTrade: 'true' })
+        .expect(200);
+
+      expect(mockFindMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            userId: 'test-user-id',
+            forTrade: { gt: 0 },
+            card: expect.objectContaining({
+              colors: { hasEvery: ['R'] },
+            }),
+          }),
+        })
+      );
+
+      const csvLines = response.text.split('\n');
+      expect(csvLines.length).toBe(2); // header + 1 item
+    });
+
+    it('should export empty CSV when no items match filters', async () => {
+      mockFindMany.mockResolvedValue([]);
+
+      const response = await request(app)
+        .get('/collection/export')
+        .query({ search: 'NonexistentCard' })
+        .expect(200);
+
+      const csvLines = response.text.split('\n');
+      expect(csvLines[0]).toBe('name,set_code,quantity,foil_quantity,condition,language,for_trade,trade_price,scryfall_id');
+      expect(csvLines.length).toBe(1); // only header
+    });
+
+    it('should include all collection fields in CSV', async () => {
+      mockFindMany.mockResolvedValue([mockCollectionItems[2]]);
+
+      const response = await request(app)
+        .get('/collection/export')
+        .expect(200);
+
+      const csvLines = response.text.split('\n');
+      const dataLine = csvLines[1].split(',');
+
+      expect(dataLine).toEqual([
+        'Tarmogoyf',
+        'MH2',
+        '1',
+        '0',
+        'LP',
+        'EN',
+        '1',
+        '15',
+        'scry-3',
+      ]);
+    });
+
+    it('should handle null trade prices in CSV export', async () => {
+      mockFindMany.mockResolvedValue([mockCollectionItems[0]]);
+
+      const response = await request(app)
+        .get('/collection/export')
+        .expect(200);
+
+      const csvLines = response.text.split('\n');
+      const dataLine = csvLines[1].split(',');
+
+      // Trade price should be empty string for null values
+      expect(dataLine[7]).toBe('');
+    });
+
+    it('should handle null scryfall_id in CSV export', async () => {
+      const itemWithoutScryfall = {
+        ...mockCollectionItems[0],
+        card: { ...mockCollectionItems[0].card, scryfallId: null },
+      };
+      mockFindMany.mockResolvedValue([itemWithoutScryfall]);
+
+      const response = await request(app)
+        .get('/collection/export')
+        .expect(200);
+
+      const csvLines = response.text.split('\n');
+      const dataLine = csvLines[1].split(',');
+
+      // Scryfall ID should be empty string for null values
+      expect(dataLine[8]).toBe('');
+    });
+
+    it('should sort exported items by card name', async () => {
+      mockFindMany.mockResolvedValue(mockCollectionItems);
+
+      const response = await request(app)
+        .get('/collection/export')
+        .expect(200);
+
+      expect(mockFindMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orderBy: { card: { name: 'asc' } },
+        })
+      );
+    });
+
+    it('should not paginate export results', async () => {
+      mockFindMany.mockResolvedValue(mockCollectionItems);
+
+      const response = await request(app)
+        .get('/collection/export')
+        .expect(200);
+
+      // Should not have skip/take for pagination
+      expect(mockFindMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.any(Object),
+          include: { card: true },
+          orderBy: { card: { name: 'asc' } },
+        })
+      );
+
+      const call = mockFindMany.mock.calls[0][0];
+      expect(call).not.toHaveProperty('skip');
+      expect(call).not.toHaveProperty('take');
+    });
+
+    it('should generate filename with current date', async () => {
+      mockFindMany.mockResolvedValue([]);
+
+      const response = await request(app)
+        .get('/collection/export')
+        .expect(200);
+
+      const contentDisposition = response.headers['content-disposition'];
+      const datePattern = /mtg-collection-\d{4}-\d{2}-\d{2}\.csv/;
+      expect(contentDisposition).toMatch(datePattern);
+    });
+  });
 });

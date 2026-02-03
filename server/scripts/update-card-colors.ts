@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { createReadStream, existsSync } from 'fs';
-import { mkdir, unlink, writeFile } from 'fs/promises';
+import { mkdir, writeFile } from 'fs/promises';
 import { createGunzip } from 'zlib';
 import { PrismaClient } from '@prisma/client';
 import { parser } from 'stream-json';
@@ -13,43 +13,20 @@ const prisma = new PrismaClient();
 const MTGJSON_URL = 'https://mtgjson.com/api/v5/AllPrintings.json.gz';
 const DATA_DIR = './data';
 const COMPRESSED_FILE = `${DATA_DIR}/AllPrintings.json.gz`;
-const BATCH_SIZE = 1000;
+const BATCH_SIZE = 500;
 
 interface MTGJSONCard {
   uuid: string;
-  name: string;
-  setCode: string;
-  rarity: string;
   colors?: string[];
-  manaCost?: string;
-  manaValue?: number;
-  type: string;
-  text?: string;
-  identifiers?: {
-    scryfallId?: string;
-  };
-  number: string;
 }
 
 interface MTGJSONSet {
-  name: string;
-  code: string;
   cards: MTGJSONCard[];
 }
 
-interface CardRecord {
+interface ColorUpdate {
   uuid: string;
-  name: string;
-  setCode: string;
-  setName: string;
-  rarity: string;
   colors: string[];
-  manaCost: string | null;
-  manaValue: number;
-  typeLine: string;
-  oracleText: string | null;
-  scryfallId: string | null;
-  collectorNumber: string;
 }
 
 async function downloadFile(url: string, dest: string): Promise<void> {
@@ -65,69 +42,62 @@ async function downloadFile(url: string, dest: string): Promise<void> {
   console.log('Download complete');
 }
 
-async function flushBatch(batch: CardRecord[]): Promise<number> {
+async function flushBatch(batch: ColorUpdate[]): Promise<number> {
   if (batch.length === 0) return 0;
 
-  await prisma.card.createMany({
-    data: batch,
-    skipDuplicates: true,
-  });
+  // Update colors for each card by UUID
+  await Promise.all(
+    batch.map((update) =>
+      prisma.card.updateMany({
+        where: { uuid: update.uuid },
+        data: { colors: update.colors },
+      })
+    )
+  );
 
   return batch.length;
 }
 
-async function importCardsStreaming(filePath: string): Promise<void> {
-  console.log('Starting streaming card import...');
+async function updateColorsStreaming(filePath: string): Promise<void> {
+  console.log('Starting streaming color update...');
   console.log('This will take several minutes for ~100k+ cards...\n');
 
-  let batch: CardRecord[] = [];
-  let importedCards = 0;
+  let batch: ColorUpdate[] = [];
+  let updatedCards = 0;
   let setsProcessed = 0;
 
   return new Promise((resolve, reject) => {
-    // MTGJSON structure: { "meta": {...}, "data": { "SET_CODE": { name, cards: [...] }, ... } }
-    // We use pick to select 'data' and streamObject to get each set
     const pipeline = chain([
       createReadStream(filePath),
       createGunzip(),
       parser(),
-      pick({ filter: 'data' }), // Select the 'data' object
-      streamObject(), // Stream each set as { key: 'SET_CODE', value: { name, cards, ... } }
+      pick({ filter: 'data' }),
+      streamObject(),
     ]);
 
     pipeline.on('data', async ({ key, value }: { key: string; value: MTGJSONSet }) => {
       if (!value || !Array.isArray(value.cards)) return;
 
-      const set = value;
-      const setCode = key;
       setsProcessed++;
 
-      for (const card of set.cards) {
-        if (!card.uuid) continue; // Skip cards without UUID
+      for (const card of value.cards) {
+        if (!card.uuid) continue;
+
+        // MTGJSON colors field - empty array for colorless, array of W/U/B/R/G for colored
+        const colors = card.colors || [];
 
         batch.push({
           uuid: card.uuid,
-          name: card.name || 'Unknown',
-          setCode: card.setCode || setCode,
-          setName: set.name || setCode,
-          rarity: card.rarity || 'unknown',
-          colors: card.colors || [],
-          manaCost: card.manaCost || null,
-          manaValue: card.manaValue || 0,
-          typeLine: card.type || '',
-          oracleText: card.text || null,
-          scryfallId: card.identifiers?.scryfallId || null,
-          collectorNumber: card.number || '',
+          colors,
         });
 
         if (batch.length >= BATCH_SIZE) {
-          // Pause stream while we flush
           pipeline.pause();
 
           try {
-            importedCards += await flushBatch(batch);
+            updatedCards += await flushBatch(batch);
             batch = [];
-            process.stdout.write(`\rImported ${importedCards} cards from ${setsProcessed} sets...`);
+            process.stdout.write(`\rUpdated ${updatedCards} cards from ${setsProcessed} sets...`);
           } catch (err) {
             pipeline.destroy();
             reject(err);
@@ -141,11 +111,10 @@ async function importCardsStreaming(filePath: string): Promise<void> {
 
     pipeline.on('end', async () => {
       try {
-        // Flush remaining cards
-        importedCards += await flushBatch(batch);
-        console.log(`\n\nImport complete!`);
+        updatedCards += await flushBatch(batch);
+        console.log(`\n\nUpdate complete!`);
         console.log(`  Total sets: ${setsProcessed}`);
-        console.log(`  Total cards: ${importedCards}`);
+        console.log(`  Total cards updated: ${updatedCards}`);
         resolve();
       } catch (err) {
         reject(err);
@@ -160,28 +129,21 @@ async function importCardsStreaming(filePath: string): Promise<void> {
 
 async function main(): Promise<void> {
   try {
-    // Create data directory
     if (!existsSync(DATA_DIR)) {
       await mkdir(DATA_DIR, { recursive: true });
     }
 
-    // Download if not exists
     if (!existsSync(COMPRESSED_FILE)) {
       await downloadFile(MTGJSON_URL, COMPRESSED_FILE);
     } else {
       console.log('Using cached AllPrintings.json.gz');
     }
 
-    // Stream parse and import
-    await importCardsStreaming(COMPRESSED_FILE);
-
-    // Cleanup
-    console.log('\nCleaning up...');
-    await unlink(COMPRESSED_FILE);
+    await updateColorsStreaming(COMPRESSED_FILE);
 
     console.log('Done!');
   } catch (error) {
-    console.error('Import failed:', error);
+    console.error('Update failed:', error);
     process.exit(1);
   } finally {
     await prisma.$disconnect();

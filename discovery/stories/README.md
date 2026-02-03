@@ -16,6 +16,7 @@ Generated from project documentation analysis on 2025-01-26.
 | [008](./story-008-dark-mode.md) | [AB#2993](https://dev.azure.com/zartis-digital/Demo%20App%20(Daniel%20Gutierrez)/_workitems/edit/2993) | Dark Mode Toggle | 3 | Medium | User Experience |
 | [009](./story-009-in-session-messaging.md) | [AB#2994](https://dev.azure.com/zartis-digital/Demo%20App%20(Daniel%20Gutierrez)/_workitems/edit/2994) | In-Session Trade Messaging | 5 | Medium | Trade Session Enhancements |
 | [010](./story-010-import-decklist.md) | [AB#2995](https://dev.azure.com/zartis-digital/Demo%20App%20(Daniel%20Gutierrez)/_workitems/edit/2995) | Import Wishlist from Decklist | 5 | Medium | Wishlist Improvements |
+| [011](./story-011-wishlist-csv-import.md) | - | Import Wishlist from CSV | 3 | Medium | Wishlist Improvements |
 
 ## Stories by Epic
 
@@ -25,9 +26,10 @@ Generated from project documentation analysis on 2025-01-26.
 - 003: Advanced Collection Filters (5 pts, High)
 - 004: Set Completion Tracker (5 pts, Medium)
 
-### Wishlist Improvements (13 points)
+### Wishlist Improvements (16 points)
 - 005: Wishlist Price Drop Alerts (8 pts, High)
 - 010: Import Wishlist from Decklist (5 pts, Medium)
+- 011: Import Wishlist from CSV (3 pts, Medium)
 
 ### Trade Session Enhancements (8 points)
 - 006: Trade Session History (3 pts, Medium)
@@ -61,10 +63,10 @@ Focus on high-value, lower-effort items:
 - 009: In-Session Messaging (5 pts) - Trade coordination
 
 ## Total Backlog
-- **Total Stories:** 10
-- **Total Points:** 45
+- **Total Stories:** 11
+- **Total Points:** 48
 - **High Priority:** 4 stories (16 points)
-- **Medium Priority:** 6 stories (29 points)
+- **Medium Priority:** 7 stories (32 points)
 
 ## INVEST Validation
 

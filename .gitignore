@@ -44,6 +44,7 @@ server/prisma/*.db-journal
 
 # Data files
 server/data/
+data/
 
 # PWA
 dev-dist/

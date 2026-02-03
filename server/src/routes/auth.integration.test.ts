@@ -12,7 +12,7 @@ jest.mock('bcrypt', () => ({
   hash: jest.fn().mockResolvedValue('hashed_password_123'),
   compare: jest.fn(),
 }));
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 // Mock nanoid
 jest.mock('nanoid', () => ({

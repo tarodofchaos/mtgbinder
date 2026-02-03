@@ -58,10 +58,25 @@ app.use(
 );
 
 // Security middleware
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: config.isProduction
+      ? {
+          directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+            fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+            imgSrc: ["'self'", 'data:', 'https://cards.scryfall.io'],
+            connectSrc: ["'self'", 'wss:', 'ws:'],
+          },
+        }
+      : false,
+  })
+);
 app.use(
   cors({
-    origin: config.clientUrl,
+    origin: config.isProduction ? true : config.clientUrl,
     credentials: true,
   })
 );

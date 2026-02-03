@@ -169,6 +169,32 @@ npm run build
 npm start
 ```
 
+### Docker
+
+Build and run with Docker:
+
+```bash
+# Build the image
+docker build -t mtg-binder .
+
+# Run with environment variables
+docker run -p 5000:5000 \
+  -e DATABASE_URL="postgresql://user:pass@host:5432/mtgbinder" \
+  -e JWT_SECRET="your-secret-key" \
+  -e CLIENT_URL="http://localhost:5000" \
+  -e NODE_ENV="production" \
+  mtg-binder
+```
+
+The container automatically:
+- Runs database migrations on startup
+- Imports card data from MTGJSON if the database is empty (first run only)
+
+### Deployment
+
+For production deployment guides, see:
+- [Deploying to Coolify](docs/deployment/coolify.md) - Self-hosted PaaS deployment
+
 ## Database Commands
 
 | Command | Description |

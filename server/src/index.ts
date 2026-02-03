@@ -10,10 +10,12 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import pinoHttp from 'pino-http';
 import { createServer } from 'http';
+import path from 'path';
 import { logger } from './utils/logger';
 import { prisma } from './utils/prisma';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
 import { initializeSocket } from './services/socket-service';
+import { startPriceCheckScheduler } from './services/price-check-service';
 
 // Routes
 import { authRouter } from './routes/auth';
@@ -23,12 +25,16 @@ import { wishlistRouter } from './routes/wishlist';
 import { tradeRouter } from './routes/trade';
 import { binderRouter } from './routes/binder';
 import { importRouter } from './routes/import';
+import { notificationsRouter } from './routes/notifications';
 
 const app = express();
 const httpServer = createServer(app);
 
 // Initialize Socket.IO
 initializeSocket(httpServer);
+
+// Start price check scheduler (checks every 6 hours)
+const priceCheckInterval = startPriceCheckScheduler();
 
 // Request logging middleware
 app.use(
@@ -104,6 +110,21 @@ app.use('/api/wishlist', wishlistRouter);
 app.use('/api/trade', tradeRouter);
 app.use('/api/binder', binderRouter);
 app.use('/api/import', importRouter);
+app.use('/api/notifications', notificationsRouter);
+
+// Static file serving for production (serves React frontend)
+if (config.isProduction) {
+  const clientDistPath = path.join(__dirname, '../../client/dist');
+  app.use(express.static(clientDistPath));
+
+  // SPA fallback - serve index.html for non-API routes
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/socket.io')) {
+      return next();
+    }
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+}
 
 // Error handling
 app.use(notFoundHandler);
@@ -112,6 +133,7 @@ app.use(errorHandler);
 // Graceful shutdown
 async function shutdown() {
   logger.info('Shutting down gracefully...');
+  clearInterval(priceCheckInterval);
   await prisma.$disconnect();
   process.exit(0);
 }

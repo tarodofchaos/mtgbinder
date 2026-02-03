@@ -3,6 +3,9 @@ FROM node:20-alpine AS builder
 RUN apk add --no-cache python3 make g++
 WORKDIR /app
 
+# Add node_modules/.bin to PATH for tsc and other binaries
+ENV PATH=/app/node_modules/.bin:$PATH
+
 COPY package*.json ./
 COPY client/package*.json ./client/
 COPY server/package*.json ./server/

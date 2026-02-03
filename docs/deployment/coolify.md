@@ -231,6 +231,164 @@ Before going live, ensure:
 - [ ] Rate limiting is appropriate for your use case (default: 100 req/15min)
 - [ ] Health checks are passing
 
+## Exposing to the Internet with Cloudflare Tunnel
+
+If your Coolify instance is running on a local network (e.g., home server) and you want to share the app with beta testers without opening router ports, Cloudflare Tunnel provides a secure solution.
+
+### Option A: Quick Tunnel (Simplest - Recommended for Beta)
+
+Run a single command on the Coolify server to get a public URL instantly:
+
+```bash
+# SSH into your Coolify server
+ssh user@your-coolify-server
+
+# Run cloudflared in quick tunnel mode (port 80 is Coolify's reverse proxy)
+cloudflared tunnel --url http://localhost:80
+```
+
+This gives you a random `https://*.trycloudflare.com` URL immediately.
+
+**Pros:** No setup, instant, HTTPS included, no Cloudflare account needed
+**Cons:** URL changes each time you restart cloudflared
+
+### Making the Quick Tunnel Persistent
+
+To run cloudflared as a system service:
+
+```bash
+# Install cloudflared
+curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared
+chmod +x /usr/local/bin/cloudflared
+
+# Create systemd service
+sudo tee /etc/systemd/system/cloudflared-tunnel.service << 'EOF'
+[Unit]
+Description=Cloudflare Tunnel for MTG Binder
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/cloudflared tunnel --url http://localhost:80
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Enable and start
+sudo systemctl daemon-reload
+sudo systemctl enable cloudflared-tunnel
+sudo systemctl start cloudflared-tunnel
+
+# Check the URL in logs
+sudo journalctl -u cloudflared-tunnel -f
+```
+
+The tunnel URL will be logged when the service starts. Look for a line like:
+```
+Your quick Tunnel has been created! Visit it at https://random-words-here.trycloudflare.com
+```
+
+### Option B: Named Tunnel (Stable URL)
+
+For a stable URL that doesn't change, create a named tunnel with a free Cloudflare account:
+
+#### 1. Create Cloudflare Account & Authenticate
+
+```bash
+# On the Coolify server
+cloudflared tunnel login
+# Opens browser to authenticate with Cloudflare
+```
+
+#### 2. Create Named Tunnel
+
+```bash
+cloudflared tunnel create mtg-binder
+# Note the tunnel ID output (e.g., a1b2c3d4-e5f6-7890-abcd-ef1234567890)
+```
+
+#### 3. Configure Tunnel
+
+```bash
+# Create config file
+mkdir -p ~/.cloudflared
+cat > ~/.cloudflared/config.yml << 'EOF'
+tunnel: <TUNNEL_ID>
+credentials-file: /root/.cloudflared/<TUNNEL_ID>.json
+
+ingress:
+  - hostname: mtg-binder.your-domain.com
+    service: http://localhost:80
+  - service: http_status:404
+EOF
+```
+
+#### 4. Configure DNS (in Cloudflare Dashboard)
+
+Add a CNAME record pointing your subdomain to the tunnel:
+- Type: `CNAME`
+- Name: `mtg-binder` (or your chosen subdomain)
+- Target: `<TUNNEL_ID>.cfargotunnel.com`
+
+#### 5. Run as Service
+
+```bash
+cloudflared service install
+sudo systemctl start cloudflared
+```
+
+### Post-Tunnel Setup
+
+After getting your tunnel URL, update the `CLIENT_URL` environment variable in Coolify:
+
+1. Go to your MTG Binder application in Coolify
+2. Navigate to **Environment Variables**
+3. Update `CLIENT_URL`:
+   ```
+   CLIENT_URL=https://your-tunnel-url.trycloudflare.com
+   ```
+4. Click **Deploy** to restart with the new URL
+
+### Verify the Tunnel
+
+```bash
+# Health check
+curl https://your-tunnel-url.trycloudflare.com/health
+
+# Card search
+curl "https://your-tunnel-url.trycloudflare.com/api/cards/search?q=lightning"
+
+# Test WebSocket (Socket.IO) - should return JSON
+curl "https://your-tunnel-url.trycloudflare.com/socket.io/?EIO=4&transport=polling"
+```
+
+### Stopping the Tunnel
+
+When done with the beta:
+
+```bash
+# If using quick tunnel service
+sudo systemctl stop cloudflared-tunnel
+sudo systemctl disable cloudflared-tunnel
+
+# If using named tunnel
+sudo systemctl stop cloudflared
+cloudflared tunnel delete mtg-binder
+```
+
+### Tunnel Notes
+
+- **Security**: Traffic is encrypted end-to-end through Cloudflare's network
+- **WebSocket**: Cloudflare Tunnel fully supports WebSocket, so Socket.IO real-time trading works
+- **Rate Limiting**: Your app's rate limiting still applies (100 req/15min by default)
+- **No Port Forwarding**: The tunnel works without opening any ports on your router
+- **Free Tier**: Both quick tunnels and named tunnels are free
+
+---
+
 ## Architecture Notes
 
 ### Single Container Design

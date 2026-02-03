@@ -24,7 +24,7 @@ interface TradeTypingPayload {
 export function initializeSocket(httpServer: HttpServer): Server {
   io = new Server(httpServer, {
     cors: {
-      origin: config.clientUrl,
+      origin: config.isProduction ? true : config.clientUrl,
       methods: ['GET', 'POST'],
       credentials: true,
     },

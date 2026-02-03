@@ -16,7 +16,7 @@ import {
   IconButton,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { Add as AddIcon, Close as CloseIcon } from '@mui/icons-material';
+import { Add as AddIcon, Close as CloseIcon, Upload as UploadIcon, CloudUpload as CloudUploadIcon } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
 import { WishlistItem, WishlistPriority, Card } from '@mtg-binder/shared';
 import { getWishlist, addToWishlist, removeFromWishlist, updateWishlistItem } from '../services/wishlist-service';
@@ -27,6 +27,8 @@ import { CardImage } from '../components/cards/CardImage';
 import { PrintingSelector } from '../components/cards/PrintingSelector';
 import { Modal } from '../components/ui/Modal';
 import { LoadingPage } from '../components/ui/LoadingSpinner';
+import { ImportDecklistModal } from '../components/wishlist/ImportDecklistModal';
+import { ImportWishlistModal } from '../components/wishlist/ImportWishlistModal';
 
 interface AddWishlistForm {
   priority: WishlistPriority;
@@ -97,6 +99,8 @@ const styles: Record<string, SxProps<Theme>> = {
 
 export function WishlistPage() {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [showCSVImportModal, setShowCSVImportModal] = useState(false);
   const [pendingCardName, setPendingCardName] = useState<string | null>(null);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [editingItem, setEditingItem] = useState<WishlistItem | null>(null);
@@ -240,6 +244,10 @@ export function WishlistPage() {
     resetAdd();
   };
 
+  const handleImportSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['wishlist'] });
+  };
+
   if (isLoading) return <LoadingPage />;
 
   if (error) {
@@ -282,6 +290,20 @@ export function WishlistPage() {
           <MenuItem value="NORMAL">Normal</MenuItem>
           <MenuItem value="LOW">Low</MenuItem>
         </TextField>
+        <Button
+          variant="outlined"
+          startIcon={<UploadIcon />}
+          onClick={() => setShowImportModal(true)}
+        >
+          Import Decklist
+        </Button>
+        <Button
+          variant="outlined"
+          startIcon={<CloudUploadIcon />}
+          onClick={() => setShowCSVImportModal(true)}
+        >
+          Import CSV
+        </Button>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -619,6 +641,20 @@ export function WishlistPage() {
           onClose={() => setEditPendingCardName(null)}
         />
       </Modal>
+
+      {/* Import decklist modal */}
+      <ImportDecklistModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onSuccess={handleImportSuccess}
+      />
+
+      {/* Import CSV modal */}
+      <ImportWishlistModal
+        isOpen={showCSVImportModal}
+        onClose={() => setShowCSVImportModal(false)}
+        onSuccess={handleImportSuccess}
+      />
     </Box>
   );
 }

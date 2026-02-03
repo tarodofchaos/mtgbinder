@@ -474,3 +474,339 @@ export function downloadCSVTemplate(): void {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+
+// ─────────────────────────────────────────────────
+// Wishlist CSV Parsing
+// ─────────────────────────────────────────────────
+
+export interface ParsedWishlistCSVRow {
+  name: string;
+  quantity: number;
+  priority: string;
+  maxPrice: number | null;
+  minCondition: string | null;
+  foilOnly: boolean;
+}
+
+const VALID_PRIORITIES = ['LOW', 'NORMAL', 'HIGH', 'URGENT'];
+const DEFAULT_PRIORITY = 'NORMAL';
+
+/**
+ * Parse a wishlist CSV file into structured row data.
+ * Validates format and returns parsed rows with any errors.
+ */
+export function parseWishlistCSV(file: File): Promise<{ rows: ParsedWishlistCSVRow[]; errors: CSVParseError[] }> {
+  return new Promise((resolve, reject) => {
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      resolve({
+        rows: [],
+        errors: [{ row: 0, message: `File too large. Maximum size is 5MB.` }],
+      });
+      return;
+    }
+
+    // Validate file type
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      resolve({
+        rows: [],
+        errors: [{ row: 0, message: 'File must be a CSV file (.csv extension).' }],
+      });
+      return;
+    }
+
+    const rows: ParsedWishlistCSVRow[] = [];
+    const errors: CSVParseError[] = [];
+    let rowIndex = 0;
+
+    Papa.parse<Record<string, string>>(file, {
+      header: true,
+      skipEmptyLines: true,
+      transformHeader: (header) => header.trim().toLowerCase(),
+      step: (results, parser) => {
+        rowIndex++;
+
+        // Check max rows
+        if (rowIndex > MAX_ROWS) {
+          errors.push({ row: rowIndex, message: `Maximum ${MAX_ROWS} rows allowed.` });
+          parser.abort();
+          return;
+        }
+
+        const data = results.data;
+
+        // Validate required field: name
+        const name = data.name?.trim();
+        if (!name) {
+          errors.push({ row: rowIndex, message: 'Missing card name.' });
+          return;
+        }
+
+        // Parse and validate quantity
+        const quantity = parseNonNegativeInt(data.quantity, 1);
+        if (quantity === null) {
+          errors.push({ row: rowIndex, message: 'Invalid quantity (must be positive integer).' });
+          return;
+        }
+        if (quantity < 1) {
+          errors.push({ row: rowIndex, message: 'Quantity must be at least 1.' });
+          return;
+        }
+
+        // Parse and validate priority
+        const priorityRaw = (data.priority || DEFAULT_PRIORITY).trim().toUpperCase();
+        if (!VALID_PRIORITIES.includes(priorityRaw)) {
+          errors.push({ row: rowIndex, message: `Invalid priority "${priorityRaw}". Valid: LOW, NORMAL, HIGH, URGENT.` });
+          return;
+        }
+
+        // Parse maxPrice
+        const maxPriceRaw = data.maxprice || data['max_price'];
+        const maxPrice = parseNonNegativeFloat(maxPriceRaw);
+
+        // Parse and validate minCondition
+        const minConditionRaw = data.mincondition || data['min_condition'];
+        let minCondition: string | null = null;
+        if (minConditionRaw) {
+          const normalized = normalizeCondition(minConditionRaw.trim().toUpperCase());
+          if (!VALID_CONDITIONS.includes(normalized)) {
+            errors.push({ row: rowIndex, message: `Invalid minCondition "${minConditionRaw}". Valid: M, NM, LP, MP, HP, DMG.` });
+            return;
+          }
+          minCondition = normalized;
+        }
+
+        // Parse foilOnly
+        const foilOnlyRaw = data.foilonly || data['foil_only'];
+        const foilOnly = parseBooleanField(foilOnlyRaw);
+
+        rows.push({
+          name,
+          quantity,
+          priority: priorityRaw,
+          maxPrice,
+          minCondition,
+          foilOnly,
+        });
+      },
+      error: (error) => {
+        reject(new Error(`CSV parsing failed: ${error.message}`));
+      },
+      complete: () => {
+        // Validate we have a 'name' column
+        if (rowIndex === 0) {
+          errors.unshift({ row: 0, message: 'CSV file is empty or has no valid rows.' });
+        }
+        resolve({ rows, errors });
+      },
+    });
+  });
+}
+
+/**
+ * Parse a boolean field from CSV.
+ */
+function parseBooleanField(value: string | undefined): boolean {
+  if (!value || value.trim() === '') return false;
+  const normalized = value.trim().toLowerCase();
+  return normalized === 'true' || normalized === '1' || normalized === 'yes';
+}
+
+// ─────────────────────────────────────────────────
+// Wishlist Preview Preparation
+// ─────────────────────────────────────────────────
+
+export interface WishlistPreviewRow extends ParsedWishlistCSVRow {
+  resolvedCard: ResolvedCard['card'] | null;
+  customCardId?: string; // User override from PrintingSelector
+  inCollection: boolean; // Whether user owns this card
+  status: 'ready' | 'not_found' | 'error';
+  errorMessage?: string;
+}
+
+/**
+ * Prepare wishlist preview data by resolving card names and checking collection.
+ */
+export async function prepareWishlistImportPreview(
+  parsedRows: ParsedWishlistCSVRow[]
+): Promise<{ previewRows: WishlistPreviewRow[]; stats: PreviewStats }> {
+  // Get unique card names
+  const uniqueNames = [...new Set(parsedRows.map((row) => row.name))];
+
+  // Resolve all card names in one API call
+  const resolved = await resolveCardNames(uniqueNames);
+
+  // Build lookup map
+  const cardMap = new Map<string, ResolvedCard['card']>();
+  for (const item of resolved.resolved) {
+    cardMap.set(item.name.toLowerCase(), item.card);
+  }
+
+  const notFoundSet = new Set(resolved.notFound.map((n) => n.toLowerCase()));
+
+  // Get user's collection to check ownership
+  const collectionResponse = await api.get('/collection', { params: { pageSize: 10000 } });
+  const collectionCardIds = new Set(
+    collectionResponse.data.data.map((item: any) => item.cardId)
+  );
+
+  // Map parsed rows to preview rows
+  const previewRows: WishlistPreviewRow[] = parsedRows.map((row) => {
+    const normalizedName = row.name.toLowerCase();
+    const resolvedCard = cardMap.get(normalizedName) || null;
+    const inCollection = resolvedCard ? collectionCardIds.has(resolvedCard.id) : false;
+
+    if (notFoundSet.has(normalizedName)) {
+      return {
+        ...row,
+        resolvedCard: null,
+        inCollection: false,
+        status: 'not_found' as const,
+        errorMessage: 'Card not found in database',
+      };
+    }
+
+    return {
+      ...row,
+      resolvedCard,
+      inCollection,
+      status: 'ready' as const,
+    };
+  });
+
+  // Calculate stats
+  const stats: PreviewStats = {
+    total: previewRows.length,
+    ready: previewRows.filter((r) => r.status === 'ready').length,
+    notFound: previewRows.filter((r) => r.status === 'not_found').length,
+    errors: previewRows.filter((r) => r.status === 'error').length,
+  };
+
+  return { previewRows, stats };
+}
+
+/**
+ * Convert wishlist preview rows to import rows.
+ */
+export function wishlistPreviewRowsToImportRows(previewRows: WishlistPreviewRow[]): any[] {
+  return previewRows
+    .filter((row) => row.status === 'ready' || row.customCardId)
+    .map((row) => ({
+      name: row.name,
+      quantity: row.quantity,
+      priority: row.priority,
+      tradePrice: row.maxPrice, // Using tradePrice field for maxPrice
+      condition: row.minCondition,
+      foilOnly: row.foilOnly,
+      cardId: row.customCardId || row.resolvedCard?.id,
+    }));
+}
+
+/**
+ * Import a single batch of wishlist items.
+ */
+export async function importWishlistBatch(
+  rows: any[],
+  duplicateMode: 'skip' | 'update'
+): Promise<ImportResult> {
+  const response = await api.post('/import/wishlist', { rows, duplicateMode });
+  return response.data.data;
+}
+
+/**
+ * Import wishlist items with batch processing for large imports.
+ */
+export async function importWishlistBatched(
+  rows: any[],
+  duplicateMode: 'skip' | 'update',
+  onProgress?: (progress: BatchProgress) => void
+): Promise<ImportResult> {
+  // For small imports, do a single batch
+  if (rows.length <= SINGLE_BATCH_THRESHOLD) {
+    onProgress?.({ currentBatch: 1, totalBatches: 1, percentage: 100 });
+    return importWishlistBatch(rows, duplicateMode);
+  }
+
+  // Split into batches
+  const batches: any[][] = [];
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    batches.push(rows.slice(i, i + BATCH_SIZE));
+  }
+
+  const totalBatches = batches.length;
+  const combinedResult: ImportResult = {
+    imported: 0,
+    updated: 0,
+    skipped: 0,
+    failed: 0,
+    errors: [],
+  };
+
+  let rowOffset = 0;
+
+  // Process batches sequentially
+  for (let i = 0; i < batches.length; i++) {
+    const batch = batches[i];
+    const currentBatch = i + 1;
+    const percentage = Math.round((currentBatch / totalBatches) * 100);
+
+    onProgress?.({ currentBatch, totalBatches, percentage });
+
+    try {
+      const result = await importWishlistBatch(batch, duplicateMode);
+
+      // Aggregate results
+      combinedResult.imported += result.imported;
+      combinedResult.updated += result.updated;
+      combinedResult.skipped += result.skipped;
+      combinedResult.failed += result.failed;
+
+      // Adjust error row numbers to account for batch offset
+      for (const error of result.errors) {
+        combinedResult.errors.push({
+          ...error,
+          row: error.row + rowOffset,
+        });
+      }
+    } catch (error) {
+      // If a batch fails entirely, mark all rows as failed
+      combinedResult.failed += batch.length;
+      const errorMessage = error instanceof Error ? error.message : 'Batch import failed';
+      for (let j = 0; j < batch.length; j++) {
+        combinedResult.errors.push({
+          row: rowOffset + j + 1,
+          cardName: batch[j].name,
+          error: errorMessage,
+        });
+      }
+    }
+
+    rowOffset += batch.length;
+  }
+
+  return combinedResult;
+}
+
+// ─────────────────────────────────────────────────
+// Wishlist CSV Template
+// ─────────────────────────────────────────────────
+
+const WISHLIST_CSV_TEMPLATE = `name,quantity,priority,maxPrice,minCondition,foilOnly
+Lightning Bolt,4,HIGH,2.00,NM,false
+Force of Will,1,URGENT,80.00,LP,false
+Mana Crypt,1,HIGH,150.00,NM,true`;
+
+/**
+ * Download a sample wishlist CSV template file.
+ */
+export function downloadWishlistCSVTemplate(): void {
+  const blob = new Blob([WISHLIST_CSV_TEMPLATE], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'wishlist-import-template.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}

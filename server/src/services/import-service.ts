@@ -287,3 +287,161 @@ export async function importCollectionItems(
 
   return result;
 }
+
+/**
+ * Parse priority string to WishlistPriority enum.
+ */
+function parsePriority(priority: string | undefined): 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT' {
+  if (!priority) return 'NORMAL';
+
+  const normalized = priority.trim().toUpperCase();
+
+  const priorityMap: Record<string, 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT'> = {
+    'LOW': 'LOW',
+    'NORMAL': 'NORMAL',
+    'HIGH': 'HIGH',
+    'URGENT': 'URGENT',
+  };
+
+  return priorityMap[normalized] || 'NORMAL';
+}
+
+/**
+ * Import wishlist items with specified duplicate handling mode.
+ * Processes rows in a transaction for atomicity.
+ */
+export async function importWishlistItems(
+  userId: string,
+  rows: ImportRow[],
+  duplicateMode: 'skip' | 'update',
+  cardNameToIdMap: Map<string, string>
+): Promise<ImportResult> {
+  const result: ImportResult = {
+    imported: 0,
+    updated: 0,
+    skipped: 0,
+    failed: 0,
+    errors: [],
+  };
+
+  if (rows.length === 0) {
+    return result;
+  }
+
+  // Process in a transaction
+  await prisma.$transaction(async (tx) => {
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNum = i + 1;
+
+      try {
+        // Get cardId - either from explicit override or from name resolution
+        const cardId = row.cardId || cardNameToIdMap.get(row.name.trim().toLowerCase());
+
+        if (!cardId) {
+          result.errors.push({
+            row: rowNum,
+            cardName: row.name,
+            error: 'Card not found in database',
+          });
+          result.failed++;
+          continue;
+        }
+
+        // Verify card exists
+        const cardExists = await tx.card.findUnique({
+          where: { id: cardId },
+          select: { id: true },
+        });
+
+        if (!cardExists) {
+          result.errors.push({
+            row: rowNum,
+            cardName: row.name,
+            error: 'Card ID not found',
+          });
+          result.failed++;
+          continue;
+        }
+
+        // Parse and validate row data
+        const quantity = Math.max(1, row.quantity ?? 1);
+        const priority = parsePriority((row as any).priority);
+        const maxPrice = row.tradePrice != null && row.tradePrice >= 0 ? row.tradePrice : null;
+        const minCondition = row.condition ? parseCondition(row.condition) : null;
+        const foilOnly = (row as any).foilOnly ?? false;
+
+        // Check for existing item
+        const existing = await tx.wishlistItem.findUnique({
+          where: {
+            userId_cardId: {
+              userId,
+              cardId,
+            },
+          },
+        });
+
+        if (existing) {
+          // Handle duplicate based on mode
+          switch (duplicateMode) {
+            case 'skip':
+              result.skipped++;
+              break;
+
+            case 'update':
+              // Update with new values
+              await tx.wishlistItem.update({
+                where: { id: existing.id },
+                data: {
+                  quantity,
+                  priority,
+                  maxPrice,
+                  minCondition,
+                  foilOnly,
+                },
+              });
+              result.updated++;
+              break;
+          }
+        } else {
+          // Create new item
+          await tx.wishlistItem.create({
+            data: {
+              userId,
+              cardId,
+              quantity,
+              priority,
+              maxPrice,
+              minCondition,
+              foilOnly,
+            },
+          });
+          result.imported++;
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        logger.error({ error, row: rowNum, cardName: row.name }, 'Wishlist import row failed');
+        result.errors.push({
+          row: rowNum,
+          cardName: row.name,
+          error: errorMessage,
+        });
+        result.failed++;
+      }
+    }
+  });
+
+  logger.info(
+    {
+      userId,
+      rowCount: rows.length,
+      imported: result.imported,
+      updated: result.updated,
+      skipped: result.skipped,
+      failed: result.failed,
+    },
+    'Wishlist import completed'
+  );
+
+  return result;
+}

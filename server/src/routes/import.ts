@@ -108,4 +108,66 @@ router.post(
   }
 );
 
+// Schema for wishlist import endpoint
+const wishlistImportRowSchema = z.object({
+  name: z.string().min(1),
+  quantity: z.coerce.number().int().min(1).optional(),
+  priority: z.string().optional(),
+  maxPrice: z.coerce.number().min(0).nullable().optional(),
+  minCondition: z.string().optional(),
+  foilOnly: z.coerce.boolean().optional(),
+  cardId: z.string().uuid().optional(), // Optional override from PrintingSelector
+});
+
+const wishlistImportSchema = z.object({
+  rows: z.array(wishlistImportRowSchema).min(1).max(1000),
+  duplicateMode: z.enum(['skip', 'update']),
+});
+
+/**
+ * POST /api/import/wishlist
+ * Bulk import wishlist items.
+ * Supports two duplicate modes: skip, update.
+ */
+router.post(
+  '/wishlist',
+  validate(wishlistImportSchema),
+  async (req: AuthenticatedRequest, res: Response, next) => {
+    try {
+      const { rows, duplicateMode } = req.body as {
+        rows: ImportRow[];
+        duplicateMode: 'skip' | 'update';
+      };
+
+      // Build a map of card names that need resolution (those without explicit cardId)
+      const namesToResolve = rows
+        .filter((row) => !row.cardId)
+        .map((row) => row.name);
+
+      // Resolve card names to IDs
+      const uniqueNamesToResolve = [...new Set(namesToResolve)];
+      const resolved = await resolveCardNames(uniqueNamesToResolve);
+
+      // Build name->id lookup map
+      const cardNameToIdMap = new Map<string, string>();
+      for (const item of resolved.resolved) {
+        cardNameToIdMap.set(item.name.trim().toLowerCase(), item.card.id);
+      }
+
+      // Import the wishlist
+      const { importWishlistItems } = await import('../services/import-service');
+      const result = await importWishlistItems(
+        req.userId!,
+        rows,
+        duplicateMode,
+        cardNameToIdMap
+      );
+
+      res.json({ data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 export { router as importRouter };

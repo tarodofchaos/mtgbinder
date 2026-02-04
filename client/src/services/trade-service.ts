@@ -1,8 +1,13 @@
 import { TradeSession, TradeMatchResult, TradeMessage } from '@mtg-binder/shared';
 import { api } from './api';
 
-export async function createTradeSession(): Promise<TradeSession> {
-  const response = await api.post('/trade/session');
+export async function createTradeSession(params?: { withUserId?: string }): Promise<TradeSession> {
+  const response = await api.post('/trade/session', params);
+  return response.data.data;
+}
+
+export async function sendMessage(code: string, content: string): Promise<TradeMessage> {
+  const response = await api.post(`/trade/${code}/message`, { content });
   return response.data.data;
 }
 

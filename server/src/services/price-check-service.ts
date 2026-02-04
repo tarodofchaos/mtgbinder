@@ -1,3 +1,4 @@
+import { NotificationType } from '@prisma/client';
 import { prisma } from '../utils/prisma';
 import { logger } from '../utils/logger';
 import { emitToUser } from './socket-service';
@@ -53,10 +54,11 @@ export async function checkWishlistPrices(): Promise<number> {
       // Check if price has dropped below maxPrice
       if (currentPrice <= maxPrice) {
         // Check if we already have a recent alert for this card/user combo
-        const existingAlert = await prisma.priceAlert.findFirst({
+        const existingAlert = await prisma.notification.findFirst({
           where: {
             userId,
             cardId: card.id,
+            type: NotificationType.PRICE_ALERT,
             createdAt: {
               gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Within last 24 hours
             },
@@ -79,12 +81,17 @@ export async function checkWishlistPrices(): Promise<number> {
     // Create alerts in database and emit socket events
     for (const alert of alerts) {
       try {
-        const priceAlert = await prisma.priceAlert.create({
+        const notification = await prisma.notification.create({
           data: {
             userId: alert.userId,
             cardId: alert.cardId,
-            oldPrice: alert.oldPrice,
-            newPrice: alert.newPrice,
+            type: NotificationType.PRICE_ALERT,
+            title: 'Price Drop Alert',
+            message: `The price for ${alert.cardName} has dropped below your limit!`,
+            data: {
+              oldPrice: alert.oldPrice,
+              newPrice: alert.newPrice,
+            },
           },
           include: {
             card: true,
@@ -92,14 +99,9 @@ export async function checkWishlistPrices(): Promise<number> {
         });
 
         // Emit socket event to user
-        emitToUser(alert.userId, 'price-alert', {
-          id: priceAlert.id,
-          cardId: alert.cardId,
-          cardName: alert.cardName,
-          oldPrice: alert.oldPrice,
-          newPrice: alert.newPrice,
-          createdAt: priceAlert.createdAt,
-          card: priceAlert.card,
+        emitToUser(alert.userId, 'notification', {
+          ...notification,
+          data: notification.data || {},
         });
 
         logger.info(
@@ -109,10 +111,10 @@ export async function checkWishlistPrices(): Promise<number> {
             oldPrice: alert.oldPrice,
             newPrice: alert.newPrice
           },
-          'Price alert created'
+          'Price alert notification created'
         );
       } catch (error) {
-        logger.error({ error, alert }, 'Failed to create price alert');
+        logger.error({ error, alert }, 'Failed to create price alert notification');
       }
     }
 

@@ -5,6 +5,7 @@ import { prisma } from '../utils/prisma';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import { AppError } from '../middleware/error-handler';
 import { computeTradeMatches } from '../services/match-service';
+import { emitToTradeSession } from '../services/socket-service';
 
 const router = Router();
 const generateSessionCode = customAlphabet('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 6);
@@ -13,6 +14,8 @@ router.use(authMiddleware);
 
 router.post('/session', async (req: AuthenticatedRequest, res: Response, next) => {
   try {
+    const { withUserId } = req.body;
+
     // Clean up any expired sessions for this user
     await prisma.tradeSession.updateMany({
       where: {
@@ -24,11 +27,33 @@ router.post('/session', async (req: AuthenticatedRequest, res: Response, next) =
     });
 
     // Check for existing active session
+    const where: any = {
+      status: { in: [TradeSessionStatus.PENDING, TradeSessionStatus.ACTIVE] },
+      expiresAt: { gt: new Date() },
+    };
+
+    if (withUserId) {
+      // Find session between these two users
+      where.OR = [
+        { initiatorId: req.userId, joinerId: withUserId },
+        { initiatorId: withUserId, joinerId: req.userId },
+      ];
+    } else {
+      // Find any session initiated by this user
+      where.initiatorId = req.userId;
+      // If we want to allow creating a new generic session even if one exists, we might need to adjust logic.
+      // But assuming one active generic session per user is fine.
+    }
+
     const existingSession = await prisma.tradeSession.findFirst({
-      where: {
-        initiatorId: req.userId,
-        status: { in: [TradeSessionStatus.PENDING, TradeSessionStatus.ACTIVE] },
-        expiresAt: { gt: new Date() },
+      where,
+      include: {
+        initiator: {
+          select: { id: true, displayName: true, shareCode: true },
+        },
+        joiner: {
+          select: { id: true, displayName: true, shareCode: true },
+        },
       },
     });
 
@@ -40,14 +65,24 @@ router.post('/session', async (req: AuthenticatedRequest, res: Response, next) =
     const sessionCode = generateSessionCode();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
+    const data: any = {
+      sessionCode,
+      initiatorId: req.userId!,
+      expiresAt,
+    };
+
+    if (withUserId) {
+      data.joinerId = withUserId;
+      data.status = TradeSessionStatus.ACTIVE;
+    }
+
     const session = await prisma.tradeSession.create({
-      data: {
-        sessionCode,
-        initiatorId: req.userId!,
-        expiresAt,
-      },
+      data,
       include: {
         initiator: {
+          select: { id: true, displayName: true, shareCode: true },
+        },
+        joiner: {
           select: { id: true, displayName: true, shareCode: true },
         },
       },
@@ -403,6 +438,53 @@ router.get('/:code/messages', async (req: AuthenticatedRequest, res: Response, n
     });
 
     res.json({ data: messages });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/:code/message', async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const { code } = req.params;
+    const { content } = req.body;
+
+    if (!content || typeof content !== 'string') {
+      throw new AppError('Message content is required', 400);
+    }
+
+    const session = await prisma.tradeSession.findUnique({
+      where: { sessionCode: code.toUpperCase() },
+      include: {
+        initiator: { select: { id: true, displayName: true, shareCode: true } },
+        joiner: { select: { id: true, displayName: true, shareCode: true } },
+      }
+    });
+
+    if (!session) {
+      throw new AppError('Trade session not found', 404);
+    }
+
+    if (session.initiatorId !== req.userId && session.joinerId !== req.userId) {
+      throw new AppError('Not authorized to send messages in this session', 403);
+    }
+
+    const message = await prisma.tradeMessage.create({
+      data: {
+        sessionId: session.id,
+        senderId: req.userId!,
+        content: content.trim(),
+      },
+      include: {
+        sender: {
+          select: { id: true, displayName: true, shareCode: true },
+        },
+      },
+    });
+
+    // Broadcast message via socket
+    emitToTradeSession(session.sessionCode, 'trade-message', message);
+
+    res.status(201).json({ data: message });
   } catch (error) {
     next(error);
   }

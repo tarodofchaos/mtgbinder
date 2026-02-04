@@ -104,20 +104,20 @@ export function NotificationBell() {
     },
   });
 
-  // Listen for real-time price alerts via socket
+  // Listen for real-time notifications via socket
   useEffect(() => {
     if (!socket) return;
 
-    const handlePriceAlert = () => {
+    const handleNotification = () => {
       // Invalidate queries to refetch notifications
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       refetchUnreadCount();
     };
 
-    socket.on('price-alert', handlePriceAlert);
+    socket.on('notification', handleNotification);
 
     return () => {
-      socket.off('price-alert', handlePriceAlert);
+      socket.off('notification', handleNotification);
     };
   }, [socket, queryClient, refetchUnreadCount]);
 

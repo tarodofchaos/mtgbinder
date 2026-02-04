@@ -1,10 +1,12 @@
 import { Router, Response } from 'express';
 import { z } from 'zod';
-import { CardCondition } from '@prisma/client';
+import { CardCondition, NotificationType } from '@prisma/client';
 import { prisma } from '../utils/prisma';
 import { validate, validateQuery } from '../middleware/validate';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import { AppError } from '../middleware/error-handler';
+import { emitToUser } from '../services/socket-service';
+import { isConditionAcceptable } from '../utils/card-conditions';
 
 const router = Router();
 
@@ -41,6 +43,48 @@ const listQuerySchema = z.object({
   sortBy: z.enum(['name', 'setCode', 'priceEur', 'updatedAt']).default('name'),
   sortOrder: z.enum(['asc', 'desc']).default('asc'),
 });
+
+async function notifyWishlistUsers(item: any, currentUserId: string) {
+  if (item.forTrade <= 0) return;
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: currentUserId } });
+    const wishlists = await prisma.wishlistItem.findMany({
+      where: {
+        cardId: item.cardId,
+        userId: { not: currentUserId },
+      },
+      include: { user: true },
+    });
+
+    for (const wish of wishlists) {
+      if (isConditionAcceptable(item.condition, wish.minCondition)) {
+         const notification = await prisma.notification.create({
+           data: {
+             userId: wish.userId,
+             type: NotificationType.TRADE_MATCH,
+             title: 'New Trade Opportunity!',
+             message: `User ${user?.displayName || 'someone'} has ${item.card.name} for trade!`,
+             data: {
+               cardId: item.cardId,
+               offererUserId: currentUserId,
+               offererName: user?.displayName,
+             },
+             cardId: item.cardId,
+           },
+           include: { card: true },
+         });
+
+         emitToUser(wish.userId, 'notification', {
+             ...notification,
+             data: notification.data || {},
+         });
+      }
+    }
+  } catch (error) {
+    console.error('Failed to notify wishlist users', error);
+  }
+}
 
 router.use(authMiddleware);
 
@@ -231,6 +275,11 @@ router.post('/', validate(addItemSchema), async (req: AuthenticatedRequest, res:
       });
     }
 
+    // Notify users who have this card in their wishlist
+    if (item.forTrade > 0) {
+      notifyWishlistUsers(item, req.userId!);
+    }
+
     res.status(201).json({ data: item });
   } catch (error) {
     next(error);
@@ -271,6 +320,11 @@ router.put('/:id', validate(updateItemSchema), async (req: AuthenticatedRequest,
       data: updates,
       include: { card: true },
     });
+
+    // Notify users if item is now for trade
+    if (item.forTrade > 0) {
+      notifyWishlistUsers(item, req.userId!);
+    }
 
     res.json({ data: item });
   } catch (error) {

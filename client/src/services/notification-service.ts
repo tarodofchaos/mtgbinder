@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { PriceAlert, ApiResponse, PaginatedResponse } from '@mtg-binder/shared';
+import type { Notification, ApiResponse, PaginatedResponse } from '@mtg-binder/shared';
 
 export interface NotificationListParams {
   page?: number;
@@ -7,7 +7,7 @@ export interface NotificationListParams {
   unreadOnly?: boolean;
 }
 
-export interface NotificationListResponse extends PaginatedResponse<PriceAlert> {
+export interface NotificationListResponse extends PaginatedResponse<Notification> {
   unreadCount: number;
 }
 
@@ -25,8 +25,8 @@ export const notificationService = {
     return response.data.data?.unreadCount ?? 0;
   },
 
-  async markAsRead(id: string): Promise<PriceAlert> {
-    const response = await api.patch<ApiResponse<PriceAlert>>(`/notifications/${id}/read`);
+  async markAsRead(id: string): Promise<Notification> {
+    const response = await api.patch<ApiResponse<Notification>>(`/notifications/${id}/read`);
     return response.data.data!;
   },
 

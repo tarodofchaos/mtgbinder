@@ -345,7 +345,9 @@
     "emptyStateDescription": "You'll be notified when cards on your wishlist drop below your target price",
     "viewOnCardmarket": "View on Cardmarket",
     "markAsRead": "Mark as read",
-    "delete": "Delete notification"
+    "delete": "Delete notification",
+    "iWantIt": "I Want It!",
+    "tradeMatchMessage": "User {{name}} has {{cardName}} for trade!"
   },
   "chat": {
     "title": "Chat",

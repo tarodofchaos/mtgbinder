@@ -1,6 +1,7 @@
 import { checkWishlistPrices } from './price-check-service';
 import { prisma } from '../utils/prisma';
 import * as socketService from './socket-service';
+import { NotificationType } from '@prisma/client';
 
 // Mock Prisma
 jest.mock('../utils/prisma', () => ({
@@ -8,7 +9,7 @@ jest.mock('../utils/prisma', () => ({
     wishlistItem: {
       findMany: jest.fn(),
     },
-    priceAlert: {
+    notification: {
       findFirst: jest.fn(),
       create: jest.fn(),
     },
@@ -47,33 +48,43 @@ describe('checkWishlistPrices', () => {
       },
     };
 
-    const mockCreatedAlert = {
+    const mockCreatedNotification = {
       id: 'alert-1',
       userId: 'user-1',
-      cardId: 'card-1',
-      oldPrice: 10.0,
-      newPrice: 8.0,
+      type: NotificationType.PRICE_ALERT,
+      title: 'Price Drop Alert',
+      message: 'The price for Lightning Bolt has dropped below your limit!',
+      data: {
+        oldPrice: 10.0,
+        newPrice: 8.0,
+      },
       read: false,
       createdAt: new Date(),
+      cardId: 'card-1',
       card: mockWishlistItem.card,
     };
 
     // Setup mocks
     (prisma.wishlistItem.findMany as jest.Mock).mockResolvedValue([mockWishlistItem]);
-    (prisma.priceAlert.findFirst as jest.Mock).mockResolvedValue(null); // No existing alert
-    (prisma.priceAlert.create as jest.Mock).mockResolvedValue(mockCreatedAlert);
+    (prisma.notification.findFirst as jest.Mock).mockResolvedValue(null); // No existing alert
+    (prisma.notification.create as jest.Mock).mockResolvedValue(mockCreatedNotification);
 
     // Run price check
     const alertsCreated = await checkWishlistPrices();
 
     // Verify alert was created
     expect(alertsCreated).toBe(1);
-    expect(prisma.priceAlert.create).toHaveBeenCalledWith({
+    expect(prisma.notification.create).toHaveBeenCalledWith({
       data: {
         userId: 'user-1',
         cardId: 'card-1',
-        oldPrice: 10.0,
-        newPrice: 8.0,
+        type: NotificationType.PRICE_ALERT,
+        title: 'Price Drop Alert',
+        message: 'The price for Lightning Bolt has dropped below your limit!',
+        data: {
+          oldPrice: 10.0,
+          newPrice: 8.0,
+        },
       },
       include: {
         card: true,
@@ -83,11 +94,13 @@ describe('checkWishlistPrices', () => {
     // Verify socket event was emitted
     expect(socketService.emitToUser).toHaveBeenCalledWith(
       'user-1',
-      'price-alert',
+      'notification',
       expect.objectContaining({
-        cardName: 'Lightning Bolt',
-        oldPrice: 10.0,
-        newPrice: 8.0,
+        type: NotificationType.PRICE_ALERT,
+        data: expect.objectContaining({
+          oldPrice: 10.0,
+          newPrice: 8.0,
+        }),
       })
     );
   });
@@ -111,7 +124,7 @@ describe('checkWishlistPrices', () => {
     const alertsCreated = await checkWishlistPrices();
 
     expect(alertsCreated).toBe(0);
-    expect(prisma.priceAlert.create).not.toHaveBeenCalled();
+    expect(prisma.notification.create).not.toHaveBeenCalled();
   });
 
   it('should not create duplicate alert within 24 hours', async () => {
@@ -128,20 +141,21 @@ describe('checkWishlistPrices', () => {
       },
     };
 
-    const existingAlert = {
+    const existingNotification = {
       id: 'alert-1',
       userId: 'user-1',
       cardId: 'card-1',
+      type: NotificationType.PRICE_ALERT,
       createdAt: new Date(), // Recent alert
     };
 
     (prisma.wishlistItem.findMany as jest.Mock).mockResolvedValue([mockWishlistItem]);
-    (prisma.priceAlert.findFirst as jest.Mock).mockResolvedValue(existingAlert);
+    (prisma.notification.findFirst as jest.Mock).mockResolvedValue(existingNotification);
 
     const alertsCreated = await checkWishlistPrices();
 
     expect(alertsCreated).toBe(0);
-    expect(prisma.priceAlert.create).not.toHaveBeenCalled();
+    expect(prisma.notification.create).not.toHaveBeenCalled();
   });
 
   it('should check foil price when foilOnly is true', async () => {
@@ -158,30 +172,38 @@ describe('checkWishlistPrices', () => {
       },
     };
 
-    const mockCreatedAlert = {
+    const mockCreatedNotification = {
       id: 'alert-1',
       userId: 'user-1',
       cardId: 'card-1',
-      oldPrice: 20.0,
-      newPrice: 18.0,
+      type: NotificationType.PRICE_ALERT,
+      data: {
+        oldPrice: 20.0,
+        newPrice: 18.0,
+      },
       read: false,
       createdAt: new Date(),
       card: mockWishlistItem.card,
     };
 
     (prisma.wishlistItem.findMany as jest.Mock).mockResolvedValue([mockWishlistItem]);
-    (prisma.priceAlert.findFirst as jest.Mock).mockResolvedValue(null);
-    (prisma.priceAlert.create as jest.Mock).mockResolvedValue(mockCreatedAlert);
+    (prisma.notification.findFirst as jest.Mock).mockResolvedValue(null);
+    (prisma.notification.create as jest.Mock).mockResolvedValue(mockCreatedNotification);
 
     const alertsCreated = await checkWishlistPrices();
 
     expect(alertsCreated).toBe(1);
-    expect(prisma.priceAlert.create).toHaveBeenCalledWith({
+    expect(prisma.notification.create).toHaveBeenCalledWith({
       data: {
         userId: 'user-1',
         cardId: 'card-1',
-        oldPrice: 20.0,
-        newPrice: 18.0,
+        type: NotificationType.PRICE_ALERT,
+        title: 'Price Drop Alert',
+        message: 'The price for Foil Lightning Bolt has dropped below your limit!',
+        data: {
+          oldPrice: 20.0,
+          newPrice: 18.0,
+        },
       },
       include: {
         card: true,
@@ -208,7 +230,7 @@ describe('checkWishlistPrices', () => {
     const alertsCreated = await checkWishlistPrices();
 
     expect(alertsCreated).toBe(0);
-    expect(prisma.priceAlert.create).not.toHaveBeenCalled();
+    expect(prisma.notification.create).not.toHaveBeenCalled();
   });
 
   it('should return 0 when no wishlist items have maxPrice', async () => {
@@ -217,6 +239,6 @@ describe('checkWishlistPrices', () => {
     const alertsCreated = await checkWishlistPrices();
 
     expect(alertsCreated).toBe(0);
-    expect(prisma.priceAlert.create).not.toHaveBeenCalled();
+    expect(prisma.notification.create).not.toHaveBeenCalled();
   });
 });

@@ -32,7 +32,7 @@ model Card {
 
   collectionItems CollectionItem[]
   wishlistItems   WishlistItem[]
-  priceAlerts     PriceAlert[]
+  notifications   Notification[]
 
   @@index([name])
   @@index([nameEs])
@@ -55,7 +55,7 @@ model User {
   wishlistItems      WishlistItem[]
   initiatedSessions  TradeSession[]   @relation("TradeSessionInitiator")
   joinedSessions     TradeSession[]   @relation("TradeSessionJoiner")
-  priceAlerts        PriceAlert[]
+  notifications      Notification[]
   tradeMessages      TradeMessage[]
 
   @@map("users")
@@ -166,20 +166,27 @@ model TradeMessage {
   @@map("trade_messages")
 }
 
-model PriceAlert {
-  id        String   @id @default(uuid())
+enum NotificationType {
+  PRICE_ALERT
+  TRADE_MATCH
+}
+
+model Notification {
+  id        String           @id @default(uuid())
   userId    String
-  cardId    String
-  oldPrice  Float
-  newPrice  Float
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  
+  cardId    String?
+  card      Card?            @relation(fields: [cardId], references: [id], onDelete: Cascade)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([cardId])
   @@index([read])
-  @@map("price_alerts")
+  @@map("notifications")
 }

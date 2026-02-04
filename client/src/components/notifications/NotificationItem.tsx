@@ -1,15 +1,17 @@
-import { Box, Typography, IconButton, Avatar, Link as MuiLink } from '@mui/material';
+import { Box, Typography, IconButton, Avatar, Link as MuiLink, Button } from '@mui/material';
 import {
   TrendingDown as TrendingDownIcon,
   CheckCircle as CheckCircleIcon,
   Delete as DeleteIcon,
   OpenInNew as OpenInNewIcon,
+  SwapHoriz as SwapIcon,
 } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
-import type { PriceAlert } from '@mtg-binder/shared';
-import { getCardmarketUrl, getScryfallImageUrl } from '@mtg-binder/shared';
+import { type Notification, NotificationType, getCardmarketUrl, getScryfallImageUrl } from '@mtg-binder/shared';
 import { formatDistanceToNow } from 'date-fns';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+import { createTradeSession, sendMessage } from '../../services/trade-service';
 
 const styles: Record<string, SxProps<Theme>> = {
   container: {
@@ -108,21 +110,20 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 interface NotificationItemProps {
-  notification: PriceAlert;
+  notification: Notification;
   onMarkAsRead: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
 export function NotificationItem({ notification, onMarkAsRead, onDelete }: NotificationItemProps) {
   const { t } = useTranslation();
-  const { id, card, oldPrice, newPrice, read, createdAt } = notification;
+  const navigate = useNavigate();
+  const { id, card, type, data, read, createdAt } = notification;
 
   if (!card) return null;
 
   const imageUrl = getScryfallImageUrl(card.scryfallId, 'small');
   const cardmarketUrl = getCardmarketUrl(card);
-  const priceDrop = oldPrice - newPrice;
-  const percentDrop = ((priceDrop / oldPrice) * 100).toFixed(0);
   const timeAgo = formatDistanceToNow(new Date(createdAt), { addSuffix: true });
 
   const handleMarkAsRead = (e: React.MouseEvent) => {
@@ -133,6 +134,73 @@ export function NotificationItem({ notification, onMarkAsRead, onDelete }: Notif
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     onDelete(id);
+  };
+
+  const handleWantIt = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const offererId = data?.offererUserId;
+      if (!offererId) return;
+
+      const session = await createTradeSession({ withUserId: offererId });
+      await sendMessage(session.sessionCode, `I'm interested in your ${card.name}!`);
+      
+      onMarkAsRead(id);
+      navigate(`/trade/session/${session.sessionCode}`);
+    } catch (error) {
+      console.error('Failed to start trade', error);
+    }
+  };
+
+  const renderContent = () => {
+    // Fallback to string comparison if NotificationType is undefined due to build issues
+    const isPriceAlert = (type as string) === 'PRICE_ALERT' || (NotificationType && type === NotificationType.PRICE_ALERT);
+    const isTradeMatch = (type as string) === 'TRADE_MATCH' || (NotificationType && type === NotificationType.TRADE_MATCH);
+
+    if (isPriceAlert) {
+      const oldPrice = data?.oldPrice || 0;
+      const newPrice = data?.newPrice || 0;
+      const priceDrop = oldPrice - newPrice;
+      const percentDrop = oldPrice > 0 ? ((priceDrop / oldPrice) * 100).toFixed(0) : '0';
+
+      return (
+        <Box sx={styles.priceRow}>
+          <TrendingDownIcon sx={styles.priceIcon} />
+          <Typography variant="body2" sx={styles.oldPrice}>
+            €{oldPrice.toFixed(2)}
+          </Typography>
+          <Typography variant="body2">→</Typography>
+          <Typography variant="body2" sx={styles.newPrice}>
+            €{newPrice.toFixed(2)}
+          </Typography>
+          <Typography variant="body2" color="success.main" sx={{ fontWeight: 500 }}>
+            (-{percentDrop}%)
+          </Typography>
+        </Box>
+      );
+    }
+
+    if (isTradeMatch) {
+      const offererName = data?.offererName || 'someone';
+      return (
+        <Box sx={{ mt: 0.5, mb: 1 }}>
+           <Typography variant="body2" color="text.secondary">
+             {t('notifications.tradeMatchMessage', { name: offererName, cardName: card.name })}
+           </Typography>
+           <Button 
+             variant="contained" 
+             size="small" 
+             startIcon={<SwapIcon />}
+             onClick={handleWantIt}
+             sx={{ mt: 1 }}
+           >
+             {t('notifications.iWantIt')}
+           </Button>
+        </Box>
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -158,19 +226,7 @@ export function NotificationItem({ notification, onMarkAsRead, onDelete }: Notif
           </Typography>
         </Box>
 
-        <Box sx={styles.priceRow}>
-          <TrendingDownIcon sx={styles.priceIcon} />
-          <Typography variant="body2" sx={styles.oldPrice}>
-            €{oldPrice.toFixed(2)}
-          </Typography>
-          <Typography variant="body2">→</Typography>
-          <Typography variant="body2" sx={styles.newPrice}>
-            €{newPrice.toFixed(2)}
-          </Typography>
-          <Typography variant="body2" color="success.main" sx={{ fontWeight: 500 }}>
-            (-{percentDrop}%)
-          </Typography>
-        </Box>
+        {renderContent()}
 
         <Box sx={styles.linkRow}>
           <MuiLink

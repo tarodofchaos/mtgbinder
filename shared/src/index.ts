@@ -237,26 +237,23 @@ export interface SetCompletionDetail {
   missingCards: Card[];
 }
 
-// Price alert types
-export interface PriceAlert {
-  id: string;
-  userId: string;
-  cardId: string;
-  oldPrice: number;
-  newPrice: number;
-  read: boolean;
-  createdAt: Date;
-  card?: Card;
+// Notification types
+export enum NotificationType {
+  PRICE_ALERT = 'PRICE_ALERT',
+  TRADE_MATCH = 'TRADE_MATCH',
 }
 
-export interface PriceAlertNotification {
+export interface Notification {
   id: string;
-  cardId: string;
-  cardName: string;
-  oldPrice: number;
-  newPrice: number;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  data: any;
+  read: boolean;
   createdAt: Date;
-  card: Card;
+  cardId: string | null;
+  card?: Card;
 }
 
 // Helper to get Scryfall image URL

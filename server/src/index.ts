@@ -102,7 +102,7 @@ const apiLimiter = rateLimit({
 // Stricter rate limit for auth endpoints to prevent brute force
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // 20 attempts per window (allows for typos and multiple devices)
+  max: config.isDevelopment ? 1000 : 20, // Higher limit for dev
   message: {
     error: 'Too many authentication attempts, please try again later.',
     retryAfter: 900,

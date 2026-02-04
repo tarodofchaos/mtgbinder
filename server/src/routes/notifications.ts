@@ -15,7 +15,7 @@ const listQuerySchema = z.object({
 
 router.use(authMiddleware);
 
-// GET /api/notifications - Get user's price alerts
+// GET /api/notifications - Get user's notifications
 router.get('/', validateQuery(listQuerySchema), async (req: AuthenticatedRequest, res: Response, next) => {
   try {
     const { page, pageSize, unreadOnly } = req.query as unknown as {
@@ -30,8 +30,8 @@ router.get('/', validateQuery(listQuerySchema), async (req: AuthenticatedRequest
       where.read = false;
     }
 
-    const [alerts, total, unreadCount] = await Promise.all([
-      prisma.priceAlert.findMany({
+    const [notifications, total, unreadCount] = await Promise.all([
+      prisma.notification.findMany({
         where,
         include: {
           card: true,
@@ -42,8 +42,8 @@ router.get('/', validateQuery(listQuerySchema), async (req: AuthenticatedRequest
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
-      prisma.priceAlert.count({ where }),
-      prisma.priceAlert.count({
+      prisma.notification.count({ where }),
+      prisma.notification.count({
         where: {
           userId: req.userId,
           read: false,
@@ -52,7 +52,7 @@ router.get('/', validateQuery(listQuerySchema), async (req: AuthenticatedRequest
     ]);
 
     res.json({
-      data: alerts,
+      data: notifications,
       total,
       page,
       pageSize,
@@ -67,7 +67,7 @@ router.get('/', validateQuery(listQuerySchema), async (req: AuthenticatedRequest
 // GET /api/notifications/unread-count - Get count of unread notifications
 router.get('/unread-count', async (req: AuthenticatedRequest, res: Response, next) => {
   try {
-    const unreadCount = await prisma.priceAlert.count({
+    const unreadCount = await prisma.notification.count({
       where: {
         userId: req.userId,
         read: false,
@@ -80,38 +80,38 @@ router.get('/unread-count', async (req: AuthenticatedRequest, res: Response, nex
   }
 });
 
-// PATCH /api/notifications/:id/read - Mark alert as read
+// PATCH /api/notifications/:id/read - Mark notification as read
 router.patch('/:id/read', async (req: AuthenticatedRequest, res: Response, next) => {
   try {
     const { id } = req.params;
 
-    const existingAlert = await prisma.priceAlert.findFirst({
+    const existingNotification = await prisma.notification.findFirst({
       where: {
         id,
         userId: req.userId,
       },
     });
 
-    if (!existingAlert) {
+    if (!existingNotification) {
       throw new AppError('Notification not found', 404);
     }
 
-    const alert = await prisma.priceAlert.update({
+    const notification = await prisma.notification.update({
       where: { id },
       data: { read: true },
       include: { card: true },
     });
 
-    res.json({ data: alert });
+    res.json({ data: notification });
   } catch (error) {
     next(error);
   }
 });
 
-// PATCH /api/notifications/read-all - Mark all alerts as read
+// PATCH /api/notifications/read-all - Mark all notifications as read
 router.patch('/read-all', async (req: AuthenticatedRequest, res: Response, next) => {
   try {
-    const result = await prisma.priceAlert.updateMany({
+    const result = await prisma.notification.updateMany({
       where: {
         userId: req.userId,
         read: false,
@@ -135,18 +135,18 @@ router.delete('/:id', async (req: AuthenticatedRequest, res: Response, next) => 
   try {
     const { id } = req.params;
 
-    const existingAlert = await prisma.priceAlert.findFirst({
+    const existingNotification = await prisma.notification.findFirst({
       where: {
         id,
         userId: req.userId,
       },
     });
 
-    if (!existingAlert) {
+    if (!existingNotification) {
       throw new AppError('Notification not found', 404);
     }
 
-    await prisma.priceAlert.delete({ where: { id } });
+    await prisma.notification.delete({ where: { id } });
 
     res.json({ message: 'Notification deleted' });
   } catch (error) {

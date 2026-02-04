@@ -345,7 +345,9 @@
     "emptyStateDescription": "Te notificaremos cuando las cartas de tu lista de deseos bajen de tu precio objetivo",
     "viewOnCardmarket": "Ver en Cardmarket",
     "markAsRead": "Marcar como leída",
-    "delete": "Eliminar notificación"
+    "delete": "Eliminar notificación",
+    "iWantIt": "¡Lo quiero!",
+    "tradeMatchMessage": "¡El usuario {{name}} tiene {{cardName}} para cambio!"
   },
   "chat": {
     "title": "Chat",

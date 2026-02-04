@@ -264,15 +264,16 @@ export function CollectionPage() {
     queryFn: getCollectionStats,
   });
 
+  // Use local state for text inputs (instant filtering) and URL state for other filters
   const { data, isLoading, error } = useQuery({
-    queryKey: ['collection', { search: urlSearch, setCode: urlSetCode, colors, rarity, priceMin: urlPriceMin, priceMax: urlPriceMax, forTrade: forTradeOnly, page }],
+    queryKey: ['collection', { search: localSearch, setCode: localSetCode, colors, rarity, priceMin: localPriceMin, priceMax: localPriceMax, forTrade: forTradeOnly, page }],
     queryFn: () => getCollection({
-      search: urlSearch,
-      setCode: urlSetCode,
+      search: localSearch,
+      setCode: localSetCode,
       colors: colors.length > 0 ? colors.join(',') : undefined,
       rarity: rarity || undefined,
-      priceMin: urlPriceMin ? parseFloat(urlPriceMin) : undefined,
-      priceMax: urlPriceMax ? parseFloat(urlPriceMax) : undefined,
+      priceMin: localPriceMin ? parseFloat(localPriceMin) : undefined,
+      priceMax: localPriceMax ? parseFloat(localPriceMax) : undefined,
       forTrade: forTradeOnly,
       page,
       pageSize: 24
@@ -337,12 +338,12 @@ export function CollectionPage() {
     setIsExporting(true);
     try {
       await exportCollection({
-        search: urlSearch,
-        setCode: urlSetCode,
+        search: localSearch,
+        setCode: localSetCode,
         colors: colors.length > 0 ? colors.join(',') : undefined,
         rarity: rarity || undefined,
-        priceMin: urlPriceMin ? parseFloat(urlPriceMin) : undefined,
-        priceMax: urlPriceMax ? parseFloat(urlPriceMax) : undefined,
+        priceMin: localPriceMin ? parseFloat(localPriceMin) : undefined,
+        priceMax: localPriceMax ? parseFloat(localPriceMax) : undefined,
         forTrade: forTradeOnly,
       });
     } catch (error) {
@@ -518,7 +519,7 @@ export function CollectionPage() {
                   clearLocalFilters();
                   setSearchParams({});
                 }}
-                disabled={!urlSearch && !urlSetCode && colors.length === 0 && !rarity && !urlPriceMin && !urlPriceMax && !forTradeOnly}
+                disabled={!localSearch && !localSetCode && colors.length === 0 && !rarity && !localPriceMin && !localPriceMax && !forTradeOnly}
                 size="small"
                 sx={{ mt: 'auto' }}
               >
@@ -527,11 +528,11 @@ export function CollectionPage() {
             </Box>
 
             {/* Active Filters Display */}
-            {(urlSearch || urlSetCode || colors.length > 0 || rarity || urlPriceMin || urlPriceMax || forTradeOnly) && (
+            {(localSearch || localSetCode || colors.length > 0 || rarity || localPriceMin || localPriceMax || forTradeOnly) && (
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 <Typography variant="caption" sx={{ alignSelf: 'center', mr: 1 }}>{t('common.activeFilters')}</Typography>
-                {urlSearch && <Chip label={t('filters.search', { term: urlSearch })} size="small" onDelete={() => { setLocalSearch(''); updateFilters({ search: null }); }} />}
-                {urlSetCode && <Chip label={t('filters.set', { code: urlSetCode })} size="small" onDelete={() => { setLocalSetCode(''); updateFilters({ setCode: null }); }} />}
+                {localSearch && <Chip label={t('filters.search', { term: localSearch })} size="small" onDelete={() => { setLocalSearch(''); updateFilters({ search: null }); }} />}
+                {localSetCode && <Chip label={t('filters.set', { code: localSetCode })} size="small" onDelete={() => { setLocalSetCode(''); updateFilters({ setCode: null }); }} />}
                 {colors.map(c => (
                   <Chip
                     key={c}
@@ -541,8 +542,8 @@ export function CollectionPage() {
                   />
                 ))}
                 {rarity && <Chip label={t('filters.rarityFilter', { rarity })} size="small" onDelete={() => updateFilters({ rarity: null })} />}
-                {urlPriceMin && <Chip label={`Min: €${urlPriceMin}`} size="small" onDelete={() => { setLocalPriceMin(''); updateFilters({ priceMin: null }); }} />}
-                {urlPriceMax && <Chip label={`Max: €${urlPriceMax}`} size="small" onDelete={() => { setLocalPriceMax(''); updateFilters({ priceMax: null }); }} />}
+                {localPriceMin && <Chip label={`Min: €${localPriceMin}`} size="small" onDelete={() => { setLocalPriceMin(''); updateFilters({ priceMin: null }); }} />}
+                {localPriceMax && <Chip label={`Max: €${localPriceMax}`} size="small" onDelete={() => { setLocalPriceMax(''); updateFilters({ priceMax: null }); }} />}
                 {forTradeOnly && <Chip label={t('collection.forTradeOnly')} size="small" onDelete={() => updateFilters({ forTrade: null })} />}
               </Box>
             )}
@@ -554,11 +555,11 @@ export function CollectionPage() {
       {items.length === 0 ? (
         <Box sx={styles.emptyState}>
           <Typography color="text.secondary" gutterBottom>
-            {urlSearch || urlSetCode || colors.length > 0 || rarity || urlPriceMin || urlPriceMax || forTradeOnly
+            {localSearch || localSetCode || colors.length > 0 || rarity || localPriceMin || localPriceMax || forTradeOnly
               ? t('collection.noMatchingCards')
               : t('collection.emptyCollection')}
           </Typography>
-          {!(urlSearch || urlSetCode || colors.length > 0 || rarity || urlPriceMin || urlPriceMax || forTradeOnly) ? (
+          {!(localSearch || localSetCode || colors.length > 0 || rarity || localPriceMin || localPriceMax || forTradeOnly) ? (
             <Button
               variant="contained"
               startIcon={<AddIcon />}

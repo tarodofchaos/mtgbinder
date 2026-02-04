@@ -77,7 +77,8 @@
     "displayNameRequired": "El nombre de usuario es requerido",
     "confirmPasswordRequired": "Por favor confirma tu contrasena",
     "passwordsDoNotMatch": "Las contrasenas no coinciden",
-    "minLength": "Debe tener al menos {{count}} caracteres"
+    "minLength": "Debe tener al menos {{count}} caracteres",
+    "tooManyAttempts": "Demasiados intentos de inicio de sesion. Por favor, intenta mas tarde."
   },
   "collection": {
     "title": "Coleccion",

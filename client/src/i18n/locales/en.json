@@ -77,7 +77,8 @@
     "displayNameRequired": "Display name is required",
     "confirmPasswordRequired": "Please confirm your password",
     "passwordsDoNotMatch": "Passwords do not match",
-    "minLength": "Must be at least {{count}} characters"
+    "minLength": "Must be at least {{count}} characters",
+    "tooManyAttempts": "Too many login attempts. Please try again later."
   },
   "collection": {
     "title": "Collection",

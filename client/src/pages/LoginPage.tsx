@@ -67,8 +67,20 @@ export function LoginPage() {
     try {
       await login(data.email, data.password);
       navigate('/collection');
-    } catch {
-      setError(t('auth.invalidCredentials'));
+    } catch (err: unknown) {
+      // Check if it's an axios error with a response
+      if (err && typeof err === 'object' && 'response' in err) {
+        const axiosError = err as { response?: { status?: number; data?: { error?: string } } };
+        if (axiosError.response?.status === 429) {
+          setError(t('auth.tooManyAttempts'));
+        } else if (axiosError.response?.data?.error) {
+          setError(axiosError.response.data.error);
+        } else {
+          setError(t('auth.invalidCredentials'));
+        }
+      } else {
+        setError(t('auth.invalidCredentials'));
+      }
     } finally {
       setIsLoading(false);
     }

@@ -273,7 +273,7 @@ export function TradePage() {
 
             {joinMutation.isError && (
               <Alert severity="error">
-                {t('trade.joinFailed')}
+                {(joinMutation.error as { response?: { data?: { error?: string } } })?.response?.data?.error || t('trade.joinFailed')}
               </Alert>
             )}
           </Stack>

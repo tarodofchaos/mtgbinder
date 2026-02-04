@@ -12,6 +12,9 @@ import { NotificationItem } from './NotificationItem';
 import { useSocket } from '../../hooks/useSocket';
 
 const styles: Record<string, SxProps<Theme>> = {
+  iconButton: {
+    color: 'text.primary',
+  },
   menu: {
     maxWidth: 400,
     width: '100%',
@@ -145,7 +148,7 @@ export function NotificationBell() {
     <>
       <IconButton
         onClick={handleClick}
-        color="inherit"
+        sx={styles.iconButton}
         aria-label="notifications"
         aria-controls={open ? 'notification-menu' : undefined}
         aria-haspopup="true"

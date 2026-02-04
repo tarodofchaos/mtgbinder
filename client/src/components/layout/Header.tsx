@@ -40,6 +40,9 @@ const styles: Record<string, SxProps<Theme>> = {
     alignItems: 'center',
     gap: 2,
   },
+  iconButton: {
+    color: 'text.primary',
+  },
   userName: {
     color: 'text.secondary',
     fontSize: '0.875rem',
@@ -72,7 +75,7 @@ export function Header() {
           <IconButton
             onClick={toggleTheme}
             aria-label={t('header.toggleTheme')}
-            color="inherit"
+            sx={styles.iconButton}
           >
             {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
           </IconButton>

@@ -165,14 +165,71 @@ export function CollectionPage() {
   const queryClient = useQueryClient();
 
   // Extract filter state from URL params
-  const search = searchParams.get('search') || '';
-  const setCode = searchParams.get('setCode') || '';
+  const urlSearch = searchParams.get('search') || '';
+  const urlSetCode = searchParams.get('setCode') || '';
   const colors = searchParams.get('colors')?.split(',').filter(Boolean) || [];
   const rarity = searchParams.get('rarity') || '';
-  const priceMin = searchParams.get('priceMin') || '';
-  const priceMax = searchParams.get('priceMax') || '';
+  const urlPriceMin = searchParams.get('priceMin') || '';
+  const urlPriceMax = searchParams.get('priceMax') || '';
   const forTradeOnly = searchParams.get('forTrade') === 'true';
   const page = parseInt(searchParams.get('page') || '1', 10);
+
+  // Local state for text inputs to prevent focus loss on keystroke
+  const [localSearch, setLocalSearch] = useState(urlSearch);
+  const [localSetCode, setLocalSetCode] = useState(urlSetCode);
+  const [localPriceMin, setLocalPriceMin] = useState(urlPriceMin);
+  const [localPriceMax, setLocalPriceMax] = useState(urlPriceMax);
+
+  // Sync local state with URL when URL changes externally (e.g., clear filters)
+  useEffect(() => {
+    setLocalSearch(urlSearch);
+  }, [urlSearch]);
+  useEffect(() => {
+    setLocalSetCode(urlSetCode);
+  }, [urlSetCode]);
+  useEffect(() => {
+    setLocalPriceMin(urlPriceMin);
+  }, [urlPriceMin]);
+  useEffect(() => {
+    setLocalPriceMax(urlPriceMax);
+  }, [urlPriceMax]);
+
+  // Debounce URL updates for text inputs
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localSearch !== urlSearch) {
+        updateFilters({ search: localSearch || null });
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [localSearch]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localSetCode !== urlSetCode) {
+        updateFilters({ setCode: localSetCode || null });
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [localSetCode]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localPriceMin !== urlPriceMin) {
+        updateFilters({ priceMin: localPriceMin || null });
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [localPriceMin]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localPriceMax !== urlPriceMax) {
+        updateFilters({ priceMax: localPriceMax || null });
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [localPriceMax]);
 
   // Helper to update URL params
   const updateFilters = (updates: Record<string, string | null>) => {
@@ -214,14 +271,14 @@ export function CollectionPage() {
   });
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['collection', { search, setCode, colors, rarity, priceMin, priceMax, forTrade: forTradeOnly, page }],
+    queryKey: ['collection', { search: urlSearch, setCode: urlSetCode, colors, rarity, priceMin: urlPriceMin, priceMax: urlPriceMax, forTrade: forTradeOnly, page }],
     queryFn: () => getCollection({
-      search,
-      setCode,
+      search: urlSearch,
+      setCode: urlSetCode,
       colors: colors.length > 0 ? colors.join(',') : undefined,
       rarity: rarity || undefined,
-      priceMin: priceMin ? parseFloat(priceMin) : undefined,
-      priceMax: priceMax ? parseFloat(priceMax) : undefined,
+      priceMin: urlPriceMin ? parseFloat(urlPriceMin) : undefined,
+      priceMax: urlPriceMax ? parseFloat(urlPriceMax) : undefined,
       forTrade: forTradeOnly,
       page,
       pageSize: 24
@@ -286,12 +343,12 @@ export function CollectionPage() {
     setIsExporting(true);
     try {
       await exportCollection({
-        search,
-        setCode,
+        search: urlSearch,
+        setCode: urlSetCode,
         colors: colors.length > 0 ? colors.join(',') : undefined,
         rarity: rarity || undefined,
-        priceMin: priceMin ? parseFloat(priceMin) : undefined,
-        priceMax: priceMax ? parseFloat(priceMax) : undefined,
+        priceMin: urlPriceMin ? parseFloat(urlPriceMin) : undefined,
+        priceMax: urlPriceMax ? parseFloat(urlPriceMax) : undefined,
         forTrade: forTradeOnly,
       });
     } catch (error) {
@@ -346,8 +403,8 @@ export function CollectionPage() {
         {/* Search and Actions Row */}
         <Box sx={styles.filtersRow}>
           <TextField
-            value={search}
-            onChange={(e) => updateFilters({ search: e.target.value })}
+            value={localSearch}
+            onChange={(e) => setLocalSearch(e.target.value)}
             placeholder={t('collection.searchPlaceholder')}
             fullWidth
             sx={{ flexGrow: 1 }}
@@ -432,8 +489,8 @@ export function CollectionPage() {
               {/* Set Filter */}
               <TextField
                 label={t('filters.setCode')}
-                value={setCode}
-                onChange={(e) => updateFilters({ setCode: e.target.value.toUpperCase() })}
+                value={localSetCode}
+                onChange={(e) => setLocalSetCode(e.target.value.toUpperCase())}
                 placeholder={t('filters.setCodePlaceholder')}
                 sx={{ minWidth: 150 }}
                 size="small"
@@ -443,8 +500,8 @@ export function CollectionPage() {
               <TextField
                 label={`${t('filters.minPrice')} (€)`}
                 type="number"
-                value={priceMin}
-                onChange={(e) => updateFilters({ priceMin: e.target.value })}
+                value={localPriceMin}
+                onChange={(e) => setLocalPriceMin(e.target.value)}
                 inputProps={{ min: 0, step: 0.01 }}
                 sx={{ minWidth: 120 }}
                 size="small"
@@ -452,8 +509,8 @@ export function CollectionPage() {
               <TextField
                 label={`${t('filters.maxPrice')} (€)`}
                 type="number"
-                value={priceMax}
-                onChange={(e) => updateFilters({ priceMax: e.target.value })}
+                value={localPriceMax}
+                onChange={(e) => setLocalPriceMax(e.target.value)}
                 inputProps={{ min: 0, step: 0.01 }}
                 sx={{ minWidth: 120 }}
                 size="small"
@@ -463,8 +520,14 @@ export function CollectionPage() {
               <Button
                 variant="outlined"
                 startIcon={<FilterAltOffIcon />}
-                onClick={() => setSearchParams({})}
-                disabled={!search && !setCode && colors.length === 0 && !rarity && !priceMin && !priceMax && !forTradeOnly}
+                onClick={() => {
+                  setLocalSearch('');
+                  setLocalSetCode('');
+                  setLocalPriceMin('');
+                  setLocalPriceMax('');
+                  setSearchParams({});
+                }}
+                disabled={!urlSearch && !urlSetCode && colors.length === 0 && !rarity && !urlPriceMin && !urlPriceMax && !forTradeOnly}
                 size="small"
                 sx={{ mt: 'auto' }}
               >
@@ -473,11 +536,11 @@ export function CollectionPage() {
             </Box>
 
             {/* Active Filters Display */}
-            {(search || setCode || colors.length > 0 || rarity || priceMin || priceMax || forTradeOnly) && (
+            {(urlSearch || urlSetCode || colors.length > 0 || rarity || urlPriceMin || urlPriceMax || forTradeOnly) && (
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 <Typography variant="caption" sx={{ alignSelf: 'center', mr: 1 }}>{t('common.activeFilters')}</Typography>
-                {search && <Chip label={t('filters.search', { term: search })} size="small" onDelete={() => updateFilters({ search: null })} />}
-                {setCode && <Chip label={t('filters.set', { code: setCode })} size="small" onDelete={() => updateFilters({ setCode: null })} />}
+                {urlSearch && <Chip label={t('filters.search', { term: urlSearch })} size="small" onDelete={() => { setLocalSearch(''); updateFilters({ search: null }); }} />}
+                {urlSetCode && <Chip label={t('filters.set', { code: urlSetCode })} size="small" onDelete={() => { setLocalSetCode(''); updateFilters({ setCode: null }); }} />}
                 {colors.map(c => (
                   <Chip
                     key={c}
@@ -487,8 +550,8 @@ export function CollectionPage() {
                   />
                 ))}
                 {rarity && <Chip label={t('filters.rarityFilter', { rarity })} size="small" onDelete={() => updateFilters({ rarity: null })} />}
-                {priceMin && <Chip label={`Min: €${priceMin}`} size="small" onDelete={() => updateFilters({ priceMin: null })} />}
-                {priceMax && <Chip label={`Max: €${priceMax}`} size="small" onDelete={() => updateFilters({ priceMax: null })} />}
+                {urlPriceMin && <Chip label={`Min: €${urlPriceMin}`} size="small" onDelete={() => { setLocalPriceMin(''); updateFilters({ priceMin: null }); }} />}
+                {urlPriceMax && <Chip label={`Max: €${urlPriceMax}`} size="small" onDelete={() => { setLocalPriceMax(''); updateFilters({ priceMax: null }); }} />}
                 {forTradeOnly && <Chip label={t('collection.forTradeOnly')} size="small" onDelete={() => updateFilters({ forTrade: null })} />}
               </Box>
             )}
@@ -500,11 +563,11 @@ export function CollectionPage() {
       {items.length === 0 ? (
         <Box sx={styles.emptyState}>
           <Typography color="text.secondary" gutterBottom>
-            {search || setCode || colors.length > 0 || rarity || priceMin || priceMax || forTradeOnly
+            {urlSearch || urlSetCode || colors.length > 0 || rarity || urlPriceMin || urlPriceMax || forTradeOnly
               ? t('collection.noMatchingCards')
               : t('collection.emptyCollection')}
           </Typography>
-          {!(search || setCode || colors.length > 0 || rarity || priceMin || priceMax || forTradeOnly) ? (
+          {!(urlSearch || urlSetCode || colors.length > 0 || rarity || urlPriceMin || urlPriceMax || forTradeOnly) ? (
             <Button
               variant="contained"
               startIcon={<AddIcon />}

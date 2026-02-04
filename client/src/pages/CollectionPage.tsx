@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
@@ -180,18 +180,33 @@ export function CollectionPage() {
   const [localPriceMin, setLocalPriceMin] = useState(urlPriceMin);
   const [localPriceMax, setLocalPriceMax] = useState(urlPriceMax);
 
+  // Track focus state to prevent URL->local sync while user is typing
+  const searchFocused = useRef(false);
+  const setCodeFocused = useRef(false);
+  const priceMinFocused = useRef(false);
+  const priceMaxFocused = useRef(false);
+
   // Sync local state with URL when URL changes externally (e.g., clear filters)
+  // Only sync when input is not focused to avoid overwriting user input
   useEffect(() => {
-    setLocalSearch(urlSearch);
+    if (!searchFocused.current) {
+      setLocalSearch(urlSearch);
+    }
   }, [urlSearch]);
   useEffect(() => {
-    setLocalSetCode(urlSetCode);
+    if (!setCodeFocused.current) {
+      setLocalSetCode(urlSetCode);
+    }
   }, [urlSetCode]);
   useEffect(() => {
-    setLocalPriceMin(urlPriceMin);
+    if (!priceMinFocused.current) {
+      setLocalPriceMin(urlPriceMin);
+    }
   }, [urlPriceMin]);
   useEffect(() => {
-    setLocalPriceMax(urlPriceMax);
+    if (!priceMaxFocused.current) {
+      setLocalPriceMax(urlPriceMax);
+    }
   }, [urlPriceMax]);
 
   // Debounce URL updates for text inputs
@@ -405,6 +420,8 @@ export function CollectionPage() {
           <TextField
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
+            onFocus={() => { searchFocused.current = true; }}
+            onBlur={() => { searchFocused.current = false; }}
             placeholder={t('collection.searchPlaceholder')}
             fullWidth
             sx={{ flexGrow: 1 }}
@@ -491,6 +508,8 @@ export function CollectionPage() {
                 label={t('filters.setCode')}
                 value={localSetCode}
                 onChange={(e) => setLocalSetCode(e.target.value.toUpperCase())}
+                onFocus={() => { setCodeFocused.current = true; }}
+                onBlur={() => { setCodeFocused.current = false; }}
                 placeholder={t('filters.setCodePlaceholder')}
                 sx={{ minWidth: 150 }}
                 size="small"
@@ -502,6 +521,8 @@ export function CollectionPage() {
                 type="number"
                 value={localPriceMin}
                 onChange={(e) => setLocalPriceMin(e.target.value)}
+                onFocus={() => { priceMinFocused.current = true; }}
+                onBlur={() => { priceMinFocused.current = false; }}
                 inputProps={{ min: 0, step: 0.01 }}
                 sx={{ minWidth: 120 }}
                 size="small"
@@ -511,6 +532,8 @@ export function CollectionPage() {
                 type="number"
                 value={localPriceMax}
                 onChange={(e) => setLocalPriceMax(e.target.value)}
+                onFocus={() => { priceMaxFocused.current = true; }}
+                onBlur={() => { priceMaxFocused.current = false; }}
                 inputProps={{ min: 0, step: 0.01 }}
                 sx={{ minWidth: 120 }}
                 size="small"

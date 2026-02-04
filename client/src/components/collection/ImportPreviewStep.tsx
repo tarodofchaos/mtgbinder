@@ -41,6 +41,7 @@ interface ImportPreviewStepProps {
   onImport: () => void;
   onBack: () => void;
   isLoading: boolean;
+  deckInfo?: { name?: string; author?: string; source?: string } | null;
 }
 
 const PREVIEW_LIMIT = 20;
@@ -117,6 +118,7 @@ export function ImportPreviewStep({
   onImport,
   onBack,
   isLoading,
+  deckInfo,
 }: ImportPreviewStepProps) {
   const [showAll, setShowAll] = useState(false);
   const [printingSelectorRow, setPrintingSelectorRow] = useState<number | null>(null);
@@ -179,6 +181,17 @@ export function ImportPreviewStep({
 
   return (
     <Box sx={styles.container}>
+      {/* Deck info from URL import */}
+      {deckInfo && (deckInfo.name || deckInfo.author) && (
+        <Alert severity="success" sx={{ mb: 1 }}>
+          <Typography variant="body2">
+            <strong>{deckInfo.name || 'Deck'}</strong>
+            {deckInfo.author && ` by ${deckInfo.author}`}
+            {deckInfo.source && ` (${deckInfo.source})`}
+          </Typography>
+        </Alert>
+      )}
+
       {/* Stats summary */}
       <Box sx={styles.statsRow}>
         <Chip

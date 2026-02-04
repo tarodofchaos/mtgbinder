@@ -1,6 +1,7 @@
 import { CardCondition, PrismaClient } from '@prisma/client';
 import { prisma } from '../utils/prisma';
 import { logger } from '../utils/logger';
+import { ParsedDecklistEntry } from '../utils/decklist-parser';
 
 export interface ResolvedCard {
   name: string;
@@ -12,11 +13,18 @@ export interface ResolvedCard {
     scryfallId: string | null;
     priceEur: number | null;
   };
+  setCode?: string;
+  collectorNumber?: string;
 }
 
 export interface ResolveCardsResult {
   resolved: ResolvedCard[];
   notFound: string[];
+}
+
+export interface ResolvedEntry extends ParsedDecklistEntry {
+  resolvedCard: ResolvedCard['card'] | null;
+  status: 'matched' | 'not_found';
 }
 
 export interface ImportRow {
@@ -445,3 +453,116 @@ export async function importWishlistItems(
 
   return result;
 }
+
+/**
+ * Resolve decklist entries to cards, preferring specific printings when setCode/collectorNumber provided.
+ * Falls back to name-only matching when specific printing not found.
+ */
+export async function resolveEntriesWithPrintings(
+  entries: ParsedDecklistEntry[]
+): Promise<ResolvedEntry[]> {
+  if (entries.length === 0) {
+    return [];
+  }
+
+  // Separate entries: those with specific printing info vs name-only
+  const withPrinting: ParsedDecklistEntry[] = [];
+  const nameOnly: ParsedDecklistEntry[] = [];
+
+  for (const entry of entries) {
+    if (entry.setCode && entry.collectorNumber) {
+      withPrinting.push(entry);
+    } else {
+      nameOnly.push(entry);
+    }
+  }
+
+  // Results map: entry index -> resolved card
+  const results: Map<number, ResolvedCard['card'] | null> = new Map();
+
+  // Resolve entries with specific printing (setCode + collectorNumber)
+  if (withPrinting.length > 0) {
+    // Build query conditions for specific printings
+    const printingConditions = withPrinting.map((entry) => ({
+      setCode: entry.setCode!.toUpperCase(),
+      collectorNumber: entry.collectorNumber!,
+    }));
+
+    // Query for specific printings
+    const specificCards = await prisma.card.findMany({
+      where: {
+        OR: printingConditions.map((cond) => ({
+          setCode: { equals: cond.setCode, mode: 'insensitive' as const },
+          collectorNumber: { equals: cond.collectorNumber, mode: 'insensitive' as const },
+        })),
+      },
+      select: {
+        id: true,
+        name: true,
+        setCode: true,
+        setName: true,
+        scryfallId: true,
+        priceEur: true,
+        collectorNumber: true,
+      },
+    });
+
+    // Build lookup map: "SETCODE|COLLECTORNUMBER" -> card
+    const printingMap = new Map<string, ResolvedCard['card']>();
+    for (const card of specificCards) {
+      const key = `${card.setCode.toUpperCase()}|${card.collectorNumber.toLowerCase()}`;
+      printingMap.set(key, card);
+    }
+
+    // Match entries to specific printings
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+      if (entry.setCode && entry.collectorNumber) {
+        const key = `${entry.setCode.toUpperCase()}|${entry.collectorNumber.toLowerCase()}`;
+        const card = printingMap.get(key);
+        if (card) {
+          results.set(i, card);
+        } else {
+          // Specific printing not found - fall back to name-only
+          nameOnly.push(entry);
+        }
+      }
+    }
+  }
+
+  // Resolve name-only entries and fallbacks
+  if (nameOnly.length > 0) {
+    const names = nameOnly.map((e) => e.cardName);
+    const { resolved } = await resolveCardNames(names);
+
+    // Build name -> card lookup
+    const nameMap = new Map<string, ResolvedCard['card']>();
+    for (const item of resolved) {
+      nameMap.set(item.name.toLowerCase(), item.card);
+    }
+
+    // Match entries to resolved cards by name
+    for (let i = 0; i < entries.length; i++) {
+      if (results.has(i)) continue; // Already resolved by specific printing
+
+      const entry = entries[i];
+      const card = nameMap.get(entry.cardName.toLowerCase());
+      results.set(i, card || null);
+    }
+  }
+
+  // Build final results
+  return entries.map((entry, i): ResolvedEntry => {
+    const resolvedCard = results.get(i) || null;
+    return {
+      ...entry,
+      resolvedCard,
+      status: resolvedCard ? 'matched' : 'not_found',
+    };
+  });
+}
+
+/**
+ * Export parseCondition for use in other services
+ */
+export { parseCondition };

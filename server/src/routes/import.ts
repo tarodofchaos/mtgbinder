@@ -6,9 +6,12 @@ import { AppError } from '../middleware/error-handler';
 import {
   resolveCardNames,
   importCollectionItems,
+  resolveEntriesWithPrintings,
   ImportRow,
   DuplicateMode,
 } from '../services/import-service';
+import { parseDecklist, parseDecklistForCollection } from '../utils/decklist-parser';
+import { importFromUrl, isUrlSupported } from '../services/url-import-service';
 
 const router = Router();
 
@@ -164,6 +167,120 @@ router.post(
       );
 
       res.json({ data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ─────────────────────────────────────────────────
+// Text Import Endpoints
+// ─────────────────────────────────────────────────
+
+// Schema for parse-text endpoint
+const parseTextSchema = z.object({
+  text: z.string().min(1).max(50000),
+  targetType: z.enum(['collection', 'wishlist']),
+});
+
+/**
+ * POST /api/import/parse-text
+ * Parse plain text decklist and return preview data.
+ */
+router.post(
+  '/parse-text',
+  validate(parseTextSchema),
+  async (req: AuthenticatedRequest, res: Response, next) => {
+    try {
+      const { text, targetType } = req.body;
+
+      // Parse the decklist
+      const parsed = targetType === 'collection'
+        ? parseDecklistForCollection(text)
+        : parseDecklist(text);
+
+      // Resolve entries with printing information
+      const entries = 'entries' in parsed
+        ? parsed.entries.map((e) => ({
+            quantity: e.quantity,
+            cardName: 'cardName' in e ? e.cardName : (e as any).cardName,
+            setCode: e.setCode,
+            collectorNumber: e.collectorNumber,
+            isFoil: 'isFoil' in e ? e.isFoil : false,
+            isEtched: 'isEtched' in e ? e.isEtched : false,
+            category: 'category' in e ? e.category : 'main',
+          }))
+        : [];
+
+      const resolved = await resolveEntriesWithPrintings(entries);
+
+      res.json({
+        data: {
+          entries: resolved,
+          errors: parsed.errors,
+          detectedFormat: parsed.detectedFormat,
+          stats: {
+            total: resolved.length,
+            matched: resolved.filter((e) => e.status === 'matched').length,
+            notFound: resolved.filter((e) => e.status === 'not_found').length,
+          },
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ─────────────────────────────────────────────────
+// URL Import Endpoints
+// ─────────────────────────────────────────────────
+
+// Schema for from-url endpoint
+const fromUrlSchema = z.object({
+  url: z.string().url().min(1),
+  targetType: z.enum(['collection', 'wishlist']),
+});
+
+/**
+ * POST /api/import/from-url
+ * Fetch deck from external URL and return preview data.
+ */
+router.post(
+  '/from-url',
+  validate(fromUrlSchema),
+  async (req: AuthenticatedRequest, res: Response, next) => {
+    try {
+      const { url, targetType } = req.body;
+
+      // Check if URL is supported
+      if (!isUrlSupported(url)) {
+        throw new AppError(
+          'Unsupported URL. Supported sites: Archidekt, Moxfield, MTGGoldfish',
+          400
+        );
+      }
+
+      // Fetch and parse from URL
+      const urlResult = await importFromUrl(url);
+
+      // Resolve entries with printing information
+      const resolved = await resolveEntriesWithPrintings(urlResult.entries);
+
+      res.json({
+        data: {
+          entries: resolved,
+          errors: urlResult.errors,
+          deckName: urlResult.deckName,
+          deckAuthor: urlResult.deckAuthor,
+          source: urlResult.source,
+          stats: {
+            total: resolved.length,
+            matched: resolved.filter((e) => e.status === 'matched').length,
+            notFound: resolved.filter((e) => e.status === 'not_found').length,
+          },
+        },
+      });
     } catch (error) {
       next(error);
     }

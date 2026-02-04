@@ -1,17 +1,23 @@
 import { useState, useCallback } from 'react';
-import { Box, Stepper, Step, StepLabel } from '@mui/material';
+import { Box, Stepper, Step, StepLabel, Tabs, Tab } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material';
 import type { Card } from '@mtg-binder/shared';
+import { useTranslation } from 'react-i18next';
 import { Modal } from '../ui/Modal';
 import { ImportUploadStep } from './ImportUploadStep';
 import { ImportPreviewStep } from './ImportPreviewStep';
 import { ImportProgressStep } from './ImportProgressStep';
 import { ImportResultsStep } from './ImportResultsStep';
+import { TextImportTab } from '../import/TextImportTab';
+import { UrlImportTab } from '../import/UrlImportTab';
 import {
   parseCollectionCSV,
   prepareImportPreview,
   previewRowsToImportRows,
   importCollectionBatched,
+  parseTextImport,
+  importFromUrl,
+  textEntriesToPreviewRows,
   CSVParseError,
   PreviewRow,
   PreviewStats,
@@ -26,13 +32,19 @@ interface ImportCollectionModalProps {
   onSuccess: () => void;
 }
 
-type ImportStep = 'upload' | 'preview' | 'progress' | 'results';
+type ImportStep = 'input' | 'preview' | 'progress' | 'results';
+type ImportMethod = 'csv' | 'text' | 'url';
 
-const STEPS = ['Upload', 'Preview', 'Import', 'Done'];
+const STEPS = ['Input', 'Preview', 'Import', 'Done'];
 
 const styles: Record<string, SxProps<Theme>> = {
   stepper: {
     mb: 3,
+  },
+  tabs: {
+    mb: 2,
+    borderBottom: 1,
+    borderColor: 'divider',
   },
   content: {
     minHeight: 300,
@@ -40,12 +52,18 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 export function ImportCollectionModal({ isOpen, onClose, onSuccess }: ImportCollectionModalProps) {
-  // Step state
-  const [currentStep, setCurrentStep] = useState<ImportStep>('upload');
-  const [isLoading, setIsLoading] = useState(false);
+  const { t } = useTranslation();
 
-  // Upload step state
+  // Step state
+  const [currentStep, setCurrentStep] = useState<ImportStep>('input');
+  const [isLoading, setIsLoading] = useState(false);
+  const [importMethod, setImportMethod] = useState<ImportMethod>('csv');
+
+  // Input step state
   const [parseErrors, setParseErrors] = useState<CSVParseError[]>([]);
+  const [textError, setTextError] = useState<string | null>(null);
+  const [urlError, setUrlError] = useState<string | null>(null);
+  const [deckInfo, setDeckInfo] = useState<{ name?: string; author?: string; source?: string } | null>(null);
 
   // Preview step state
   const [previewRows, setPreviewRows] = useState<PreviewRow[]>([]);
@@ -65,9 +83,12 @@ export function ImportCollectionModal({ isOpen, onClose, onSuccess }: ImportColl
 
   // Reset state when modal closes
   const handleClose = useCallback(() => {
-    setCurrentStep('upload');
+    setCurrentStep('input');
     setIsLoading(false);
     setParseErrors([]);
+    setTextError(null);
+    setUrlError(null);
+    setDeckInfo(null);
     setPreviewRows([]);
     setPreviewStats({ total: 0, ready: 0, notFound: 0, errors: 0 });
     setDuplicateMode('add');
@@ -76,7 +97,7 @@ export function ImportCollectionModal({ isOpen, onClose, onSuccess }: ImportColl
     onClose();
   }, [onClose]);
 
-  // Handle file selection in upload step
+  // Handle file selection in upload step (CSV)
   const handleFileSelected = useCallback(async (file: File) => {
     setIsLoading(true);
     setParseErrors([]);
@@ -106,6 +127,78 @@ export function ImportCollectionModal({ isOpen, onClose, onSuccess }: ImportColl
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to parse CSV file';
       setParseErrors([{ row: 0, message }]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Handle text import
+  const handleTextParse = useCallback(async (text: string) => {
+    setIsLoading(true);
+    setTextError(null);
+
+    try {
+      const result = await parseTextImport(text, 'collection');
+
+      if (result.entries.length === 0) {
+        setTextError('No valid cards found in the text.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Convert to preview rows
+      const rows = textEntriesToPreviewRows(result.entries);
+
+      setPreviewRows(rows);
+      setPreviewStats({
+        total: result.stats.total,
+        ready: result.stats.matched,
+        notFound: result.stats.notFound,
+        errors: 0,
+      });
+      setDeckInfo(null);
+      setCurrentStep('preview');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to parse text';
+      setTextError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Handle URL import
+  const handleUrlFetch = useCallback(async (url: string) => {
+    setIsLoading(true);
+    setUrlError(null);
+
+    try {
+      const result = await importFromUrl(url, 'collection');
+
+      if (result.entries.length === 0) {
+        setUrlError('No cards found in the deck.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Convert to preview rows
+      const rows = textEntriesToPreviewRows(result.entries);
+
+      setPreviewRows(rows);
+      setPreviewStats({
+        total: result.stats.total,
+        ready: result.stats.matched,
+        notFound: result.stats.notFound,
+        errors: 0,
+      });
+      setDeckInfo({
+        name: result.deckName,
+        author: result.deckAuthor,
+        source: result.source,
+      });
+      setCurrentStep('preview');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch deck';
+      setUrlError(message);
     } finally {
       setIsLoading(false);
     }
@@ -175,16 +268,17 @@ export function ImportCollectionModal({ isOpen, onClose, onSuccess }: ImportColl
 
   // Handle back from preview
   const handleBack = useCallback(() => {
-    setCurrentStep('upload');
+    setCurrentStep('input');
     setPreviewRows([]);
     setPreviewStats({ total: 0, ready: 0, notFound: 0, errors: 0 });
     setParseErrors([]);
+    setDeckInfo(null);
   }, []);
 
   // Get active step index for stepper
   const getActiveStep = () => {
     switch (currentStep) {
-      case 'upload':
+      case 'input':
         return 0;
       case 'preview':
         return 1;
@@ -197,11 +291,18 @@ export function ImportCollectionModal({ isOpen, onClose, onSuccess }: ImportColl
     }
   };
 
+  const handleMethodChange = (_: React.SyntheticEvent, newValue: ImportMethod) => {
+    setImportMethod(newValue);
+    setParseErrors([]);
+    setTextError(null);
+    setUrlError(null);
+  };
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={currentStep === 'progress' ? () => {} : handleClose}
-      title="Import Collection from CSV"
+      title={t('import.importCollection', 'Import Collection')}
       size="lg"
     >
       <Box>
@@ -216,12 +317,44 @@ export function ImportCollectionModal({ isOpen, onClose, onSuccess }: ImportColl
 
         {/* Step content */}
         <Box sx={styles.content}>
-          {currentStep === 'upload' && (
-            <ImportUploadStep
-              onFileSelected={handleFileSelected}
-              parseErrors={parseErrors}
-              isLoading={isLoading}
-            />
+          {currentStep === 'input' && (
+            <>
+              {/* Import method tabs */}
+              <Tabs
+                value={importMethod}
+                onChange={handleMethodChange}
+                sx={styles.tabs}
+              >
+                <Tab label={t('import.tabCsv', 'CSV File')} value="csv" />
+                <Tab label={t('import.tabText', 'Paste Text')} value="text" />
+                <Tab label={t('import.tabUrl', 'Import URL')} value="url" />
+              </Tabs>
+
+              {importMethod === 'csv' && (
+                <ImportUploadStep
+                  onFileSelected={handleFileSelected}
+                  parseErrors={parseErrors}
+                  isLoading={isLoading}
+                />
+              )}
+
+              {importMethod === 'text' && (
+                <TextImportTab
+                  onParse={handleTextParse}
+                  isLoading={isLoading}
+                  error={textError}
+                  targetType="collection"
+                />
+              )}
+
+              {importMethod === 'url' && (
+                <UrlImportTab
+                  onFetch={handleUrlFetch}
+                  isLoading={isLoading}
+                  error={urlError}
+                />
+              )}
+            </>
           )}
 
           {currentStep === 'preview' && (
@@ -234,6 +367,7 @@ export function ImportCollectionModal({ isOpen, onClose, onSuccess }: ImportColl
               onImport={handleImport}
               onBack={handleBack}
               isLoading={isLoading}
+              deckInfo={deckInfo}
             />
           )}
 

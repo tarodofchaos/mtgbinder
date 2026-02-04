@@ -2,6 +2,46 @@ import Papa from 'papaparse';
 import { api } from './api';
 
 // ─────────────────────────────────────────────────
+// Text/URL Import Types
+// ─────────────────────────────────────────────────
+
+export interface TextImportEntry {
+  quantity: number;
+  cardName: string;
+  setCode?: string;
+  collectorNumber?: string;
+  isFoil?: boolean;
+  isEtched?: boolean;
+  category?: string;
+  resolvedCard: {
+    id: string;
+    name: string;
+    setCode: string;
+    setName: string;
+    scryfallId: string | null;
+    priceEur: number | null;
+  } | null;
+  status: 'matched' | 'not_found';
+}
+
+export interface TextImportResult {
+  entries: TextImportEntry[];
+  errors: string[];
+  detectedFormat?: string;
+  stats: {
+    total: number;
+    matched: number;
+    notFound: number;
+  };
+}
+
+export interface UrlImportResult extends TextImportResult {
+  deckName?: string;
+  deckAuthor?: string;
+  source?: string;
+}
+
+// ─────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────
 
@@ -809,4 +849,72 @@ export function downloadWishlistCSVTemplate(): void {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+}
+
+// ─────────────────────────────────────────────────
+// Text/URL Import API
+// ─────────────────────────────────────────────────
+
+/**
+ * Parse plain text decklist and return preview.
+ */
+export async function parseTextImport(
+  text: string,
+  targetType: 'collection' | 'wishlist'
+): Promise<TextImportResult> {
+  const response = await api.post('/import/parse-text', { text, targetType });
+  return response.data.data;
+}
+
+/**
+ * Fetch and parse deck from URL.
+ */
+export async function importFromUrl(
+  url: string,
+  targetType: 'collection' | 'wishlist'
+): Promise<UrlImportResult> {
+  const response = await api.post('/import/from-url', { url, targetType });
+  return response.data.data;
+}
+
+/**
+ * Convert text import entries to CSV-style preview rows for collection import.
+ */
+export function textEntriesToPreviewRows(entries: TextImportEntry[]): PreviewRow[] {
+  return entries.map((entry): PreviewRow => {
+    // Handle foil: if entry.isFoil, put quantity in foilQuantity
+    const quantity = entry.isFoil ? 0 : entry.quantity;
+    const foilQuantity = entry.isFoil ? entry.quantity : 0;
+
+    return {
+      name: entry.cardName,
+      quantity,
+      foilQuantity,
+      condition: 'NM',
+      language: 'EN',
+      forTrade: 0,
+      tradePrice: null,
+      resolvedCard: entry.resolvedCard,
+      status: entry.status === 'matched' ? 'ready' : 'not_found',
+      errorMessage: entry.status === 'not_found' ? 'Card not found in database' : undefined,
+    };
+  });
+}
+
+/**
+ * Convert text import entries to wishlist preview rows.
+ */
+export function textEntriesToWishlistRows(entries: TextImportEntry[]): WishlistPreviewRow[] {
+  return entries.map((entry): WishlistPreviewRow => ({
+    name: entry.cardName,
+    quantity: entry.quantity,
+    priority: 'NORMAL',
+    maxPrice: null,
+    minCondition: null,
+    foilOnly: entry.isFoil || false,
+    resolvedCard: entry.resolvedCard,
+    inCollection: false, // Will be updated by caller if needed
+    status: entry.status === 'matched' ? 'ready' : 'not_found',
+    errorMessage: entry.status === 'not_found' ? 'Card not found in database' : undefined,
+  }));
 }

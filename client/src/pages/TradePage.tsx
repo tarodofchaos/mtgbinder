@@ -210,7 +210,7 @@ export function TradePage() {
             </Typography>
             <Button
               variant="contained"
-              onClick={() => createMutation.mutate()}
+              onClick={() => createMutation.mutate(undefined)}
               disabled={createMutation.isPending}
               startIcon={createMutation.isPending ? <LoadingSpinner size="sm" /> : undefined}
             >

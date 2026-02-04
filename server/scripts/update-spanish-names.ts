@@ -13,7 +13,7 @@ const prisma = new PrismaClient();
 const MTGJSON_URL = 'https://mtgjson.com/api/v5/AllPrintings.json.gz';
 const DATA_DIR = './data';
 const COMPRESSED_FILE = `${DATA_DIR}/AllPrintings.json.gz`;
-const BATCH_SIZE = 1000;
+const BATCH_SIZE = 500;
 
 interface ForeignData {
   language: string;
@@ -23,17 +23,6 @@ interface ForeignData {
 interface MTGJSONCard {
   uuid: string;
   name: string;
-  setCode: string;
-  rarity: string;
-  colors?: string[];
-  manaCost?: string;
-  manaValue?: number;
-  type: string;
-  text?: string;
-  identifiers?: {
-    scryfallId?: string;
-  };
-  number: string;
   foreignData?: ForeignData[];
 }
 
@@ -43,20 +32,9 @@ interface MTGJSONSet {
   cards: MTGJSONCard[];
 }
 
-interface CardRecord {
+interface SpanishNameUpdate {
   uuid: string;
-  name: string;
-  nameEs: string | null;
-  setCode: string;
-  setName: string;
-  rarity: string;
-  colors: string[];
-  manaCost: string | null;
-  manaValue: number;
-  typeLine: string;
-  oracleText: string | null;
-  scryfallId: string | null;
-  collectorNumber: string;
+  nameEs: string;
 }
 
 async function downloadFile(url: string, dest: string): Promise<void> {
@@ -72,73 +50,64 @@ async function downloadFile(url: string, dest: string): Promise<void> {
   console.log('Download complete');
 }
 
-async function flushBatch(batch: CardRecord[]): Promise<number> {
+async function flushBatch(batch: SpanishNameUpdate[]): Promise<number> {
   if (batch.length === 0) return 0;
 
-  await prisma.card.createMany({
-    data: batch,
-    skipDuplicates: true,
-  });
+  // Update each card individually (Prisma doesn't support updateMany with different values)
+  const promises = batch.map(update =>
+    prisma.card.updateMany({
+      where: { uuid: update.uuid },
+      data: { nameEs: update.nameEs },
+    })
+  );
 
+  await Promise.all(promises);
   return batch.length;
 }
 
-async function importCardsStreaming(filePath: string): Promise<void> {
-  console.log('Starting streaming card import...');
-  console.log('This will take several minutes for ~100k+ cards...\n');
+async function updateSpanishNamesStreaming(filePath: string): Promise<void> {
+  console.log('Starting Spanish names update...');
+  console.log('This will take several minutes...\n');
 
-  let batch: CardRecord[] = [];
-  let importedCards = 0;
+  let batch: SpanishNameUpdate[] = [];
+  let updatedCards = 0;
   let setsProcessed = 0;
+  let cardsWithSpanish = 0;
 
   return new Promise((resolve, reject) => {
-    // MTGJSON structure: { "meta": {...}, "data": { "SET_CODE": { name, cards: [...] }, ... } }
-    // We use pick to select 'data' and streamObject to get each set
     const pipeline = chain([
       createReadStream(filePath),
       createGunzip(),
       parser(),
-      pick({ filter: 'data' }), // Select the 'data' object
-      streamObject(), // Stream each set as { key: 'SET_CODE', value: { name, cards, ... } }
+      pick({ filter: 'data' }),
+      streamObject(),
     ]);
 
     pipeline.on('data', async ({ key, value }: { key: string; value: MTGJSONSet }) => {
       if (!value || !Array.isArray(value.cards)) return;
 
       const set = value;
-      const setCode = key;
       setsProcessed++;
 
       for (const card of set.cards) {
-        if (!card.uuid) continue; // Skip cards without UUID
+        if (!card.uuid) continue;
 
-        // Extract Spanish name from foreignData if available
-        const spanishName = card.foreignData?.find(fd => fd.language === 'Spanish')?.name || null;
-
-        batch.push({
-          uuid: card.uuid,
-          name: card.name || 'Unknown',
-          nameEs: spanishName,
-          setCode: card.setCode || setCode,
-          setName: set.name || setCode,
-          rarity: card.rarity || 'unknown',
-          colors: card.colors || [],
-          manaCost: card.manaCost || null,
-          manaValue: card.manaValue || 0,
-          typeLine: card.type || '',
-          oracleText: card.text || null,
-          scryfallId: card.identifiers?.scryfallId || null,
-          collectorNumber: card.number || '',
-        });
+        const spanishName = card.foreignData?.find(fd => fd.language === 'Spanish')?.name;
+        if (spanishName) {
+          cardsWithSpanish++;
+          batch.push({
+            uuid: card.uuid,
+            nameEs: spanishName,
+          });
+        }
 
         if (batch.length >= BATCH_SIZE) {
-          // Pause stream while we flush
           pipeline.pause();
 
           try {
-            importedCards += await flushBatch(batch);
+            updatedCards += await flushBatch(batch);
             batch = [];
-            process.stdout.write(`\rImported ${importedCards} cards from ${setsProcessed} sets...`);
+            process.stdout.write(`\rUpdated ${updatedCards} cards from ${setsProcessed} sets...`);
           } catch (err) {
             pipeline.destroy();
             reject(err);
@@ -152,11 +121,11 @@ async function importCardsStreaming(filePath: string): Promise<void> {
 
     pipeline.on('end', async () => {
       try {
-        // Flush remaining cards
-        importedCards += await flushBatch(batch);
-        console.log(`\n\nImport complete!`);
-        console.log(`  Total sets: ${setsProcessed}`);
-        console.log(`  Total cards: ${importedCards}`);
+        updatedCards += await flushBatch(batch);
+        console.log(`\n\nUpdate complete!`);
+        console.log(`  Total sets processed: ${setsProcessed}`);
+        console.log(`  Cards with Spanish names found: ${cardsWithSpanish}`);
+        console.log(`  Cards updated: ${updatedCards}`);
         resolve();
       } catch (err) {
         reject(err);
@@ -183,8 +152,8 @@ async function main(): Promise<void> {
       console.log('Using cached AllPrintings.json.gz');
     }
 
-    // Stream parse and import
-    await importCardsStreaming(COMPRESSED_FILE);
+    // Stream parse and update
+    await updateSpanishNamesStreaming(COMPRESSED_FILE);
 
     // Cleanup
     console.log('\nCleaning up...');
@@ -192,7 +161,7 @@ async function main(): Promise<void> {
 
     console.log('Done!');
   } catch (error) {
-    console.error('Import failed:', error);
+    console.error('Update failed:', error);
     process.exit(1);
   } finally {
     await prisma.$disconnect();

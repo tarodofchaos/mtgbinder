@@ -148,7 +148,7 @@ describe('exportCollection', () => {
     await exportCollection();
 
     expect(capturedBlob).toBeInstanceOf(Blob);
-    expect((capturedBlob as Blob).type).toBe('text/csv');
+    expect(capturedBlob!.type).toBe('text/csv');
   });
 
   it('should pass undefined for optional params that are not provided', async () => {

@@ -3,7 +3,6 @@ import { useForm, Controller } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
-  Paper,
   Typography,
   Box,
   TextField,
@@ -59,12 +58,8 @@ const LANGUAGES = [
 ];
 
 const styles: Record<string, SxProps<Theme>> = {
-  card: {
-    p: 3,
-  },
-  title: {
-    mb: 3,
-    fontWeight: 600,
+  container: {
+    minHeight: 300,
   },
   selectedCard: {
     display: 'flex',
@@ -148,11 +143,7 @@ export function AddCardForm({ onSuccess, onCancel }: AddCardFormProps) {
   };
 
   return (
-    <Paper sx={styles.card}>
-      <Typography variant="h5" sx={styles.title}>
-        {t('collection.addToCollection')}
-      </Typography>
-
+    <Box sx={styles.container}>
       <Stack spacing={3}>
         {!selectedCard && (
           <Box>
@@ -356,6 +347,6 @@ export function AddCardForm({ onSuccess, onCancel }: AddCardFormProps) {
         onSelect={handlePrintingSelected}
         onClose={() => setPendingCardName(null)}
       />
-    </Paper>
+    </Box>
   );
 }

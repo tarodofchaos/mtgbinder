@@ -278,6 +278,9 @@ export function BinderView({ items }: BinderViewProps) {
           scryfallId={card.scryfallId}
           name={card.name}
           size="normal"
+          setCode={card.setCode}
+          collectorNumber={card.collectorNumber}
+          language={item.language}
         />
         {item.forTrade > 1 && (
           <Box sx={styles.quantityBadge}>x{item.forTrade}</Box>
@@ -404,6 +407,9 @@ export function BinderView({ items }: BinderViewProps) {
                   scryfallId={selectedCard.card!.scryfallId}
                   name={selectedCard.card!.name}
                   size="large"
+                  setCode={selectedCard.card!.setCode}
+                  collectorNumber={selectedCard.card!.collectorNumber}
+                  language={selectedCard.language}
                 />
               </Box>
               <Paper sx={styles.modalInfo}>

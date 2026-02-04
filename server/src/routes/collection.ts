@@ -68,10 +68,14 @@ router.get('/', validateQuery(listQuerySchema), async (req: AuthenticatedRequest
 
     const cardWhere: Record<string, unknown> = {};
     if (search) {
-      cardWhere.name = { contains: search, mode: 'insensitive' };
+      // Search both English and Spanish names
+      cardWhere.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { nameEs: { contains: search, mode: 'insensitive' } },
+      ];
     }
     if (setCode) {
-      cardWhere.setCode = setCode.toUpperCase();
+      cardWhere.setCode = { startsWith: setCode.toUpperCase(), mode: 'insensitive' };
     }
     // Color filter uses AND logic: card must have ALL selected colors
     // e.g., colors=U,R matches cards with BOTH blue AND red in their color identity
@@ -421,10 +425,14 @@ router.get('/export', validateQuery(listQuerySchema), async (req: AuthenticatedR
 
     const cardWhere: Record<string, unknown> = {};
     if (search) {
-      cardWhere.name = { contains: search, mode: 'insensitive' };
+      // Search both English and Spanish names
+      cardWhere.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { nameEs: { contains: search, mode: 'insensitive' } },
+      ];
     }
     if (setCode) {
-      cardWhere.setCode = setCode.toUpperCase();
+      cardWhere.setCode = { startsWith: setCode.toUpperCase(), mode: 'insensitive' };
     }
     // Color filter uses AND logic: card must have ALL selected colors
     // Special filters: C = colorless (empty colors array), L = lands (typeLine contains "Land")

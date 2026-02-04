@@ -49,6 +49,8 @@
     "title": "MTG Binder",
     "toggleTheme": "Toggle theme",
     "logout": "Logout",
+    "logoutConfirmTitle": "Logout",
+    "logoutConfirmMessage": "Are you sure you want to logout?",
     "login": "Login",
     "register": "Register"
   },

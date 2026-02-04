@@ -119,7 +119,14 @@ export function CollectionCard({ item, onEdit, onRemove }: CollectionCardProps) 
   return (
     <Card sx={styles.card}>
       <Box sx={styles.imageContainer}>
-        <CardImage scryfallId={card.scryfallId} name={card.name} size="normal" />
+        <CardImage
+          scryfallId={card.scryfallId}
+          name={card.name}
+          size="normal"
+          setCode={card.setCode}
+          collectorNumber={card.collectorNumber}
+          language={item.language}
+        />
 
         <Box sx={styles.quantityBadge}>
           x{item.quantity}

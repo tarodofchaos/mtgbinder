@@ -27,6 +27,7 @@ import { CardImage } from '../components/cards/CardImage';
 import { PrintingSelector } from '../components/cards/PrintingSelector';
 import { Modal } from '../components/ui/Modal';
 import { LoadingPage } from '../components/ui/LoadingSpinner';
+import { DebouncedTextField } from '../components/ui/DebouncedTextField';
 import { ImportDecklistModal } from '../components/wishlist/ImportDecklistModal';
 import { ImportWishlistModal } from '../components/wishlist/ImportWishlistModal';
 import { useTranslation } from 'react-i18next';
@@ -267,10 +268,10 @@ export function WishlistPage() {
     <Box sx={styles.container}>
       {/* Filters */}
       <Box sx={styles.filtersRow}>
-        <TextField
+        <DebouncedTextField
           value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
+          onChange={(value) => {
+            setSearch(value);
             setPage(1);
           }}
           placeholder={t('wishlist.searchPlaceholder')}

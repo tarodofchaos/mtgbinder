@@ -8,6 +8,12 @@ interface CardImageProps {
   scryfallId: string | null;
   name: string;
   size?: 'small' | 'normal' | 'large';
+  /** Set code for language-specific images */
+  setCode?: string;
+  /** Collector number for language-specific images */
+  collectorNumber?: string;
+  /** Language code (e.g., 'EN', 'ES') for language-specific images */
+  language?: string;
 }
 
 const styles: Record<string, SxProps<Theme>> = {
@@ -46,11 +52,17 @@ const styles: Record<string, SxProps<Theme>> = {
   },
 };
 
-export function CardImage({ scryfallId, name, size = 'normal' }: CardImageProps) {
+export function CardImage({ scryfallId, name, size = 'normal', setCode, collectorNumber, language }: CardImageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
-  const imageUrl = getCardImageUrl(scryfallId, size);
+  const imageUrl = getCardImageUrl({
+    scryfallId,
+    setCode,
+    collectorNumber,
+    language,
+    size,
+  });
 
   return (
     <Box sx={styles.container}>

@@ -28,8 +28,18 @@ const styles: Record<string, SxProps<Theme>> = {
   action: {
     minWidth: 'auto',
     py: 1,
+    // Fix mobile touch feedback causing visual glitch
+    WebkitTapHighlightColor: 'transparent',
+    '&:active': {
+      opacity: 0.7,
+    },
     '&.Mui-selected': {
       color: 'primary.main',
+    },
+    // Ensure label stays visible
+    '& .MuiBottomNavigationAction-label': {
+      opacity: 1,
+      transition: 'none',
     },
   },
 };

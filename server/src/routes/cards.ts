@@ -34,10 +34,14 @@ router.get('/search', validateQuery(searchQuerySchema), async (req: Request, res
     const where: Record<string, unknown> = {};
 
     if (q) {
-      where.name = { contains: q, mode: 'insensitive' };
+      // Search both English and Spanish names
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { nameEs: { contains: q, mode: 'insensitive' } },
+      ];
     }
     if (setCode) {
-      where.setCode = setCode.toUpperCase();
+      where.setCode = { startsWith: setCode.toUpperCase(), mode: 'insensitive' };
     }
     if (rarity) {
       where.rarity = rarity.toLowerCase();
@@ -74,11 +78,15 @@ router.get('/autocomplete', validateQuery(autocompleteQuerySchema), async (req: 
 
     const cards = await prisma.card.findMany({
       where: {
-        name: { contains: q, mode: 'insensitive' },
+        OR: [
+          { name: { contains: q, mode: 'insensitive' } },
+          { nameEs: { contains: q, mode: 'insensitive' } },
+        ],
       },
       select: {
         id: true,
         name: true,
+        nameEs: true,
         setCode: true,
         setName: true,
         scryfallId: true,
@@ -104,7 +112,10 @@ router.get('/printings', async (req: Request, res: Response, next) => {
 
     const printings = await prisma.card.findMany({
       where: {
-        name: { equals: name, mode: 'insensitive' },
+        OR: [
+          { name: { equals: name, mode: 'insensitive' } },
+          { nameEs: { equals: name, mode: 'insensitive' } },
+        ],
       },
       orderBy: { setName: 'asc' },
     });

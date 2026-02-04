@@ -40,7 +40,7 @@
   },
   "nav": {
     "collection": "Coleccion",
-    "wishlist": "Lista de deseos",
+    "wishlist": "Wants",
     "sets": "Ediciones",
     "trade": "Intercambio",
     "search": "Buscar"
@@ -49,6 +49,8 @@
     "title": "MTG Binder",
     "toggleTheme": "Cambiar tema",
     "logout": "Cerrar sesion",
+    "logoutConfirmTitle": "Cerrar sesion",
+    "logoutConfirmMessage": "Estas seguro de que quieres cerrar sesion?",
     "login": "Iniciar sesion",
     "register": "Registrarse"
   },

@@ -28,6 +28,7 @@ export enum TradeSessionStatus {
 export interface Card {
   id: string;
   name: string;
+  nameEs: string | null;
   setCode: string;
   setName: string;
   rarity: string;
@@ -205,6 +206,7 @@ export interface CardSearchParams {
 export interface CardAutocompleteResult {
   id: string;
   name: string;
+  nameEs: string | null;
   setCode: string;
   setName: string;
   scryfallId: string | null;

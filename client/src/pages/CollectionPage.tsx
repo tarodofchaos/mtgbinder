@@ -33,6 +33,7 @@ import { CardImage } from '../components/cards/CardImage';
 import { PrintingSelector } from '../components/cards/PrintingSelector';
 import { Modal } from '../components/ui/Modal';
 import { LoadingPage } from '../components/ui/LoadingSpinner';
+import { DebouncedTextField } from '../components/ui/DebouncedTextField';
 
 interface EditFormData {
   quantity: number;
@@ -165,65 +166,14 @@ export function CollectionPage() {
   const queryClient = useQueryClient();
 
   // Extract filter state from URL params
-  const urlSearch = searchParams.get('search') || '';
-  const urlSetCode = searchParams.get('setCode') || '';
+  const search = searchParams.get('search') || '';
+  const setCode = searchParams.get('setCode') || '';
   const colors = searchParams.get('colors')?.split(',').filter(Boolean) || [];
   const rarity = searchParams.get('rarity') || '';
-  const urlPriceMin = searchParams.get('priceMin') || '';
-  const urlPriceMax = searchParams.get('priceMax') || '';
+  const priceMin = searchParams.get('priceMin') || '';
+  const priceMax = searchParams.get('priceMax') || '';
   const forTradeOnly = searchParams.get('forTrade') === 'true';
   const page = parseInt(searchParams.get('page') || '1', 10);
-
-  // Local state for text inputs to prevent focus loss on keystroke
-  const [localSearch, setLocalSearch] = useState(urlSearch);
-  const [localSetCode, setLocalSetCode] = useState(urlSetCode);
-  const [localPriceMin, setLocalPriceMin] = useState(urlPriceMin);
-  const [localPriceMax, setLocalPriceMax] = useState(urlPriceMax);
-
-  // Helper to clear all local filter state (used by Clear Filters button)
-  const clearLocalFilters = () => {
-    setLocalSearch('');
-    setLocalSetCode('');
-    setLocalPriceMin('');
-    setLocalPriceMax('');
-  };
-
-  // Debounce URL updates for text inputs
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (localSearch !== urlSearch) {
-        updateFilters({ search: localSearch || null });
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [localSearch]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (localSetCode !== urlSetCode) {
-        updateFilters({ setCode: localSetCode || null });
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [localSetCode]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (localPriceMin !== urlPriceMin) {
-        updateFilters({ priceMin: localPriceMin || null });
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [localPriceMin]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (localPriceMax !== urlPriceMax) {
-        updateFilters({ priceMax: localPriceMax || null });
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [localPriceMax]);
 
   // Helper to update URL params
   const updateFilters = (updates: Record<string, string | null>) => {
@@ -264,20 +214,22 @@ export function CollectionPage() {
     queryFn: getCollectionStats,
   });
 
-  // Use local state for text inputs (instant filtering) and URL state for other filters
+  // Query uses URL state - DebouncedTextField handles debouncing before URL updates
+  // Use placeholderData to keep showing previous results while fetching, preventing UI flicker
   const { data, isLoading, error } = useQuery({
-    queryKey: ['collection', { search: localSearch, setCode: localSetCode, colors, rarity, priceMin: localPriceMin, priceMax: localPriceMax, forTrade: forTradeOnly, page }],
+    queryKey: ['collection', { search, setCode, colors, rarity, priceMin, priceMax, forTrade: forTradeOnly, page }],
     queryFn: () => getCollection({
-      search: localSearch,
-      setCode: localSetCode,
+      search,
+      setCode,
       colors: colors.length > 0 ? colors.join(',') : undefined,
       rarity: rarity || undefined,
-      priceMin: localPriceMin ? parseFloat(localPriceMin) : undefined,
-      priceMax: localPriceMax ? parseFloat(localPriceMax) : undefined,
+      priceMin: priceMin ? parseFloat(priceMin) : undefined,
+      priceMax: priceMax ? parseFloat(priceMax) : undefined,
       forTrade: forTradeOnly,
       page,
       pageSize: 24
     }),
+    placeholderData: (previousData) => previousData, // Keep previous data while fetching
   });
 
   const removeMutation = useMutation({
@@ -338,12 +290,12 @@ export function CollectionPage() {
     setIsExporting(true);
     try {
       await exportCollection({
-        search: localSearch,
-        setCode: localSetCode,
+        search,
+        setCode,
         colors: colors.length > 0 ? colors.join(',') : undefined,
         rarity: rarity || undefined,
-        priceMin: localPriceMin ? parseFloat(localPriceMin) : undefined,
-        priceMax: localPriceMax ? parseFloat(localPriceMax) : undefined,
+        priceMin: priceMin ? parseFloat(priceMin) : undefined,
+        priceMax: priceMax ? parseFloat(priceMax) : undefined,
         forTrade: forTradeOnly,
       });
     } catch (error) {
@@ -397,9 +349,9 @@ export function CollectionPage() {
       <Stack spacing={2} sx={{ mb: 3 }}>
         {/* Search and Actions Row */}
         <Box sx={styles.filtersRow}>
-          <TextField
-            value={localSearch}
-            onChange={(e) => setLocalSearch(e.target.value)}
+          <DebouncedTextField
+            value={search}
+            onChange={(value) => updateFilters({ search: value || null })}
             placeholder={t('collection.searchPlaceholder')}
             fullWidth
             sx={{ flexGrow: 1 }}
@@ -482,30 +434,31 @@ export function CollectionPage() {
               </TextField>
 
               {/* Set Filter */}
-              <TextField
+              <DebouncedTextField
                 label={t('filters.setCode')}
-                value={localSetCode}
-                onChange={(e) => setLocalSetCode(e.target.value.toUpperCase())}
+                value={setCode}
+                onChange={(value) => updateFilters({ setCode: value || null })}
+                transformValue={(v) => v.toUpperCase()}
                 placeholder={t('filters.setCodePlaceholder')}
                 sx={{ minWidth: 150 }}
                 size="small"
               />
 
               {/* Price Range */}
-              <TextField
+              <DebouncedTextField
                 label={`${t('filters.minPrice')} (€)`}
                 type="number"
-                value={localPriceMin}
-                onChange={(e) => setLocalPriceMin(e.target.value)}
+                value={priceMin}
+                onChange={(value) => updateFilters({ priceMin: value || null })}
                 inputProps={{ min: 0, step: 0.01 }}
                 sx={{ minWidth: 120 }}
                 size="small"
               />
-              <TextField
+              <DebouncedTextField
                 label={`${t('filters.maxPrice')} (€)`}
                 type="number"
-                value={localPriceMax}
-                onChange={(e) => setLocalPriceMax(e.target.value)}
+                value={priceMax}
+                onChange={(value) => updateFilters({ priceMax: value || null })}
                 inputProps={{ min: 0, step: 0.01 }}
                 sx={{ minWidth: 120 }}
                 size="small"
@@ -515,11 +468,8 @@ export function CollectionPage() {
               <Button
                 variant="outlined"
                 startIcon={<FilterAltOffIcon />}
-                onClick={() => {
-                  clearLocalFilters();
-                  setSearchParams({});
-                }}
-                disabled={!localSearch && !localSetCode && colors.length === 0 && !rarity && !localPriceMin && !localPriceMax && !forTradeOnly}
+                onClick={() => setSearchParams({})}
+                disabled={!search && !setCode && colors.length === 0 && !rarity && !priceMin && !priceMax && !forTradeOnly}
                 size="small"
                 sx={{ mt: 'auto' }}
               >
@@ -528,11 +478,11 @@ export function CollectionPage() {
             </Box>
 
             {/* Active Filters Display */}
-            {(localSearch || localSetCode || colors.length > 0 || rarity || localPriceMin || localPriceMax || forTradeOnly) && (
+            {(search || setCode || colors.length > 0 || rarity || priceMin || priceMax || forTradeOnly) && (
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 <Typography variant="caption" sx={{ alignSelf: 'center', mr: 1 }}>{t('common.activeFilters')}</Typography>
-                {localSearch && <Chip label={t('filters.search', { term: localSearch })} size="small" onDelete={() => { setLocalSearch(''); updateFilters({ search: null }); }} />}
-                {localSetCode && <Chip label={t('filters.set', { code: localSetCode })} size="small" onDelete={() => { setLocalSetCode(''); updateFilters({ setCode: null }); }} />}
+                {search && <Chip label={t('filters.search', { term: search })} size="small" onDelete={() => updateFilters({ search: null })} />}
+                {setCode && <Chip label={t('filters.set', { code: setCode })} size="small" onDelete={() => updateFilters({ setCode: null })} />}
                 {colors.map(c => (
                   <Chip
                     key={c}
@@ -542,8 +492,8 @@ export function CollectionPage() {
                   />
                 ))}
                 {rarity && <Chip label={t('filters.rarityFilter', { rarity })} size="small" onDelete={() => updateFilters({ rarity: null })} />}
-                {localPriceMin && <Chip label={`Min: €${localPriceMin}`} size="small" onDelete={() => { setLocalPriceMin(''); updateFilters({ priceMin: null }); }} />}
-                {localPriceMax && <Chip label={`Max: €${localPriceMax}`} size="small" onDelete={() => { setLocalPriceMax(''); updateFilters({ priceMax: null }); }} />}
+                {priceMin && <Chip label={`Min: €${priceMin}`} size="small" onDelete={() => updateFilters({ priceMin: null })} />}
+                {priceMax && <Chip label={`Max: €${priceMax}`} size="small" onDelete={() => updateFilters({ priceMax: null })} />}
                 {forTradeOnly && <Chip label={t('collection.forTradeOnly')} size="small" onDelete={() => updateFilters({ forTrade: null })} />}
               </Box>
             )}
@@ -555,11 +505,11 @@ export function CollectionPage() {
       {items.length === 0 ? (
         <Box sx={styles.emptyState}>
           <Typography color="text.secondary" gutterBottom>
-            {localSearch || localSetCode || colors.length > 0 || rarity || localPriceMin || localPriceMax || forTradeOnly
+            {search || setCode || colors.length > 0 || rarity || priceMin || priceMax || forTradeOnly
               ? t('collection.noMatchingCards')
               : t('collection.emptyCollection')}
           </Typography>
-          {!(localSearch || localSetCode || colors.length > 0 || rarity || localPriceMin || localPriceMax || forTradeOnly) ? (
+          {!(search || setCode || colors.length > 0 || rarity || priceMin || priceMax || forTradeOnly) ? (
             <Button
               variant="contained"
               startIcon={<AddIcon />}
@@ -571,10 +521,7 @@ export function CollectionPage() {
             <Button
               variant="outlined"
               startIcon={<FilterAltOffIcon />}
-              onClick={() => {
-                clearLocalFilters();
-                setSearchParams({});
-              }}
+              onClick={() => setSearchParams({})}
             >
               {t('common.clearFilters')}
             </Button>
@@ -638,6 +585,9 @@ export function CollectionPage() {
                     scryfallId={editSelectedCard?.scryfallId || editingItem.card?.scryfallId || null}
                     name={editSelectedCard?.name || editingItem.card?.name || ''}
                     size="small"
+                    setCode={editSelectedCard?.setCode || editingItem.card?.setCode}
+                    collectorNumber={editSelectedCard?.collectorNumber || editingItem.card?.collectorNumber}
+                    language={editingItem.language}
                   />
                 </Box>
                 <Box sx={{ flexGrow: 1 }}>

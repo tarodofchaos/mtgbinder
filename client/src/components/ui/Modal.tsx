@@ -47,6 +47,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
         paper: {
           sx: {
             maxHeight: '90vh',
+            minHeight: { xs: '60vh', sm: '50vh' },
           },
         },
       }}
@@ -65,7 +66,15 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
           </Box>
         </DialogTitle>
       )}
-      <DialogContent dividers={!!title}>
+      <DialogContent
+        dividers={!!title}
+        sx={{
+          overflowY: 'auto',
+          overflowX: 'visible',
+          minHeight: { xs: 300, sm: 350 },
+          pb: 4,
+        }}
+      >
         {children}
       </DialogContent>
     </Dialog>

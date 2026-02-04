@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -8,6 +9,11 @@ import {
   IconButton,
   Button,
   Link,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import {
   DarkMode as DarkModeIcon,
@@ -61,6 +67,20 @@ export function Header() {
   const { t } = useTranslation();
   const { user, logout, isAuthenticated } = useAuth();
   const { mode, toggleTheme } = useTheme();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const handleLogoutClick = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleLogoutConfirm = () => {
+    setShowLogoutConfirm(false);
+    logout();
+  };
+
+  const handleLogoutCancel = () => {
+    setShowLogoutConfirm(false);
+  };
 
   return (
     <AppBar position="static" elevation={0} sx={styles.appBar}>
@@ -86,7 +106,7 @@ export function Header() {
               <Typography sx={styles.userName}>{user?.displayName}</Typography>
               <Link
                 component="button"
-                onClick={logout}
+                onClick={handleLogoutClick}
                 sx={styles.textLink}
               >
                 {t('header.logout')}
@@ -109,6 +129,22 @@ export function Header() {
           )}
         </Box>
       </Toolbar>
+
+      {/* Logout confirmation dialog */}
+      <Dialog open={showLogoutConfirm} onClose={handleLogoutCancel}>
+        <DialogTitle>{t('header.logoutConfirmTitle')}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {t('header.logoutConfirmMessage')}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleLogoutCancel}>{t('common.cancel')}</Button>
+          <Button onClick={handleLogoutConfirm} variant="contained" color="primary">
+            {t('header.logout')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </AppBar>
   );
 }

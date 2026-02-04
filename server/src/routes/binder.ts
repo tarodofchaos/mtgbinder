@@ -43,10 +43,14 @@ router.get('/:shareCode', validateQuery(listQuerySchema), async (req: Request, r
 
     const cardWhere: Record<string, unknown> = {};
     if (search) {
-      cardWhere.name = { contains: search, mode: 'insensitive' };
+      // Search both English and Spanish names
+      cardWhere.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { nameEs: { contains: search, mode: 'insensitive' } },
+      ];
     }
     if (setCode) {
-      cardWhere.setCode = setCode.toUpperCase();
+      cardWhere.setCode = { startsWith: setCode.toUpperCase(), mode: 'insensitive' };
     }
 
     if (Object.keys(cardWhere).length > 0) {
@@ -101,7 +105,13 @@ router.get('/:shareCode/wishlist', validateQuery(listQuerySchema), async (req: R
     const where: Record<string, unknown> = { userId: user.id };
 
     if (search) {
-      where.card = { name: { contains: search, mode: 'insensitive' } };
+      // Search both English and Spanish names
+      where.card = {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { nameEs: { contains: search, mode: 'insensitive' } },
+        ],
+      };
     }
 
     const [items, total] = await Promise.all([

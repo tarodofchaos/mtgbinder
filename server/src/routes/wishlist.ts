@@ -68,7 +68,13 @@ router.get('/', validateQuery(listQuerySchema), async (req: AuthenticatedRequest
     }
 
     if (search) {
-      where.card = { name: { contains: search, mode: 'insensitive' } };
+      // Search both English and Spanish names
+      where.card = {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { nameEs: { contains: search, mode: 'insensitive' } },
+        ],
+      };
     }
 
     const orderBy: Record<string, unknown>[] = [];

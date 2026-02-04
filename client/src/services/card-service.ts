@@ -35,9 +35,56 @@ export async function getSets(): Promise<Array<{ setCode: string; setName: strin
   return response.data.data;
 }
 
-export function getCardImageUrl(scryfallId: string | null, size: 'small' | 'normal' | 'large' = 'normal'): string {
+// Map our language codes to Scryfall's codes
+const SCRYFALL_LANG_MAP: Record<string, string> = {
+  EN: 'en',
+  ES: 'es',
+  DE: 'de',
+  FR: 'fr',
+  IT: 'it',
+  PT: 'pt',
+  JA: 'ja',
+  KO: 'ko',
+  RU: 'ru',
+  ZH: 'zhs', // Simplified Chinese
+};
+
+export interface CardImageOptions {
+  scryfallId?: string | null;
+  setCode?: string;
+  collectorNumber?: string;
+  language?: string;
+  size?: 'small' | 'normal' | 'large';
+}
+
+export function getCardImageUrl(
+  scryfallIdOrOptions: string | null | CardImageOptions,
+  size: 'small' | 'normal' | 'large' = 'normal'
+): string {
+  // Handle legacy call signature: getCardImageUrl(scryfallId, size)
+  if (typeof scryfallIdOrOptions === 'string' || scryfallIdOrOptions === null) {
+    const scryfallId = scryfallIdOrOptions;
+    if (!scryfallId) return '/placeholder-card.png';
+    const dir1 = scryfallId.charAt(0);
+    const dir2 = scryfallId.charAt(1);
+    return `https://cards.scryfall.io/${size}/front/${dir1}/${dir2}/${scryfallId}.jpg`;
+  }
+
+  // Handle new options object signature
+  const options = scryfallIdOrOptions;
+  const { scryfallId, setCode, collectorNumber, language } = options;
+  const imageSize = options.size || size;
+
+  // If we have set code, collector number, and a non-English language, use Scryfall API
+  const scryfallLang = language ? SCRYFALL_LANG_MAP[language] : 'en';
+  if (setCode && collectorNumber && scryfallLang && scryfallLang !== 'en') {
+    // Use Scryfall's API endpoint for language-specific images
+    return `https://api.scryfall.com/cards/${setCode.toLowerCase()}/${collectorNumber}/${scryfallLang}?format=image&version=${imageSize}`;
+  }
+
+  // Fall back to direct image URL with scryfallId
   if (!scryfallId) return '/placeholder-card.png';
   const dir1 = scryfallId.charAt(0);
   const dir2 = scryfallId.charAt(1);
-  return `https://cards.scryfall.io/${size}/front/${dir1}/${dir2}/${scryfallId}.jpg`;
+  return `https://cards.scryfall.io/${imageSize}/front/${dir1}/${dir2}/${scryfallId}.jpg`;
 }

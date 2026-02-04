@@ -74,6 +74,8 @@ app.use(
         }
       : false,
     crossOriginOpenerPolicy: false, // Disable COOP for simpler setup
+    crossOriginEmbedderPolicy: false, // Disable COEP to allow loading external images
+    crossOriginResourcePolicy: false, // Disable CORP to allow cross-origin resources
   })
 );
 app.use(

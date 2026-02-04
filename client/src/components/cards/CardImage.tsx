@@ -72,8 +72,6 @@ export function CardImage({ scryfallId, name, size = 'normal' }: CardImageProps)
           src={imageUrl}
           alt={name}
           loading="lazy"
-          crossOrigin="anonymous"
-          referrerPolicy="no-referrer"
           onLoad={() => setIsLoading(false)}
           onError={() => {
             setIsLoading(false);

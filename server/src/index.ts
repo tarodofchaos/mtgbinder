@@ -67,8 +67,8 @@ app.use(
             scriptSrc: ["'self'"],
             styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
             fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-            imgSrc: ["'self'", 'data:', 'https://cards.scryfall.io'],
-            connectSrc: ["'self'", 'wss:', 'ws:'],
+            imgSrc: ["'self'", 'data:', 'https://cards.scryfall.io', 'https://api.scryfall.com'],
+            connectSrc: ["'self'", 'wss:', 'ws:', 'https://cards.scryfall.io', 'https://api.scryfall.com'],
             upgradeInsecureRequests: null, // Disable HTTPS upgrade for HTTP deployments
           },
         }

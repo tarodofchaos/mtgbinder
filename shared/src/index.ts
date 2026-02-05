@@ -70,6 +70,8 @@ export interface CollectionItem {
   foilQuantity: number;
   condition: CardCondition;
   language: string;
+  isAlter: boolean;
+  photoUrl: string | null;
   forTrade: number;
   tradePrice: number | null;
   card?: Card;
@@ -81,6 +83,8 @@ export interface CollectionItemInput {
   foilQuantity?: number;
   condition?: CardCondition;
   language?: string;
+  isAlter?: boolean;
+  photoUrl?: string | null;
   forTrade?: number;
   tradePrice?: number | null;
 }
@@ -145,6 +149,9 @@ export interface TradeMatch {
   receiverUserId: string;
   availableQuantity: number;
   condition: CardCondition;
+  language: string;
+  isAlter: boolean;
+  photoUrl: string | null;
   isFoil: boolean;
   priority: WishlistPriority | null;
   priceEur: number | null;
@@ -158,6 +165,8 @@ export interface TradeMatchResult {
   userBOffers: TradeMatch[];
   userATotalValue: number;
   userBTotalValue: number;
+  userASelectedJson?: Record<string, number>;
+  userBSelectedJson?: Record<string, number>;
 }
 
 // Auth types

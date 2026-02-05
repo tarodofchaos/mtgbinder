@@ -26,13 +26,18 @@ export async function getTradeMatches(code: string): Promise<TradeMatchResult> {
   return response.data.data;
 }
 
+export async function updateTradeSelection(code: string, selectionJson: Record<string, number>): Promise<TradeSession> {
+  const response = await api.post(`/trade/${code}/selection`, { selectionJson });
+  return response.data.data;
+}
+
 export async function completeTradeSession(code: string): Promise<TradeSession> {
   const response = await api.post(`/trade/${code}/complete`);
   return response.data.data;
 }
 
 export async function deleteTradeSession(code: string): Promise<void> {
-  await api.delete(`/trade/${code}`);
+  await api.post(`/trade/${code}/delete`);
 }
 
 export interface TradeHistoryParams {
@@ -47,7 +52,7 @@ export async function getTradeHistory(params?: TradeHistoryParams): Promise<Trad
 }
 
 export async function getTradeHistoryDetail(id: string): Promise<TradeSession> {
-  const response = await api.get(`/trade/history/${id}`);
+  const response = await api.get(`/history/${id}`);
   return response.data.data;
 }
 

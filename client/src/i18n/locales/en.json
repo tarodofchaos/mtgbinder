@@ -116,7 +116,11 @@
     "newPrintingSelected": "New printing selected",
     "copiesForTrade": "{{count}} for trade",
     "copiesAtPrice": "{{count}} @ {{price}}",
-    "foilCount": "({{count}} foil)"
+    "foilCount": "({{count}} foil)",
+    "isAlter": "Is Alter/Custom Art",
+    "cardPhoto": "Card Photo",
+    "uploadPhoto": "Upload Photo",
+    "removePhoto": "Remove Photo"
   },
   "wishlist": {
     "title": "Wishlist",
@@ -221,8 +225,11 @@
     "difference": "Difference",
     "matchingCardsYouOffer": "Matching cards you can offer ({{total}} total)",
     "matchingCardsTheyOffer": "Matching cards they can offer ({{total}} total)",
-    "cardsYouCanOffer": "Cards You Can Offer",
-    "cardsTheyCanOffer": "Cards They Can Offer",
+    "cardsYouCanOffer": "My Cards",
+    "cardsTheyCanOffer": "Their Cards",
+    "sendSelection": "Send My Selection",
+    "selectionSent": "Your selection has been sent!",
+    "selectionUpdateFailed": "Failed to send selection. Please try again.",
     "noMatchYourCards": "None of your tradeable cards match their wishlist",
     "noMatchTheirCards": "None of their tradeable cards match your wishlist",
     "completeSession": "Complete",
@@ -235,7 +242,12 @@
     "noHistoryDescription": "Your completed trade sessions will appear here",
     "completedOn": "Completed on {{date}}",
     "youOffered": "You offered",
-    "theyOffered": "They offered"
+    "theyOffered": "They offered",
+    "tradeBalanced": "TRADE IS BALANCED",
+    "youPayBalance": "YOU PAY BALANCE",
+    "youReceiveBalance": "YOU RECEIVE BALANCE",
+    "youGiveValue": "YOU GIVE VALUE",
+    "youReceiveValue": "YOU RECEIVE VALUE"
   },
   "sets": {
     "title": "Set Completion Tracker",

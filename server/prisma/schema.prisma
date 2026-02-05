@@ -78,6 +78,8 @@ model CollectionItem {
   foilQuantity Int           @default(0)
   condition    CardCondition @default(NM)
   language     String        @default("EN")
+  isAlter      Boolean       @default(false)
+  photoUrl     String?
   forTrade     Int           @default(0)
   tradePrice   Float?
   createdAt    DateTime      @default(now())
@@ -86,7 +88,7 @@ model CollectionItem {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, cardId, condition, language])
+  @@unique([userId, cardId, condition, language, isAlter])
   @@index([userId])
   @@index([cardId])
   @@index([forTrade])
@@ -135,6 +137,8 @@ model TradeSession {
   joinerId    String?
   status      TradeSessionStatus @default(PENDING)
   matchesJson Json?
+  userASelectedJson Json?        // { cardId: quantity } - Cards User A wants from User B
+  userBSelectedJson Json?        // { cardId: quantity } - Cards User B wants from User A
   expiresAt   DateTime
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt

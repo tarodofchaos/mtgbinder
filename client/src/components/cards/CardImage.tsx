@@ -8,6 +8,8 @@ interface CardImageProps {
   scryfallId: string | null;
   name: string;
   size?: 'small' | 'normal' | 'large';
+  /** Custom photo URL (for alters or specific card photos) */
+  customImageUrl?: string | null;
   /** Set code for language-specific images */
   setCode?: string;
   /** Collector number for language-specific images */
@@ -52,11 +54,11 @@ const styles: Record<string, SxProps<Theme>> = {
   },
 };
 
-export function CardImage({ scryfallId, name, size = 'normal', setCode, collectorNumber, language }: CardImageProps) {
+export function CardImage({ scryfallId, name, size = 'normal', customImageUrl, setCode, collectorNumber, language }: CardImageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
-  const imageUrl = getCardImageUrl({
+  const imageUrl = customImageUrl || getCardImageUrl({
     scryfallId,
     setCode,
     collectorNumber,

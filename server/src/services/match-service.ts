@@ -20,6 +20,9 @@ interface TradeMatch {
   receiverUserId: string;
   availableQuantity: number;
   condition: CardCondition;
+  language: string;
+  isAlter: boolean;
+  photoUrl: string | null;
   isFoil: boolean;
   priority: string | null;
   priceEur: number | null;
@@ -58,6 +61,9 @@ export async function computeTradeMatches(
       forTrade: number;
       foilQuantity: number;
       condition: CardCondition;
+      language: string;
+      isAlter: boolean;
+      photoUrl: string | null;
       priceEur: number | null;
       priceEurFoil: number | null;
       tradePrice: number | null;
@@ -81,6 +87,9 @@ export async function computeTradeMatches(
       ci."forTrade",
       ci."foilQuantity",
       ci.condition,
+      ci.language,
+      ci."isAlter",
+      ci."photoUrl",
       ci."tradePrice",
       c."priceEur",
       c."priceEurFoil"
@@ -110,6 +119,9 @@ export async function computeTradeMatches(
       forTrade: number;
       foilQuantity: number;
       condition: CardCondition;
+      language: string;
+      isAlter: boolean;
+      photoUrl: string | null;
       priceEur: number | null;
       priceEurFoil: number | null;
       tradePrice: number | null;
@@ -133,6 +145,9 @@ export async function computeTradeMatches(
       ci."forTrade",
       ci."foilQuantity",
       ci.condition,
+      ci.language,
+      ci."isAlter",
+      ci."photoUrl",
       ci."tradePrice",
       c."priceEur",
       c."priceEurFoil"
@@ -182,6 +197,9 @@ export async function computeTradeMatches(
       receiverUserId: userBId,
       availableQuantity: item.forTrade,
       condition: item.condition,
+      language: item.language,
+      isAlter: item.isAlter,
+      photoUrl: item.photoUrl,
       isFoil: item.foilQuantity > 0,
       priority: null,
       priceEur: item.priceEur,
@@ -212,6 +230,9 @@ export async function computeTradeMatches(
       receiverUserId: userAId,
       availableQuantity: item.forTrade,
       condition: item.condition,
+      language: item.language,
+      isAlter: item.isAlter,
+      photoUrl: item.photoUrl,
       isFoil: item.foilQuantity > 0,
       priority: null,
       priceEur: item.priceEur,

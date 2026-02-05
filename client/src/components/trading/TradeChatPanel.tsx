@@ -13,7 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { TradeMessage } from '@mtg-binder/shared';
 import { getTradeMessages } from '../../services/trade-service';
-import { getSocket } from '../../services/socket-service';
+import { useSocket } from '../../hooks/useSocket';
 import { useAuth } from '../../context/auth-context';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 
@@ -47,12 +47,6 @@ const styles: Record<string, SxProps<Theme>> = {
     alignItems: 'flex-start',
     flexDirection: 'row-reverse',
   },
-  messageBubble: {
-    maxWidth: '70%',
-    p: 1.5,
-    borderRadius: 2,
-    wordBreak: 'break-word',
-  },
   myMessage: {
     maxWidth: '70%',
     p: 1.5,
@@ -66,16 +60,21 @@ const styles: Record<string, SxProps<Theme>> = {
     p: 1.5,
     borderRadius: 2,
     wordBreak: 'break-word',
-    bgcolor: 'grey.200',
-    color: 'text.primary',
+    bgcolor: 'action.selected',
+    // In dark mode, action.selected might be translucent. Force visible text color.
+    color: (theme: Theme) => theme.palette.mode === 'dark' ? '#ffffff' : '#1f2937',
+    border: '1px solid',
+    borderColor: 'divider',
   },
   messageText: {
     fontSize: '0.875rem',
     mb: 0.5,
+    color: 'inherit', // Inherit from parent bubble
   },
   messageTime: {
     fontSize: '0.75rem',
     opacity: 0.7,
+    color: 'inherit',
   },
   typingIndicator: {
     fontSize: '0.75rem',
@@ -107,7 +106,7 @@ interface TradeChatPanelProps {
 export function TradeChatPanel({ sessionCode, partnerName }: TradeChatPanelProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const socket = getSocket();
+  const socket = useSocket();
   const [messages, setMessages] = useState<TradeMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
@@ -118,11 +117,16 @@ export function TradeChatPanel({ sessionCode, partnerName }: TradeChatPanelProps
     queryKey: ['tradeMessages', sessionCode],
     queryFn: () => getTradeMessages(sessionCode),
     enabled: !!sessionCode,
+    refetchOnWindowFocus: false,
   });
 
+  // Use a ref to track if initial messages have been loaded to prevent overwriting
+  const initialLoadedRef = useRef(false);
+
   useEffect(() => {
-    if (initialMessages) {
+    if (initialMessages && !initialLoadedRef.current) {
       setMessages(initialMessages);
+      initialLoadedRef.current = true;
     }
   }, [initialMessages]);
 
@@ -130,7 +134,11 @@ export function TradeChatPanel({ sessionCode, partnerName }: TradeChatPanelProps
     if (!socket) return;
 
     const handleNewMessage = (message: TradeMessage) => {
-      setMessages((prev) => [...prev, message]);
+      // Avoid duplicate messages if they arrive via query and socket simultaneously
+      setMessages((prev) => {
+        if (prev.some(m => m.id === message.id)) return prev;
+        return [...prev, message];
+      });
     };
 
     const handleTyping = (data: { userId: string; isTyping: boolean }) => {
@@ -198,7 +206,7 @@ export function TradeChatPanel({ sessionCode, partnerName }: TradeChatPanelProps
 
   const formatTime = (date: Date) => {
     const d = new Date(date);
-    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   const getInitials = (name: string) => {

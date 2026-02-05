@@ -96,6 +96,13 @@ const styles: Record<string, SxProps<Theme>> = {
     color: 'success.main',
     fontWeight: 500,
   },
+  alterBadge: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    bgcolor: 'secondary.main',
+    color: 'white',
+  },
 };
 
 export function CollectionCard({ item, onEdit, onRemove }: CollectionCardProps) {
@@ -123,6 +130,7 @@ export function CollectionCard({ item, onEdit, onRemove }: CollectionCardProps) 
           scryfallId={card.scryfallId}
           name={card.name}
           size="normal"
+          customImageUrl={item.photoUrl}
           setCode={card.setCode}
           collectorNumber={card.collectorNumber}
           language={item.language}
@@ -147,6 +155,14 @@ export function CollectionCard({ item, onEdit, onRemove }: CollectionCardProps) 
             color="success"
             size="small"
             sx={styles.tradeBadge}
+          />
+        )}
+
+        {item.isAlter && (
+          <Chip
+            label={t('collection.isAlter')}
+            size="small"
+            sx={styles.alterBadge}
           />
         )}
 

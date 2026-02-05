@@ -278,12 +278,27 @@ export function BinderView({ items }: BinderViewProps) {
           scryfallId={card.scryfallId}
           name={card.name}
           size="normal"
+          customImageUrl={item.photoUrl}
           setCode={card.setCode}
           collectorNumber={card.collectorNumber}
           language={item.language}
         />
         {item.forTrade > 1 && (
           <Box sx={styles.quantityBadge}>x{item.forTrade}</Box>
+        )}
+        {item.isAlter && (
+          <Box
+            sx={{
+              ...styles.quantityBadge,
+              bottom: 'auto',
+              top: 2,
+              left: 2,
+              right: 'auto',
+              bgcolor: 'secondary.main',
+            }}
+          >
+            A
+          </Box>
         )}
       </Box>
     );
@@ -407,6 +422,7 @@ export function BinderView({ items }: BinderViewProps) {
                   scryfallId={selectedCard.card!.scryfallId}
                   name={selectedCard.card!.name}
                   size="large"
+                  customImageUrl={selectedCard.photoUrl}
                   setCode={selectedCard.card!.setCode}
                   collectorNumber={selectedCard.card!.collectorNumber}
                   language={selectedCard.language}
@@ -430,6 +446,9 @@ export function BinderView({ items }: BinderViewProps) {
                     size="small"
                     color="success"
                   />
+                  {selectedCard.isAlter && (
+                    <Chip label="Alter" size="small" color="secondary" />
+                  )}
                   {selectedCard.foilQuantity > 0 && (
                     <Chip label="Foil" size="small" color="warning" />
                   )}

@@ -217,6 +217,7 @@ export const TradeEvents = {
   USER_JOINED: 'trade:user-joined',
   USER_LEFT: 'trade:user-left',
   MATCHES_UPDATED: 'trade:matches-updated',
+  SELECTION_UPDATED: 'trade:selection-updated',
   SESSION_COMPLETED: 'trade:session-completed',
   SESSION_EXPIRED: 'trade:session-expired',
   MESSAGE: 'trade-message',

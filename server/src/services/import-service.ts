@@ -33,6 +33,7 @@ export interface ImportRow {
   foilQuantity?: number;
   condition?: string;
   language?: string;
+  isAlter?: boolean;
   forTrade?: number;
   tradePrice?: number | null;
   cardId?: string; // Optional override from PrintingSelector
@@ -201,17 +202,19 @@ export async function importCollectionItems(
         const foilQuantity = Math.max(0, row.foilQuantity ?? 0);
         const condition = parseCondition(row.condition);
         const language = row.language?.trim().toUpperCase() || 'EN';
+        const isAlter = !!row.isAlter;
         const forTrade = Math.min(Math.max(0, row.forTrade ?? 0), quantity + foilQuantity);
         const tradePrice = row.tradePrice != null && row.tradePrice >= 0 ? row.tradePrice : null;
 
         // Check for existing item with same unique constraint
         const existing = await tx.collectionItem.findUnique({
           where: {
-            userId_cardId_condition_language: {
+            userId_cardId_condition_language_isAlter: {
               userId,
               cardId,
               condition,
               language,
+              isAlter,
             },
           },
         });
@@ -262,6 +265,7 @@ export async function importCollectionItems(
               foilQuantity,
               condition,
               language,
+              isAlter,
               forTrade,
               tradePrice,
             },

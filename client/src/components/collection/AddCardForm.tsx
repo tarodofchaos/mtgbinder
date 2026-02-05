@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -11,15 +11,17 @@ import {
   Stack,
   MenuItem,
   IconButton,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { Close as CloseIcon } from '@mui/icons-material';
+import { Close as CloseIcon, PhotoCamera as PhotoCameraIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
 import { CardCondition, Card } from '@mtg-binder/shared';
 import { CardSearch } from '../cards/CardSearch';
 import { CardImage } from '../cards/CardImage';
 import { PrintingSelector } from '../cards/PrintingSelector';
-import { addToCollection } from '../../services/collection-service';
+import { addToCollection, uploadCardPhoto } from '../../services/collection-service';
 
 interface AddCardFormProps {
   onSuccess?: () => void;
@@ -31,6 +33,7 @@ interface FormData {
   foilQuantity: number;
   condition: CardCondition;
   language: string;
+  isAlter: boolean;
   forTrade: number;
   tradePrice: number | null;
 }
@@ -85,12 +88,23 @@ const styles: Record<string, SxProps<Theme>> = {
     gap: 1.5,
     mt: 2,
   },
+  photoPreview: {
+    width: '100%',
+    maxWidth: 200,
+    height: 'auto',
+    borderRadius: 1,
+    mt: 1,
+  },
 };
 
 export function AddCardForm({ onSuccess, onCancel }: AddCardFormProps) {
   const { t } = useTranslation();
   const [pendingCardName, setPendingCardName] = useState<string | null>(null);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
@@ -99,6 +113,7 @@ export function AddCardForm({ onSuccess, onCancel }: AddCardFormProps) {
       foilQuantity: 0,
       condition: CardCondition.NEAR_MINT,
       language: 'EN',
+      isAlter: false,
       forTrade: 0,
       tradePrice: null,
     },
@@ -110,6 +125,8 @@ export function AddCardForm({ onSuccess, onCancel }: AddCardFormProps) {
       queryClient.invalidateQueries({ queryKey: ['collection'] });
       queryClient.invalidateQueries({ queryKey: ['collectionStats'] });
       setSelectedCard(null);
+      setPhotoFile(null);
+      setPhotoPreview(null);
       reset();
       onSuccess?.();
     },
@@ -128,8 +145,41 @@ export function AddCardForm({ onSuccess, onCancel }: AddCardFormProps) {
     setSelectedCard(null);
   };
 
-  const onSubmit = (data: FormData) => {
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPhotoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const onSubmit = async (data: FormData) => {
     if (!selectedCard) return;
+
+    let photoUrl = null;
+    if (photoFile) {
+      try {
+        setIsUploading(true);
+        photoUrl = await uploadCardPhoto(photoFile);
+      } catch (error) {
+        console.error('Failed to upload photo', error);
+        // We continue anyway, or we could show an error
+      } finally {
+        setIsUploading(false);
+      }
+    }
 
     mutation.mutate({
       cardId: selectedCard.id,
@@ -137,6 +187,8 @@ export function AddCardForm({ onSuccess, onCancel }: AddCardFormProps) {
       foilQuantity: data.foilQuantity,
       condition: data.condition,
       language: data.language,
+      isAlter: data.isAlter,
+      photoUrl,
       forTrade: data.forTrade,
       tradePrice: data.tradePrice,
     });
@@ -274,6 +326,61 @@ export function AddCardForm({ onSuccess, onCancel }: AddCardFormProps) {
                   </Grid>
                 </Grid>
 
+                <Box>
+                  <Controller
+                    name="isAlter"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={field.value}
+                            onChange={(e) => field.onChange(e.target.checked)}
+                          />
+                        }
+                        label={t('collection.isAlter')}
+                      />
+                    )}
+                  />
+                </Box>
+
+                <Box>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    {t('collection.cardPhoto')}
+                  </Typography>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    ref={fileInputRef}
+                    onChange={handlePhotoChange}
+                  />
+                  {!photoPreview ? (
+                    <Button
+                      variant="outlined"
+                      startIcon={<PhotoCameraIcon />}
+                      onClick={() => fileInputRef.current?.click()}
+                      fullWidth
+                    >
+                      {t('collection.uploadPhoto')}
+                    </Button>
+                  ) : (
+                    <Box>
+                      <img src={photoPreview} alt="Preview" style={styles.photoPreview as any} />
+                      <Box sx={{ mt: 1 }}>
+                        <Button
+                          size="small"
+                          color="error"
+                          startIcon={<DeleteIcon />}
+                          onClick={handleRemovePhoto}
+                        >
+                          {t('collection.removePhoto')}
+                        </Button>
+                      </Box>
+                    </Box>
+                  )}
+                </Box>
+
                 <Grid container spacing={2}>
                   <Grid size={6}>
                     <Controller
@@ -331,9 +438,11 @@ export function AddCardForm({ onSuccess, onCancel }: AddCardFormProps) {
                   <Button
                     type="submit"
                     variant="contained"
-                    disabled={mutation.isPending}
+                    disabled={mutation.isPending || isUploading}
                   >
-                    {mutation.isPending ? t('collection.addingToCollection') : t('collection.addToCollection')}
+                    {mutation.isPending || isUploading 
+                      ? (isUploading ? t('common.saving') : t('collection.addingToCollection')) 
+                      : t('collection.addToCollection')}
                   </Button>
                 </Box>
               </Stack>

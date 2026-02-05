@@ -1,11 +1,11 @@
 import { Router, Response } from 'express';
 import { customAlphabet } from 'nanoid';
-import { TradeSessionStatus } from '@prisma/client';
+import { TradeSessionStatus, NotificationType } from '@prisma/client';
 import { prisma } from '../utils/prisma';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import { AppError } from '../middleware/error-handler';
 import { computeTradeMatches } from '../services/match-service';
-import { emitToTradeSession } from '../services/socket-service';
+import { emitToTradeSession, emitToUser } from '../services/socket-service';
 
 const router = Router();
 const generateSessionCode = customAlphabet('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 6);
@@ -41,8 +41,6 @@ router.post('/session', async (req: AuthenticatedRequest, res: Response, next) =
     } else {
       // Find any session initiated by this user
       where.initiatorId = req.userId;
-      // If we want to allow creating a new generic session even if one exists, we might need to adjust logic.
-      // But assuming one active generic session per user is fine.
     }
 
     const existingSession = await prisma.tradeSession.findFirst({
@@ -175,6 +173,23 @@ router.post('/:code/join', async (req: AuthenticatedRequest, res: Response, next
       },
     });
 
+    // Notify initiator
+    const joiner = await prisma.user.findUnique({ where: { id: req.userId } });
+    const notification = await prisma.notification.create({
+      data: {
+        userId: session.initiatorId,
+        type: NotificationType.TRADE_MATCH,
+        title: 'User joined your trade session!',
+        message: `${joiner?.displayName} has joined your trade session ${session.sessionCode}`,
+        data: {
+          sessionCode: session.sessionCode,
+          type: 'join',
+        },
+      },
+    });
+
+    emitToUser(session.initiatorId, 'notification', notification);
+
     res.json({ data: updatedSession });
   } catch (error) {
     next(error);
@@ -212,7 +227,7 @@ router.get('/:code/matches', async (req: AuthenticatedRequest, res: Response, ne
     const matches = await computeTradeMatches(session.initiatorId, session.joinerId);
 
     // Transform matches to include nested card object as expected by shared TradeMatch interface
-    const transformMatch = (match: typeof matches.userAOffers[0]) => ({
+    const transformMatch = (match: any) => ({
       card: {
         id: match.cardId,
         name: match.cardName,
@@ -235,6 +250,9 @@ router.get('/:code/matches', async (req: AuthenticatedRequest, res: Response, ne
       receiverUserId: match.receiverUserId,
       availableQuantity: match.availableQuantity,
       condition: match.condition,
+      language: match.language,
+      isAlter: match.isAlter,
+      photoUrl: match.photoUrl,
       isFoil: match.isFoil,
       priority: match.priority,
       priceEur: match.priceEur,
@@ -249,18 +267,68 @@ router.get('/:code/matches', async (req: AuthenticatedRequest, res: Response, ne
       userBTotalValue: matches.userBTotalValue,
     };
 
-    // Cache the matches
+    // Cache the matches (Prisma handles Json automatically, no stringify needed)
     await prisma.tradeSession.update({
       where: { id: session.id },
-      data: { matchesJson: JSON.stringify(transformedMatches) },
+      data: { matchesJson: transformedMatches as any },
     });
 
     res.json({
       data: {
         session,
         ...transformedMatches,
+        userASelectedJson: session.userASelectedJson || {},
+        userBSelectedJson: session.userBSelectedJson || {},
       },
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/:code/selection', async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const { code } = req.params;
+    const { selectionJson } = req.body; // Map of { cardId: quantity }
+
+    if (!selectionJson || typeof selectionJson !== 'object') {
+      throw new AppError('selectionJson must be an object', 400);
+    }
+
+    const session = await prisma.tradeSession.findUnique({
+      where: { sessionCode: code.toUpperCase() },
+    });
+
+    if (!session) {
+      throw new AppError('Trade session not found', 404);
+    }
+
+    const isInitiator = req.userId === session.initiatorId;
+    const isJoiner = req.userId === session.joinerId;
+
+    if (!isInitiator && !isJoiner) {
+      throw new AppError('Not authorized to update selections in this session', 403);
+    }
+
+    const updateData: any = {};
+    if (isInitiator) {
+      updateData.userASelectedJson = selectionJson;
+    } else {
+      updateData.userBSelectedJson = selectionJson;
+    }
+
+    const updatedSession = await prisma.tradeSession.update({
+      where: { id: session.id },
+      data: updateData,
+    });
+
+    // Notify other user via socket
+    emitToTradeSession(session.sessionCode, 'trade:selection-updated', {
+      userId: req.userId,
+      selectionJson,
+    });
+
+    res.json({ data: updatedSession });
   } catch (error) {
     next(error);
   }
@@ -287,13 +355,27 @@ router.post('/:code/complete', async (req: AuthenticatedRequest, res: Response, 
       data: { status: TradeSessionStatus.COMPLETED },
     });
 
+    // Notify joiner
+    if (session.joinerId) {
+      const notification = await prisma.notification.create({
+        data: {
+          userId: session.joinerId,
+          type: NotificationType.TRADE_MATCH,
+          title: 'Trade completed!',
+          message: `The trade session ${session.sessionCode} has been completed.`,
+          data: { sessionCode: session.sessionCode, type: 'complete' },
+        },
+      });
+      emitToUser(session.joinerId, 'notification', notification);
+    }
+
     res.json({ data: updatedSession });
   } catch (error) {
     next(error);
   }
 });
 
-router.delete('/:code', async (req: AuthenticatedRequest, res: Response, next) => {
+router.post('/:code/delete', async (req: AuthenticatedRequest, res: Response, next) => {
   try {
     const { code } = req.params;
 
@@ -307,6 +389,20 @@ router.delete('/:code', async (req: AuthenticatedRequest, res: Response, next) =
 
     if (session.initiatorId !== req.userId) {
       throw new AppError('Only the session initiator can delete the session', 403);
+    }
+
+    // Notify joiner if they exist
+    if (session.joinerId) {
+      const notification = await prisma.notification.create({
+        data: {
+          userId: session.joinerId,
+          type: NotificationType.TRADE_MATCH,
+          title: 'Trade deleted',
+          message: `The trade session ${session.sessionCode} has been deleted by the initiator.`,
+          data: { sessionCode: session.sessionCode, type: 'delete' },
+        },
+      });
+      emitToUser(session.joinerId, 'notification', notification);
     }
 
     await prisma.tradeSession.delete({ where: { id: session.id } });
@@ -354,7 +450,7 @@ router.get('/history', async (req: AuthenticatedRequest, res: Response, next) =>
           select: { id: true, displayName: true, shareCode: true },
         },
       },
-      orderBy: { createdAt: sort === 'asc' ? 'asc' : 'desc' },
+      orderBy: { createdAt: 'desc' },
     });
 
     // Compute match counts from matchesJson
@@ -468,11 +564,12 @@ router.post('/:code/message', async (req: AuthenticatedRequest, res: Response, n
       throw new AppError('Not authorized to send messages in this session', 403);
     }
 
+    const trimmedContent = content.trim();
     const message = await prisma.tradeMessage.create({
       data: {
         sessionId: session.id,
         senderId: req.userId!,
-        content: content.trim(),
+        content: trimmedContent,
       },
       include: {
         sender: {
@@ -483,6 +580,21 @@ router.post('/:code/message', async (req: AuthenticatedRequest, res: Response, n
 
     // Broadcast message via socket
     emitToTradeSession(session.sessionCode, 'trade-message', message);
+
+    // Create a notification for the other user
+    const otherUserId = session.initiatorId === req.userId ? session.joinerId : session.initiatorId;
+    if (otherUserId) {
+      const user = await prisma.user.findUnique({ where: { id: req.userId } });
+      await prisma.notification.create({
+        data: {
+          userId: otherUserId,
+          type: NotificationType.TRADE_MATCH,
+          title: `New message from ${user?.displayName}`,
+          message: trimmedContent.length > 50 ? `${trimmedContent.substring(0, 47)}...` : trimmedContent,
+          data: { sessionCode: session.sessionCode, type: 'message' },
+        },
+      });
+    }
 
     res.status(201).json({ data: message });
   } catch (error) {

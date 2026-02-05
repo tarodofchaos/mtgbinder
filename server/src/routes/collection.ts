@@ -1,6 +1,9 @@
 import { Router, Response } from 'express';
 import { z } from 'zod';
 import { CardCondition, NotificationType } from '@prisma/client';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import { prisma } from '../utils/prisma';
 import { validate, validateQuery } from '../middleware/validate';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
@@ -10,12 +13,43 @@ import { isConditionAcceptable } from '../utils/card-conditions';
 
 const router = Router();
 
+// Configure multer for photo uploads
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    const uploadDir = path.join(__dirname, '../../uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (_req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, 'card-' + uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (_req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (extname && mimetype) {
+      return cb(null, true);
+    }
+    cb(new Error('Only images are allowed (jpeg, jpg, png, webp)'));
+  },
+});
+
 const addItemSchema = z.object({
   cardId: z.string().uuid(),
   quantity: z.coerce.number().int().min(1).default(1),
   foilQuantity: z.coerce.number().int().min(0).default(0),
   condition: z.nativeEnum(CardCondition).default(CardCondition.NM),
   language: z.string().default('EN'),
+  isAlter: z.boolean().default(false),
+  photoUrl: z.string().nullable().optional(),
   forTrade: z.coerce.number().int().min(0).default(0),
   tradePrice: z.coerce.number().min(0).nullable().optional(),
 });
@@ -26,6 +60,8 @@ const updateItemSchema = z.object({
   foilQuantity: z.coerce.number().int().min(0).optional(),
   condition: z.nativeEnum(CardCondition).optional(),
   language: z.string().optional(),
+  isAlter: z.boolean().optional(),
+  photoUrl: z.string().nullable().optional(),
   forTrade: z.coerce.number().int().min(0).optional(),
   tradePrice: z.coerce.number().min(0).nullable().optional(),
 });
@@ -224,9 +260,17 @@ router.get('/stats', async (req: AuthenticatedRequest, res: Response, next) => {
   }
 });
 
+router.post('/upload', upload.single('photo'), (req: AuthenticatedRequest, res: Response) => {
+  if (!req.file) {
+    throw new AppError('No file uploaded', 400);
+  }
+  const photoUrl = `/uploads/${req.file.filename}`;
+  res.json({ data: { photoUrl } });
+});
+
 router.post('/', validate(addItemSchema), async (req: AuthenticatedRequest, res: Response, next) => {
   try {
-    const { cardId, quantity, foilQuantity, condition, language, forTrade, tradePrice } = req.body;
+    const { cardId, quantity, foilQuantity, condition, language, isAlter, photoUrl, forTrade, tradePrice } = req.body;
 
     const card = await prisma.card.findUnique({ where: { id: cardId } });
     if (!card) {
@@ -239,11 +283,12 @@ router.post('/', validate(addItemSchema), async (req: AuthenticatedRequest, res:
 
     const existingItem = await prisma.collectionItem.findUnique({
       where: {
-        userId_cardId_condition_language: {
+        userId_cardId_condition_language_isAlter: {
           userId: req.userId!,
           cardId,
           condition,
           language,
+          isAlter: isAlter || false,
         },
       },
     });
@@ -256,6 +301,7 @@ router.post('/', validate(addItemSchema), async (req: AuthenticatedRequest, res:
           quantity: existingItem.quantity + quantity,
           foilQuantity: existingItem.foilQuantity + foilQuantity,
           forTrade: existingItem.forTrade + forTrade,
+          photoUrl: photoUrl || existingItem.photoUrl,
         },
         include: { card: true },
       });
@@ -268,6 +314,8 @@ router.post('/', validate(addItemSchema), async (req: AuthenticatedRequest, res:
           foilQuantity,
           condition,
           language,
+          isAlter: isAlter || false,
+          photoUrl: photoUrl ?? null,
           forTrade,
           tradePrice: tradePrice ?? null,
         },

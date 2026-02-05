@@ -116,7 +116,11 @@
     "newPrintingSelected": "Nueva edición seleccionada",
     "copiesForTrade": "{{count}} para intercambio",
     "copiesAtPrice": "{{count}} @ {{price}}",
-    "foilCount": "({{count}} foil)"
+    "foilCount": "({{count}} foil)",
+    "isAlter": "Es Alter/Arte personalizado",
+    "cardPhoto": "Foto de la carta",
+    "uploadPhoto": "Subir foto",
+    "removePhoto": "Quitar foto"
   },
   "wishlist": {
     "title": "Lista de deseos",
@@ -221,8 +225,11 @@
     "difference": "Diferencia",
     "matchingCardsYouOffer": "Cartas coincidentes que puedes ofrecer ({{total}} total)",
     "matchingCardsTheyOffer": "Cartas coincidentes que pueden ofrecer ({{total}} total)",
-    "cardsYouCanOffer": "Cartas que puedes ofrecer",
-    "cardsTheyCanOffer": "Cartas que pueden ofrecer",
+    "cardsYouCanOffer": "Mis cartas",
+    "cardsTheyCanOffer": "Sus cartas",
+    "sendSelection": "Enviar mi selección",
+    "selectionSent": "¡Tu selección ha sido enviada!",
+    "selectionUpdateFailed": "Error al enviar la selección. Inténtalo de nuevo.",
     "noMatchYourCards": "Ninguna de tus cartas coincide con su lista de deseos",
     "noMatchTheirCards": "Ninguna de sus cartas coincide con tu lista de deseos",
     "completeSession": "Completar",
@@ -235,7 +242,12 @@
     "noHistoryDescription": "Tus sesiones de intercambio completadas aparecerán aquí",
     "completedOn": "Completado el {{date}}",
     "youOffered": "Tú ofreciste",
-    "theyOffered": "Ellos ofrecieron"
+    "theyOffered": "Ellos ofrecieron",
+    "tradeBalanced": "EL INTERCAMBIO ESTÁ EQUILIBRADO",
+    "youPayBalance": "TIENES QUE PAGAR",
+    "youReceiveBalance": "TIENES QUE COBRAR",
+    "youGiveValue": "VALOR QUE ENTREGAS",
+    "youReceiveValue": "VALOR QUE RECIBES"
   },
   "sets": {
     "title": "Seguimiento de ediciones",

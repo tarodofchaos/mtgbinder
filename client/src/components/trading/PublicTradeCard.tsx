@@ -17,21 +17,13 @@ import {
   OpenInNew as ExternalLinkIcon,
 } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { CollectionItem, CardCondition, getCardmarketUrl } from '@mtg-binder/shared';
 import { CardImage } from '../cards/CardImage';
 
 interface PublicTradeCardProps {
   item: CollectionItem;
 }
-
-const conditionLabels: Record<CardCondition, string> = {
-  M: 'Mint',
-  NM: 'Near Mint',
-  LP: 'Lightly Played',
-  MP: 'Moderately Played',
-  HP: 'Heavily Played',
-  DMG: 'Damaged',
-};
 
 const styles: Record<string, SxProps<Theme>> = {
   card: {
@@ -68,6 +60,13 @@ const styles: Record<string, SxProps<Theme>> = {
     position: 'absolute',
     top: 8,
     left: 8,
+  },
+  alterBadge: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    bgcolor: 'secondary.main',
+    color: 'white',
   },
   content: {
     flexGrow: 1,
@@ -120,6 +119,7 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 export function PublicTradeCard({ item }: PublicTradeCardProps) {
+  const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const card = item.card!;
 
@@ -138,6 +138,18 @@ export function PublicTradeCard({ item }: PublicTradeCardProps) {
     setIsModalOpen(false);
   };
 
+  const getConditionLabel = (condition: CardCondition): string => {
+    const labels: Record<CardCondition, string> = {
+      M: t('conditions.mint'),
+      NM: t('conditions.nearMint'),
+      LP: t('conditions.lightlyPlayed'),
+      MP: t('conditions.moderatelyPlayed'),
+      HP: t('conditions.heavilyPlayed'),
+      DMG: t('conditions.damaged'),
+    };
+    return labels[condition] || condition;
+  };
+
   return (
     <>
       <Card sx={styles.card} onClick={handleCardClick}>
@@ -146,6 +158,7 @@ export function PublicTradeCard({ item }: PublicTradeCardProps) {
             scryfallId={card.scryfallId}
             name={card.name}
             size="normal"
+            customImageUrl={item.photoUrl}
             setCode={card.setCode}
             collectorNumber={card.collectorNumber}
             language={item.language}
@@ -168,6 +181,14 @@ export function PublicTradeCard({ item }: PublicTradeCardProps) {
               sx={styles.priceBadge}
             />
           )}
+
+          {item.isAlter && (
+            <Chip
+              label={t('collection.isAlter')}
+              size="small"
+              sx={styles.alterBadge}
+            />
+          )}
         </Box>
 
         <CardContent sx={styles.content}>
@@ -179,7 +200,7 @@ export function PublicTradeCard({ item }: PublicTradeCardProps) {
           </Typography>
           <Box sx={styles.footer}>
             <Typography variant="caption" color="text.secondary">
-              {conditionLabels[item.condition as CardCondition]}
+              {getConditionLabel(item.condition as CardCondition)}
             </Typography>
             {totalValue !== null && (
               <Typography variant="body2" sx={styles.price}>
@@ -216,6 +237,7 @@ export function PublicTradeCard({ item }: PublicTradeCardProps) {
               scryfallId={card.scryfallId}
               name={card.name}
               size="large"
+              customImageUrl={item.photoUrl}
               setCode={card.setCode}
               collectorNumber={card.collectorNumber}
               language={item.language}
@@ -230,7 +252,7 @@ export function PublicTradeCard({ item }: PublicTradeCardProps) {
             </Typography>
             <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1 }}>
               <Chip
-                label={conditionLabels[item.condition as CardCondition]}
+                label={getConditionLabel(item.condition as CardCondition)}
                 size="small"
                 variant="outlined"
               />
@@ -239,6 +261,9 @@ export function PublicTradeCard({ item }: PublicTradeCardProps) {
                 size="small"
                 color="success"
               />
+              {item.isAlter && (
+                <Chip label={t('collection.isAlter')} size="small" color="secondary" />
+              )}
               {hasFoil && (
                 <Chip label="Foil" size="small" color="warning" />
               )}

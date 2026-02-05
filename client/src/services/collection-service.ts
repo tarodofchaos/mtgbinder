@@ -30,6 +30,17 @@ export async function addToCollection(data: CollectionItemInput): Promise<Collec
   return response.data.data;
 }
 
+export async function uploadCardPhoto(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('photo', file);
+  const response = await api.post('/collection/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data.data.photoUrl;
+}
+
 export async function updateCollectionItem(id: string, data: Partial<CollectionItemInput>): Promise<CollectionItem> {
   const response = await api.put(`/collection/${id}`, data);
   return response.data.data;

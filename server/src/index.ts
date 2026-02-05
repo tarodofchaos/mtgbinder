@@ -116,6 +116,10 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Serve uploaded images
+const uploadsPath = path.join(__dirname, '../uploads');
+app.use('/uploads', express.static(uploadsPath));
+
 // Apply rate limiting to API routes
 app.use('/api/', apiLimiter);
 app.use('/api/auth/login', authLimiter);

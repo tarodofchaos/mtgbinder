@@ -5,6 +5,9 @@ import {
   List,
   ListItem,
   Chip,
+  Checkbox,
+  TextField,
+  MenuItem,
 } from '@mui/material';
 import { Star as StarIcon } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
@@ -17,6 +20,9 @@ interface MatchListProps {
   totalValue: number;
   title: string;
   emptyMessage?: string;
+  onToggleSelect?: (cardId: string, quantity: number) => void;
+  selectedJson?: Record<string, number>;
+  isSelectable?: boolean;
 }
 
 type ChipColor = 'error' | 'warning' | 'primary' | 'default';
@@ -48,6 +54,7 @@ const styles: Record<string, SxProps<Theme>> = {
     display: 'flex',
     alignItems: 'center',
     p: 2,
+    cursor: 'pointer',
     '&:hover': {
       bgcolor: 'action.hover',
     },
@@ -56,6 +63,7 @@ const styles: Record<string, SxProps<Theme>> = {
     display: 'flex',
     alignItems: 'center',
     p: 2,
+    cursor: 'pointer',
     bgcolor: '#e8f5e9', // Light green background (green-50)
     borderLeft: '4px solid',
     borderLeftColor: 'success.main',
@@ -68,6 +76,18 @@ const styles: Record<string, SxProps<Theme>> = {
     },
     '& .MuiTypography-colorTextSecondary, & .MuiTypography-root.MuiTypography-colorTextSecondary': {
       color: '#4b5563', // gray-600 - dark secondary text
+    },
+  },
+  listItemSelected: {
+    bgcolor: 'action.selected !important',
+    '&::after': {
+      content: '""',
+      position: 'absolute',
+      right: 0,
+      top: 0,
+      bottom: 0,
+      width: 4,
+      bgcolor: 'primary.main',
     },
   },
   matchBadge: {
@@ -101,9 +121,14 @@ const styles: Record<string, SxProps<Theme>> = {
     textAlign: 'right',
     flexShrink: 0,
     ml: 2,
+    minWidth: 100,
   },
   price: {
     color: 'success.main',
+  },
+  quantitySelector: {
+    width: 70,
+    mr: 2,
   },
 };
 
@@ -112,6 +137,9 @@ export function MatchList({
   totalValue,
   title,
   emptyMessage,
+  onToggleSelect,
+  selectedJson = {},
+  isSelectable = false,
 }: MatchListProps) {
   const { t } = useTranslation();
 
@@ -148,65 +176,113 @@ export function MatchList({
       </Box>
 
       <List disablePadding>
-        {matches.map((match, index) => (
-          <ListItem
-            key={`${match.card.id}-${index}`}
-            divider={index < matches.length - 1}
-            sx={match.isMatch ? styles.listItemMatch : styles.listItem}
-          >
-            <Box sx={styles.cardImageWrapper}>
-              <CardImage
-                scryfallId={match.card.scryfallId}
-                name={match.card.name}
-                size="small"
-              />
-            </Box>
+        {matches.map((match, index) => {
+          const selectedQuantity = selectedJson[match.card.id] || 0;
+          const isSelected = selectedQuantity > 0;
+          const itemStyle: SxProps<Theme> = [
+            match.isMatch ? styles.listItemMatch : styles.listItem,
+            isSelected && styles.listItemSelected,
+          ].filter(Boolean) as SxProps<Theme>;
 
-            <Box sx={styles.cardInfo}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="subtitle2" noWrap>
-                  {match.card.name}
-                </Typography>
-                {match.isMatch && (
-                  <Box sx={styles.matchBadge}>
-                    <StarIcon sx={{ fontSize: 14 }} />
-                    {t('matchList.match')}
-                  </Box>
-                )}
-              </Box>
-              <Typography variant="body2" color="text.secondary">
-                {match.card.setName} ({match.card.setCode})
-              </Typography>
-              <Box sx={styles.metaRow}>
-                <Typography variant="caption" color="text.secondary">
-                  {match.condition} {match.isFoil && t('matchList.foil')}
-                </Typography>
-                {match.priority && (
-                  <Chip
-                    label={
-                      priorityConfig[match.priority]?.key
-                        ? t(priorityConfig[match.priority].key)
-                        : match.priority
-                    }
-                    color={priorityConfig[match.priority]?.color || 'default'}
-                    size="small"
-                  />
-                )}
-              </Box>
-            </Box>
+          const unitPrice = match.tradePrice ?? match.card.priceEur ?? 0;
 
-            <Box sx={styles.priceColumn}>
-              <Typography variant="body2" fontWeight={500}>
-                x{match.availableQuantity}
-              </Typography>
-              {match.priceEur && (
-                <Typography variant="body2" sx={styles.price}>
-                  €{(match.priceEur * match.availableQuantity).toFixed(2)}
-                </Typography>
+          return (
+            <ListItem
+              key={`${match.card.id}-${index}`}
+              divider={index < matches.length - 1}
+              sx={itemStyle}
+              onClick={() => isSelectable && onToggleSelect?.(match.card.id, isSelected ? 0 : 1)}
+            >
+              {isSelectable && (
+                <Checkbox
+                  checked={isSelected}
+                  sx={{ ml: -1, mr: 1 }}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={() => onToggleSelect?.(match.card.id, isSelected ? 0 : 1)}
+                />
               )}
-            </Box>
-          </ListItem>
-        ))}
+              
+              <Box sx={styles.cardImageWrapper}>
+                <CardImage
+                  scryfallId={match.card.scryfallId}
+                  name={match.card.name}
+                  size="small"
+                  customImageUrl={match.photoUrl}
+                />
+              </Box>
+
+              <Box sx={styles.cardInfo}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="subtitle2" noWrap>
+                    {match.card.name}
+                  </Typography>
+                  {match.isMatch && (
+                    <Box sx={styles.matchBadge}>
+                      <StarIcon sx={{ fontSize: 14 }} />
+                      {t('matchList.match')}
+                    </Box>
+                  )}
+                  {match.isAlter && (
+                    <Chip label="Alter" size="small" color="secondary" sx={{ height: 20, fontSize: '0.65rem' }} />
+                  )}
+                </Box>
+                <Typography variant="body2" color="text.secondary">
+                  {match.card.setName} ({match.card.setCode})
+                </Typography>
+                <Box sx={styles.metaRow}>
+                  <Typography variant="caption" color="text.secondary">
+                    {match.condition} {match.isFoil && t('matchList.foil')}
+                  </Typography>
+                  {match.priority && (
+                    <Chip
+                      label={
+                        priorityConfig[match.priority]?.key
+                          ? t(priorityConfig[match.priority].key)
+                          : match.priority
+                      }
+                      color={priorityConfig[match.priority]?.color || 'default'}
+                      size="small"
+                    />
+                  )}
+                </Box>
+              </Box>
+
+              {isSelectable && match.availableQuantity > 1 && (
+                <TextField
+                  select
+                  size="small"
+                  label="Qty"
+                  value={selectedQuantity || 1}
+                  sx={styles.quantitySelector}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => onToggleSelect?.(match.card.id, parseInt(e.target.value))}
+                >
+                  {[...Array(match.availableQuantity)].map((_, i) => (
+                    <MenuItem key={i + 1} value={i + 1}>
+                      {i + 1}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+
+              <Box sx={styles.priceColumn}>
+                <Typography variant="body2" fontWeight={500}>
+                  x{isSelectable && isSelected ? selectedQuantity : match.availableQuantity}
+                </Typography>
+                {unitPrice > 0 && (
+                  <>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      €{unitPrice.toFixed(2)} each
+                    </Typography>
+                    <Typography variant="body2" sx={styles.price} fontWeight={600}>
+                      €{(unitPrice * (isSelectable && isSelected ? selectedQuantity : match.availableQuantity)).toFixed(2)}
+                    </Typography>
+                  </>
+                )}
+              </Box>
+            </ListItem>
+          );
+        })}
       </List>
     </Paper>
   );

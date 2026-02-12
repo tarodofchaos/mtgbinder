@@ -52,6 +52,14 @@ export const config = {
   rateLimitWindowMs: optionalEnvInt('RATE_LIMIT_WINDOW_MS', 15 * 60 * 1000), // 15 minutes
   rateLimitMaxRequests: optionalEnvInt('RATE_LIMIT_MAX_REQUESTS', 100),
 
+  // Email (Mailjet)
+  mailjet: {
+    apiKey: optionalEnv('MAILJET_API_KEY', ''),
+    apiSecret: optionalEnv('MAILJET_SECRET_KEY', ''),
+    fromEmail: optionalEnv('EMAIL_FROM', 'noreply@mtgbinder.com'),
+    fromName: optionalEnv('EMAIL_FROM_NAME', 'Bring the Binder'),
+  },
+
   // Derived values
   get isProduction(): boolean {
     return this.nodeEnv === 'production';

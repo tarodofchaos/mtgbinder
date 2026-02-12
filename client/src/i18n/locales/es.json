@@ -46,7 +46,7 @@
     "search": "Buscar"
   },
   "header": {
-    "title": "MTG Binder",
+    "title": "Trae la Carpeta",
     "toggleTheme": "Cambiar tema",
     "logout": "Cerrar sesión",
     "logoutConfirmTitle": "Cerrar sesión",
@@ -55,7 +55,7 @@
     "register": "Registrarse"
   },
   "auth": {
-    "loginTitle": "Iniciar sesión en MTG Binder",
+    "loginTitle": "Iniciar sesión en Trae la Carpeta",
     "registerTitle": "Crear cuenta",
     "email": "Correo electrónico",
     "emailPlaceholder": "tu@email.com",
@@ -78,7 +78,18 @@
     "confirmPasswordRequired": "Por favor confirma tu contraseña",
     "passwordsDoNotMatch": "Las contraseñas no coinciden",
     "minLength": "Debe tener al menos {{count}} caracteres",
-    "tooManyAttempts": "Demasiados intentos de inicio de sesión. Por favor, intenta más tarde."
+    "tooManyAttempts": "Demasiados intentos de inicio de sesión. Por favor, intenta más tarde.",
+    "forgotPassword": "¿Olvidó su contraseña?",
+    "forgotPasswordTitle": "Restablecer Contraseña",
+    "forgotPasswordDescription": "Introduzca su dirección de correo electrónico y le enviaremos un enlace para restablecer su contraseña.",
+    "sendResetLink": "Enviar Enlace de Restablecimiento",
+    "sendingResetLink": "Enviando...",
+    "resetLinkSent": "Si existe un usuario con ese correo electrónico, se ha enviado un enlace de restablecimiento.",
+    "resetPasswordTitle": "Elija Nueva Contraseña",
+    "resetPasswordButton": "Restablecer Contraseña",
+    "resettingPassword": "Restableciendo...",
+    "passwordResetSuccess": "Su contraseña ha sido restablecida con éxito.",
+    "invalidResetToken": "El enlace de restablecimiento no es válido o ha caducado."
   },
   "collection": {
     "title": "Colección",
@@ -325,7 +336,7 @@
     "parsing": "Analizando...",
     "pasteFromClipboard": "Pegar del portapapeles",
     "collectionTextPlaceholder": "4 Lightning Bolt\n2 Counterspell (MH2) 267\n1 Black Lotus *F*",
-    "wishlistTextPlaceholder": "4 Lightning Bolt\n2x Counterspell\nBrainstorm x3",
+    "wishlistTextPlaceholder": "4x Counterspell\nBrainstorm x3",
     "foilMarker": "(foil)",
     "sideboardNote": "Los marcadores de sideboard (Sideboard:, SB:) son reconocidos.",
     "withSetCode": "con código de edición",

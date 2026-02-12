@@ -51,6 +51,8 @@ describe('TradeHistoryTab', () => {
       login: vi.fn(),
       logout: vi.fn(),
       register: vi.fn(),
+      forgotPassword: vi.fn(),
+      resetPassword: vi.fn(),
       isLoading: false,
     });
 

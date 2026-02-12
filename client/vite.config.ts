@@ -13,9 +13,9 @@ export default defineConfig({
         enabled: true, // Enable PWA in development mode
       },
       manifest: {
-        name: 'MTG Binder',
-        short_name: 'MTG Binder',
-        description: 'Manage your MTG collection and trade with others',
+        name: 'Bring the Binder',
+        short_name: 'Bring the Binder',
+        description: 'Manage your MTG collection and trade with others',      
         theme_color: '#1f2937',
         background_color: '#111827',
         display: 'standalone',

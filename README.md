@@ -1,4 +1,4 @@
-# MTG Binder
+# Bring the Binder
 
 A full-stack Magic: The Gathering card collection and trading application. Track your collection, manage wishlists, and trade cards with other players in real-time.
 

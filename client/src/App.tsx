@@ -9,6 +9,8 @@ import { LoadingPage } from './components/ui/LoadingSpinner';
 // Pages
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { CollectionPage } from './pages/CollectionPage';
 import { WishlistPage } from './pages/WishlistPage';
 import { SetsPage } from './pages/SetsPage';
@@ -17,6 +19,7 @@ import { TradePage } from './pages/TradePage';
 import { TradeSessionPage } from './pages/TradeSessionPage';
 import { SearchPage } from './pages/SearchPage';
 import { PublicTradesPage } from './pages/PublicTradesPage';
+import { LandingPage } from './pages/LandingPage';
 
 const styles: Record<string, SxProps<Theme>> = {
   root: {
@@ -36,7 +39,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
@@ -79,8 +82,13 @@ function MinimalLayout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const { isAuthenticated } = useAuth();
+
   return (
     <Routes>
+      {/* Teaser Landing Page */}
+      <Route path="/" element={<LandingPage />} />
+
       {/* Public routes */}
       <Route
         path="/login"
@@ -98,8 +106,24 @@ export default function App() {
           </PublicRoute>
         }
       />
+      <Route
+        path="/forgot-password"
+        element={
+          <PublicRoute>
+            <ForgotPasswordPage />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/reset-password"
+        element={
+          <PublicRoute>
+            <ResetPasswordPage />
+          </PublicRoute>
+        }
+      />
 
-      {/* Truly public route - no auth check, accessible by anyone */}
+      {/* Truly public route - no auth check, accessible by anyone */}        
       <Route
         path="/binder/:shareCode"
         element={
@@ -182,8 +206,10 @@ export default function App() {
       />
 
       {/* Default redirect */}
-      <Route path="/" element={<Navigate to="/collection" replace />} />
-      <Route path="*" element={<Navigate to="/collection" replace />} />
+      <Route 
+        path="*" 
+        element={<Navigate to={isAuthenticated ? "/collection" : "/"} replace />} 
+      />
     </Routes>
   );
 }

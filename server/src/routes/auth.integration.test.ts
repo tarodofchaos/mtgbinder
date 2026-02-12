@@ -4,11 +4,12 @@ import jwt from 'jsonwebtoken';
 
 // Mock implementations
 const mockFindUnique = jest.fn();
+const mockFindFirst = jest.fn();
 const mockCreate = jest.fn();
 const mockUpdate = jest.fn();
 
-// Mock bcrypt
-jest.mock('bcrypt', () => ({
+// Mock bcryptjs
+jest.mock('bcryptjs', () => ({
   hash: jest.fn().mockResolvedValue('hashed_password_123'),
   compare: jest.fn(),
 }));
@@ -19,11 +20,28 @@ jest.mock('nanoid', () => ({
   customAlphabet: () => () => 'TEST1234',
 }));
 
+// Mock Mailjet
+jest.mock('node-mailjet', () => {
+  return class {
+    post() {
+      return {
+        request: jest.fn().mockResolvedValue({ body: {} }),
+      };
+    }
+  };
+});
+
 // Mock config
 jest.mock('../utils/config', () => ({
   config: {
     jwtSecret: 'test-jwt-secret-key',
     jwtExpiresIn: '1h',
+    mailjet: {
+      apiKey: 'test-api-key',
+      apiSecret: 'test-api-secret',
+      fromEmail: 'test@example.com',
+      fromName: 'Test Name',
+    },
   },
 }));
 
@@ -32,6 +50,7 @@ jest.mock('../utils/prisma', () => ({
   prisma: {
     user: {
       findUnique: (...args: unknown[]) => mockFindUnique(...args),
+      findFirst: (...args: unknown[]) => mockFindFirst(...args),
       create: (...args: unknown[]) => mockCreate(...args),
       update: (...args: unknown[]) => mockUpdate(...args),
     },
@@ -416,6 +435,82 @@ describe('Auth Routes - Integration Tests', () => {
         .expect(401);
 
       expect(response.body.error).toBeDefined();
+    });
+  });
+
+  describe('POST /auth/forgot-password', () => {
+    it('should handle forgot password request', async () => {
+      mockFindUnique.mockResolvedValueOnce({
+        id: 'user-id',
+        email: 'test@example.com',
+      });
+      mockUpdate.mockResolvedValueOnce({});
+
+      const response = await request(app)
+        .post('/auth/forgot-password')
+        .send({ email: 'test@example.com' })
+        .expect(200);
+
+      expect(response.body.message).toContain('reset link has been sent');    
+      expect(mockFindUnique).toHaveBeenCalledWith({ where: { email: 'test@example.com' } });
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'user-id' },
+          data: expect.objectContaining({
+            resetToken: expect.any(String),
+            resetTokenExpires: expect.any(Date),
+          }),
+        })
+      );
+    });
+
+    it('should return same message even if user does not exist', async () => {
+      mockFindUnique.mockResolvedValueOnce(null);
+
+      const response = await request(app)
+        .post('/auth/forgot-password')
+        .send({ email: 'nonexistent@example.com' })
+        .expect(200);
+
+      expect(response.body.message).toContain('reset link has been sent');    
+      expect(mockUpdate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('POST /auth/reset-password', () => {
+    it('should reset password with valid token', async () => {
+      mockFindFirst.mockResolvedValueOnce({
+        id: 'user-id',
+        email: 'test@example.com',
+      });
+      mockUpdate.mockResolvedValueOnce({});
+
+      const response = await request(app)
+        .post('/auth/reset-password')
+        .send({ token: 'valid-token', password: 'new-secure-password' })      
+        .expect(200);
+
+      expect(response.body.message).toBe('Password has been reset successfully.');
+      expect(bcrypt.hash).toHaveBeenCalledWith('new-secure-password', 12);    
+      expect(mockUpdate).toHaveBeenCalledWith({
+        where: { id: 'user-id' },
+        data: {
+          passwordHash: 'hashed_password_123',
+          resetToken: null,
+          resetTokenExpires: null,
+        },
+      });
+    });
+
+    it('should reject invalid or expired token', async () => {
+      mockFindFirst.mockResolvedValueOnce(null);
+
+      const response = await request(app)
+        .post('/auth/reset-password')
+        .send({ token: 'invalid-token', password: 'new-secure-password' })    
+        .expect(400);
+
+      expect(response.body.error).toBe('Invalid or expired reset token');     
     });
   });
 

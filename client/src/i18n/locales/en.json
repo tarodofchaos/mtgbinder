@@ -46,7 +46,7 @@
     "search": "Search"
   },
   "header": {
-    "title": "MTG Binder",
+    "title": "Bring the Binder",
     "toggleTheme": "Toggle theme",
     "logout": "Logout",
     "logoutConfirmTitle": "Logout",
@@ -55,7 +55,7 @@
     "register": "Register"
   },
   "auth": {
-    "loginTitle": "Login to MTG Binder",
+    "loginTitle": "Login to Bring the Binder",
     "registerTitle": "Create Account",
     "email": "Email",
     "emailPlaceholder": "your@email.com",
@@ -78,7 +78,18 @@
     "confirmPasswordRequired": "Please confirm your password",
     "passwordsDoNotMatch": "Passwords do not match",
     "minLength": "Must be at least {{count}} characters",
-    "tooManyAttempts": "Too many login attempts. Please try again later."
+    "tooManyAttempts": "Too many login attempts. Please try again later.",
+    "forgotPassword": "Forgot Password?",
+    "forgotPasswordTitle": "Reset Password",
+    "forgotPasswordDescription": "Enter your email address and we'll send you a link to reset your password.",
+    "sendResetLink": "Send Reset Link",
+    "sendingResetLink": "Sending...",
+    "resetLinkSent": "If a user with that email exists, a reset link has been sent.",
+    "resetPasswordTitle": "Choose New Password",
+    "resetPasswordButton": "Reset Password",
+    "resettingPassword": "Resetting...",
+    "passwordResetSuccess": "Your password has been reset successfully.",
+    "invalidResetToken": "The reset link is invalid or has expired."
   },
   "collection": {
     "title": "Collection",
@@ -325,7 +336,7 @@
     "parsing": "Parsing...",
     "pasteFromClipboard": "Paste from Clipboard",
     "collectionTextPlaceholder": "4 Lightning Bolt\n2 Counterspell (MH2) 267\n1 Black Lotus *F*",
-    "wishlistTextPlaceholder": "4 Lightning Bolt\n2x Counterspell\nBrainstorm x3",
+    "wishlistTextPlaceholder": "4x Counterspell\nBrainstorm x3",
     "foilMarker": "(foil)",
     "sideboardNote": "Sideboard markers (Sideboard:, SB:) are recognized.",
     "withSetCode": "with set code",

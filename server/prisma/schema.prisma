@@ -48,6 +48,8 @@ model User {
   passwordHash String
   displayName  String
   shareCode    String   @unique
+  resetToken        String?
+  resetTokenExpires DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

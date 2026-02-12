@@ -1,8 +1,8 @@
-# CLAUDE.md - MTG Binder Project Guide
+# CLAUDE.md - Bring the Binder Project Guide
 
 ## Project Overview
 
-MTG Binder is a full-stack Magic: The Gathering card collection and trading application. Users can:
+Bring the Binder is a full-stack Magic: The Gathering card collection and trading application. Users can:
 - Track their card collections with condition, quantity, and trade availability
 - Maintain wishlists with priority levels and price limits
 - Share their trade binders via QR codes for public viewing

@@ -65,7 +65,12 @@ app.use(
           directives: {
             defaultSrc: ["'self'"],
             scriptSrc: ["'self'", 'https://storage.ko-fi.com', 'https://ko-fi.com'],
-            styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+            styleSrc: [
+              "'self'",
+              "'unsafe-inline'",
+              'https://fonts.googleapis.com',
+              'https://storage.ko-fi.com',
+            ],
             fontSrc: ["'self'", 'https://fonts.gstatic.com'],
             imgSrc: [
               "'self'",

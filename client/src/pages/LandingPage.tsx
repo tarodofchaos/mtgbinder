@@ -283,14 +283,15 @@ export const LandingPage: React.FC = () => {
       }}>
         <Box sx={{ animation: `${pulse} 6s infinite ease-in-out` }}>
           <Typography variant="h1" sx={{
-            fontWeight: 900,
+            fontFamily: "'Planewalker', serif",
+            fontWeight: 'normal',
             fontSize: { xs: '4.5rem', md: '9rem' },
             background: 'linear-gradient(135deg, #ffffff 10%, #3f51b5 50%, #9c27b0 90%)',
             backgroundClip: 'text',
             textFillColor: 'transparent',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            letterSpacing: '-0.06em',
+            letterSpacing: '0.02em',
             mb: 1,
             filter: 'drop-shadow(0 0 50px rgba(63, 81, 181, 0.6))',
             lineHeight: 1.1,

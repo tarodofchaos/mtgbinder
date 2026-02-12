@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Planewalker';
+  src: url('/fonts/Planewalker.woff2') format('woff2'),
+       url('/fonts/Planewalker.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   html {
     font-family: 'Inter', system-ui, sans-serif;

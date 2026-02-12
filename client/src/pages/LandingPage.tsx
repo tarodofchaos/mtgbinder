@@ -1,7 +1,8 @@
-import React, { useMemo, useEffect } from 'react';
+import { useMemo, useEffect } from 'react';
 import { Box, Typography, Button, keyframes } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../context/auth-context';
 
 // Keyframes for animations
 const rotate = keyframes`
@@ -79,7 +80,7 @@ interface FloatingElementProps {
   index: number;
 }
 
-const FloatingElement: React.FC<FloatingElementProps> = ({ delay, duration, type, index }) => {
+function FloatingElement({ delay, duration, type, index }: FloatingElementProps) {
   const vars = useMemo(() => {
     // Randomized spawn point
     const spawnX = (Math.random() - 0.5) * 150;
@@ -154,14 +155,18 @@ const FloatingElement: React.FC<FloatingElementProps> = ({ delay, duration, type
       </Box>
     );
   }
-};
+}
 
-export const LandingPage: React.FC = () => {
+export function LandingPage() {
   const { i18n } = useTranslation();
+  const { isAuthenticated } = useAuth();
   const isSpanish = i18n.language === 'es';
 
   // Load Ko-fi widget
   useEffect(() => {
+    // If authenticated, don't load the widget
+    if (isAuthenticated) return;
+
     const script = document.createElement('script');
     script.src = 'https://storage.ko-fi.com/cdn/scripts/overlay-widget.js';
     script.async = true;
@@ -180,13 +185,28 @@ export const LandingPage: React.FC = () => {
     document.body.appendChild(script);
 
     return () => {
-      document.body.removeChild(script);
+      try {
+        if (document.body.contains(script)) {
+          document.body.removeChild(script);
+        }
+      } catch (e) {
+        // Ignore errors if script was already removed
+      }
+      
       const kofiWidget = document.getElementById('kofi-widget-overlay');
       if (kofiWidget) kofiWidget.remove();
+      
       const kofiChat = document.querySelector('.kofi-floating-chat-container');
       if (kofiChat) kofiChat.remove();
+      
+      // Also remove any other kofi elements that might be present
+      const kofiIframe = document.querySelector('iframe[id^="kofi-widget-overlay"]');
+      if (kofiIframe) kofiIframe.remove();
+      
+      const kofiOverlay = document.querySelector('.kofichat-container');
+      if (kofiOverlay) kofiOverlay.remove();
     };
-  }, []);
+  }, [isAuthenticated]);
 
   return (
     <Box sx={{
@@ -358,4 +378,6 @@ export const LandingPage: React.FC = () => {
       </Box>
     </Box>
   );
-};
+}
+
+export default LandingPage;

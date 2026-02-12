@@ -44,6 +44,7 @@ export const config = {
   // Authentication - REQUIRED for security
   jwtSecret: requireEnv('JWT_SECRET'),
   jwtExpiresIn: optionalEnv('JWT_EXPIRES_IN', '7d'),
+  registrationSecret: optionalEnv('REGISTRATION_SECRET', ''),
 
   // CORS
   clientUrl: optionalEnv('CLIENT_URL', 'http://localhost:3000'),

@@ -20,6 +20,7 @@ interface RegisterForm {
   password: string;
   confirmPassword: string;
   displayName: string;
+  inviteCode: string;
 }
 
 const styles: Record<string, SxProps<Theme>> = {
@@ -61,6 +62,7 @@ export function RegisterPage() {
       password: '',
       confirmPassword: '',
       displayName: '',
+      inviteCode: '',
     },
   });
   const password = watch('password');
@@ -70,10 +72,14 @@ export function RegisterPage() {
     setIsLoading(true);
 
     try {
-      await registerUser(data.email, data.password, data.displayName);
+      await registerUser(data.email, data.password, data.displayName, data.inviteCode);
       navigate('/collection');
-    } catch {
-      setError(t('auth.registrationFailed'));
+    } catch (err: any) {
+      if (err.response?.status === 403) {
+        setError(t('auth.inviteCodeRequired'));
+      } else {
+        setError(t('auth.registrationFailed'));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -160,6 +166,21 @@ export function RegisterPage() {
                   fullWidth
                   error={!!errors.confirmPassword}
                   helperText={errors.confirmPassword?.message}
+                />
+              )}
+            />
+
+            <Controller
+              name="inviteCode"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label={t('auth.inviteCode')}
+                  placeholder={t('auth.inviteCodePlaceholder')}
+                  fullWidth
+                  error={!!errors.inviteCode}
+                  helperText={errors.inviteCode?.message}
                 />
               )}
             />

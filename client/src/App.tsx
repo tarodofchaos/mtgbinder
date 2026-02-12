@@ -19,7 +19,7 @@ import { TradePage } from './pages/TradePage';
 import { TradeSessionPage } from './pages/TradeSessionPage';
 import { SearchPage } from './pages/SearchPage';
 import { PublicTradesPage } from './pages/PublicTradesPage';
-import { LandingPage } from './pages/LandingPage';
+import LandingPage from './pages/LandingPage';
 
 const styles: Record<string, SxProps<Theme>> = {
   root: {
@@ -87,7 +87,14 @@ export default function App() {
   return (
     <Routes>
       {/* Teaser Landing Page */}
-      <Route path="/" element={<LandingPage />} />
+      <Route
+        path="/"
+        element={
+          <PublicRoute>
+            <LandingPage />
+          </PublicRoute>
+        }
+      />
 
       {/* Public routes */}
       <Route

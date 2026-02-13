@@ -23,6 +23,7 @@ model Card {
   oracleText      String?
   scryfallId      String?
   collectorNumber String
+  isOnlineOnly    Boolean  @default(false)
   priceEur        Float?
   priceEurFoil    Float?
   priceUsd        Float?
@@ -198,4 +199,12 @@ model Notification {
   @@index([userId])
   @@index([read])
   @@map("notifications")
+}
+
+model SystemSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("system_settings")
 }

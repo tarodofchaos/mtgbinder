@@ -16,6 +16,7 @@ import { prisma } from './utils/prisma';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
 import { initializeSocket } from './services/socket-service';
 import { startPriceCheckScheduler } from './services/price-check-service';
+import { startDataUpdateScheduler } from './services/data-update-service';
 import { getMetrics, httpRequestDurationMicroseconds, httpRequestsTotal } from './utils/metrics';
 
 // Routes

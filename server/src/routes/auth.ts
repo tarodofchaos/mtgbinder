@@ -19,6 +19,7 @@ const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   displayName: z.string().min(2).max(50),
+  avatarId: z.string().optional(),
   inviteCode: z.string().optional(),
 });
 
@@ -36,9 +37,22 @@ const resetPasswordSchema = z.object({
   password: z.string().min(8),
 });
 
+const updateSettingsSchema = z.object({
+  displayName: z.string().min(2).max(50).optional(),
+  avatarId: z.string().optional(),
+  isPublic: z.boolean().optional(),
+  email: z.string().email().optional(),
+  currentPassword: z.string().optional(),
+  newPassword: z.string().min(8).optional(),
+});
+
+const deleteAccountSchema = z.object({
+  password: z.string(),
+});
+
 router.post('/register', validate(registerSchema), async (req, res: Response, next) => {
   try {
-    const { email, password, displayName, inviteCode } = req.body;
+    const { email, password, displayName, avatarId, inviteCode } = req.body;
 
     // Registration is strictly restricted. Must have a secret configured AND the invite code must match.
     if (!config.registrationSecret || inviteCode !== config.registrationSecret) {
@@ -60,12 +74,16 @@ router.post('/register', validate(registerSchema), async (req, res: Response, ne
         passwordHash,
         displayName,
         shareCode,
+        avatarId,
+        isPublic: false, // Explicit default
       },
       select: {
         id: true,
         email: true,
         displayName: true,
         shareCode: true,
+        avatarId: true,
+        isPublic: true,
         createdAt: true,
       },
     });
@@ -112,6 +130,8 @@ router.post('/login', validate(loginSchema), async (req, res: Response, next) =>
           email: user.email,
           displayName: user.displayName,
           shareCode: user.shareCode,
+          avatarId: user.avatarId,
+          isPublic: user.isPublic,
           createdAt: user.createdAt,
         },
         token,
@@ -202,6 +222,8 @@ router.get('/me', authMiddleware, async (req: AuthenticatedRequest, res: Respons
         email: true,
         displayName: true,
         shareCode: true,
+        avatarId: true,
+        isPublic: true,
         createdAt: true,
       },
     });
@@ -216,23 +238,80 @@ router.get('/me', authMiddleware, async (req: AuthenticatedRequest, res: Respons
   }
 });
 
-router.put('/me', authMiddleware, async (req: AuthenticatedRequest, res: Response, next) => {
+router.put('/me', authMiddleware, validate(updateSettingsSchema), async (req: AuthenticatedRequest, res: Response, next) => {
   try {
-    const { displayName } = req.body;
+    const { displayName, avatarId, isPublic, email, currentPassword, newPassword } = req.body;
 
-    const user = await prisma.user.update({
+    const user = await prisma.user.findUnique({ where: { id: req.userId } });
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    const updateData: any = {};
+    if (displayName !== undefined) updateData.displayName = displayName;
+    if (avatarId !== undefined) updateData.avatarId = avatarId;
+    if (isPublic !== undefined) updateData.isPublic = isPublic;
+
+    // Check password if updating sensitive info
+    if (email || newPassword) {
+      if (!currentPassword) {
+        throw new AppError('Current password is required to change email or password', 400);
+      }
+      const isValidPassword = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!isValidPassword) {
+        throw new AppError('Invalid current password', 401);
+      }
+
+      if (email) {
+        const existingEmail = await prisma.user.findUnique({ where: { email } });
+        if (existingEmail && existingEmail.id !== user.id) {
+          throw new AppError('Email already in use', 400);
+        }
+        updateData.email = email;
+      }
+
+      if (newPassword) {
+        updateData.passwordHash = await bcrypt.hash(newPassword, 12);
+      }
+    }
+
+    const updatedUser = await prisma.user.update({
       where: { id: req.userId },
-      data: { displayName },
+      data: updateData,
       select: {
         id: true,
         email: true,
         displayName: true,
         shareCode: true,
+        avatarId: true,
+        isPublic: true,
         createdAt: true,
       },
     });
 
-    res.json({ data: user });
+    res.json({ data: updatedUser, message: 'Settings updated successfully' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/me', authMiddleware, validate(deleteAccountSchema), async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const { password } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { id: req.userId } });
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+    if (!isValidPassword) {
+      throw new AppError('Invalid password', 401);
+    }
+
+    await prisma.user.delete({ where: { id: req.userId } });
+
+    res.json({ message: 'Account deleted successfully' });
   } catch (error) {
     next(error);
   }

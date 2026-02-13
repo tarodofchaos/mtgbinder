@@ -11,15 +11,19 @@ import {
   Link,
   Alert,
   Stack,
+  Avatar,
 } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import type { SxProps, Theme } from '@mui/material';
 import { useAuth } from '../context/auth-context';
+import { AVATARS } from '../components/layout/SettingsModal';
 
 interface RegisterForm {
   email: string;
   password: string;
   confirmPassword: string;
   displayName: string;
+  avatarId: string;
   inviteCode: string;
 }
 
@@ -30,6 +34,7 @@ const styles: Record<string, SxProps<Theme>> = {
     alignItems: 'center',
     justifyContent: 'center',
     px: 2,
+    py: 4,
   },
   card: {
     p: 4,
@@ -56,23 +61,26 @@ export function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { control, handleSubmit, watch, formState: { errors } } = useForm<RegisterForm>({
+  const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<RegisterForm>({
     defaultValues: {
       email: '',
       password: '',
       confirmPassword: '',
       displayName: '',
+      avatarId: 'avatar-1',
       inviteCode: '',
     },
   });
   const password = watch('password');
+  const selectedAvatarId = watch('avatarId');
+  const displayName = watch('displayName');
 
   const onSubmit = async (data: RegisterForm) => {
     setError(null);
     setIsLoading(true);
 
     try {
-      await registerUser(data.email, data.password, data.displayName, data.inviteCode);
+      await registerUser(data.email, data.password, data.displayName, data.avatarId, data.inviteCode);
       navigate('/collection');
     } catch (err: any) {
       if (err.response?.status === 403) {
@@ -94,6 +102,32 @@ export function RegisterPage() {
 
         <Box component="form" onSubmit={handleSubmit(onSubmit)}>
           <Stack spacing={2.5}>
+            <Box>
+              <Typography variant="body2" gutterBottom sx={{ mb: 1 }}>
+                {t('settings.chooseAvatar', 'Choose Avatar')}
+              </Typography>
+              <Grid container spacing={1} justifyContent="center">
+                {AVATARS.map((av) => (
+                  <Grid key={av.id}>
+                    <Box
+                      onClick={() => setValue('avatarId', av.id)}
+                      sx={{
+                        cursor: 'pointer',
+                        p: 0.5,
+                        borderRadius: '50%',
+                        border: 2,
+                        borderColor: selectedAvatarId === av.id ? 'primary.main' : 'transparent',
+                      }}
+                    >
+                      <Avatar sx={{ bgcolor: av.color }}>
+                        {displayName ? displayName.charAt(0).toUpperCase() : '?'}
+                      </Avatar>
+                    </Box>
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
+
             <Controller
               name="displayName"
               control={control}

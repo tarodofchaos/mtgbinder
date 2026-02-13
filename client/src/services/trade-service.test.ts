@@ -119,11 +119,13 @@ describe('Trade History Service', () => {
           id: 'user1',
           displayName: 'User One',
           shareCode: 'SHARE1',
+          avatarId: 'avatar-1',
         },
         joiner: {
           id: 'user2',
           displayName: 'User Two',
           shareCode: 'SHARE2',
+          avatarId: 'avatar-2',
         },
         matchCount: 5,
       };

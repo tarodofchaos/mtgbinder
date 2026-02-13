@@ -75,12 +75,20 @@ async function downloadFile(url: string, dest: string): Promise<void> {
 async function flushBatch(batch: CardRecord[]): Promise<number> {
   if (batch.length === 0) return 0;
 
-  await prisma.card.createMany({
-    data: batch,
-    skipDuplicates: true,
-  });
-
-  return batch.length;
+  try {
+    const result = await prisma.card.createMany({
+      data: batch,
+      skipDuplicates: true,
+    });
+    return result.count;
+  } catch (err) {
+    console.error('\nBatch insert failed:', err);
+    // Log one sample card to help debug
+    if (batch.length > 0) {
+      console.error('Sample card:', JSON.stringify(batch[0], null, 2));
+    }
+    throw err;
+  }
 }
 
 async function importCardsStreaming(filePath: string): Promise<void> {

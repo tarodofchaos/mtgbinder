@@ -52,6 +52,8 @@ export interface User {
   email: string;
   displayName: string;
   shareCode: string;
+  avatarId: string | null;
+  isPublic: boolean;
   createdAt: Date;
 }
 
@@ -59,6 +61,7 @@ export interface UserPublic {
   id: string;
   displayName: string;
   shareCode: string;
+  avatarId: string | null;
 }
 
 // Collection types
@@ -179,6 +182,7 @@ export interface RegisterInput {
   email: string;
   password: string;
   displayName: string;
+  avatarId?: string;
 }
 
 export interface AuthResponse {

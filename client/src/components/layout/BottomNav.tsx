@@ -4,7 +4,7 @@ import { Paper, BottomNavigation, BottomNavigationAction } from '@mui/material';
 import {
   Inventory2 as CollectionIcon,
   FavoriteBorder as WishlistIcon,
-  LibraryBooks as SetsIcon,
+  Public as ExploreIcon,
   SwapHoriz as TradeIcon,
   Search as SearchIcon,
 } from '@mui/icons-material';
@@ -47,7 +47,7 @@ const styles: Record<string, SxProps<Theme>> = {
 const navItems = [
   { path: '/collection', labelKey: 'nav.collection', icon: <CollectionIcon /> },
   { path: '/wishlist', labelKey: 'nav.wishlist', icon: <WishlistIcon /> },
-  { path: '/sets', labelKey: 'nav.sets', icon: <SetsIcon /> },
+  { path: '/explore', labelKey: 'nav.explore', icon: <ExploreIcon /> },
   { path: '/trade', labelKey: 'nav.trade', icon: <TradeIcon /> },
   { path: '/search', labelKey: 'nav.search', icon: <SearchIcon /> },
 ];

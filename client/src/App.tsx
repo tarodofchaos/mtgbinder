@@ -18,6 +18,7 @@ import { SetDetailPage } from './pages/SetDetailPage';
 import { TradePage } from './pages/TradePage';
 import { TradeSessionPage } from './pages/TradeSessionPage';
 import { SearchPage } from './pages/SearchPage';
+import { ExplorePage } from './pages/ExplorePage';
 import { PublicTradesPage } from './pages/PublicTradesPage';
 import LandingPage from './pages/LandingPage';
 
@@ -177,6 +178,16 @@ export default function App() {
           <ProtectedRoute>
             <AppLayout>
               <SetDetailPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/explore"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <ExplorePage />
             </AppLayout>
           </ProtectedRoute>
         }

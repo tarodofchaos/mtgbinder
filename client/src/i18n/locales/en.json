@@ -41,18 +41,48 @@
   "nav": {
     "collection": "Collection",
     "wishlist": "Wishlist",
-    "sets": "Sets",
+    "explore": "Explore",
     "trade": "Trade",
     "search": "Search"
   },
   "header": {
     "title": "Bring the Binder",
     "toggleTheme": "Toggle theme",
+    "settings": "Settings",
     "logout": "Logout",
     "logoutConfirmTitle": "Logout",
     "logoutConfirmMessage": "Are you sure you want to logout?",
     "login": "Login",
     "register": "Register"
+  },
+  "explore": {
+    "title": "Explore Binders",
+    "searchPlaceholder": "Search users...",
+    "viewBinder": "View Binder",
+    "noResults": "No public binders found",
+    "error": "Error loading public binders"
+  },
+  "settings": {
+    "title": "User Settings",
+    "profile": "Profile",
+    "chooseAvatar": "Choose Avatar",
+    "displayName": "Display Name",
+    "makePublic": "Public Binder (Visible in Explore)",
+    "account": "Account",
+    "email": "Email Address",
+    "newPassword": "New Password (leave blank to keep current)",
+    "currentPassword": "Current Password (required for changes)",
+    "currentPasswordRequired": "Current password is required to change email or password",
+    "dangerZone": "Danger Zone",
+    "deleteAccount": "Remove Account",
+    "deleteWarning": "This action is permanent and cannot be undone.",
+    "confirmPasswordToDelete": "Enter your password to confirm",
+    "confirmDelete": "Remove Account",
+    "confirmDeleteFinal": "Are you ABSOLUTELY sure?",
+    "save": "Save Changes",
+    "saveSuccess": "Settings saved successfully",
+    "saveError": "Error saving settings",
+    "deleteError": "Error deleting account"
   },
   "auth": {
     "loginTitle": "Login to Bring the Binder",

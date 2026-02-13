@@ -41,18 +41,48 @@
   "nav": {
     "collection": "Colección",
     "wishlist": "Wants",
-    "sets": "Ediciones",
+    "explore": "Explorar",
     "trade": "Intercambio",
     "search": "Buscar"
   },
   "header": {
     "title": "Trae la Carpeta",
     "toggleTheme": "Cambiar tema",
+    "settings": "Ajustes",
     "logout": "Cerrar sesión",
     "logoutConfirmTitle": "Cerrar sesión",
     "logoutConfirmMessage": "¿Estás seguro de que quieres cerrar sesión?",
     "login": "Iniciar sesión",
     "register": "Registrarse"
+  },
+  "explore": {
+    "title": "Explorar Carpetas",
+    "searchPlaceholder": "Buscar usuarios...",
+    "viewBinder": "Ver Carpeta",
+    "noResults": "No se encontraron carpetas públicas",
+    "error": "Error al cargar carpetas públicas"
+  },
+  "settings": {
+    "title": "Ajustes de Usuario",
+    "profile": "Perfil",
+    "chooseAvatar": "Elegir Avatar",
+    "displayName": "Nombre de Usuario",
+    "makePublic": "Carpeta Pública (Visible en Explorar)",
+    "account": "Cuenta",
+    "email": "Correo Electrónico",
+    "newPassword": "Nueva Contraseña (dejar en blanco para mantener la actual)",
+    "currentPassword": "Contraseña Actual (requerida para cambios)",
+    "currentPasswordRequired": "Se requiere la contraseña actual para cambiar el correo o la contraseña",
+    "dangerZone": "Zona de Peligro",
+    "deleteAccount": "Eliminar Cuenta",
+    "deleteWarning": "Esta acción es permanente y no se puede deshacer.",
+    "confirmPasswordToDelete": "Introduce tu contraseña para confirmar",
+    "confirmDelete": "Eliminar Cuenta",
+    "confirmDeleteFinal": "¿Estás TOTALMENTE seguro?",
+    "save": "Guardar Cambios",
+    "saveSuccess": "Ajustes guardados correctamente",
+    "saveError": "Error al guardar los ajustes",
+    "deleteError": "Error al eliminar la cuenta"
   },
   "auth": {
     "loginTitle": "Iniciar sesión en Trae la Carpeta",

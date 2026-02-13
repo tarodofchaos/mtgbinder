@@ -55,6 +55,7 @@ dev-dist/
 
 # Claude Code
 .claude/
+.agents/*
 
 # Debug/test files at root
 test-*.ts

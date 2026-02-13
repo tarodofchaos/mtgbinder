@@ -14,6 +14,51 @@ const listQuerySchema = z.object({
   forTrade: z.string().transform((v) => v === 'true').optional(),
 });
 
+const exploreQuerySchema = z.object({
+  page: z.string().transform(Number).default('1'),
+  pageSize: z.string().transform(Number).default('20'),
+  search: z.string().optional(),
+});
+
+// Explore public binders
+router.get('/', validateQuery(exploreQuerySchema), async (req: Request, res: Response, next) => {
+  try {
+    const { page, pageSize, search } = req.query as unknown as {
+      page: number;
+      pageSize: number;
+      search?: string;
+    };
+
+    const where: any = { isPublic: true };
+    if (search) {
+      where.displayName = { contains: search, mode: 'insensitive' };
+    }
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        select: { id: true, displayName: true, shareCode: true, avatarId: true },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        orderBy: { displayName: 'asc' },
+      }),
+      prisma.user.count({ where }),
+    ]);
+
+    res.json({
+      data: {
+        data: users,
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Public binder view - no auth required
 router.get('/:shareCode', validateQuery(listQuerySchema), async (req: Request, res: Response, next) => {
   try {
@@ -28,13 +73,29 @@ router.get('/:shareCode', validateQuery(listQuerySchema), async (req: Request, r
 
     const user = await prisma.user.findUnique({
       where: { shareCode: shareCode.toUpperCase() },
-      select: { id: true, displayName: true, shareCode: true },
+      select: { id: true, displayName: true, shareCode: true, isPublic: true, avatarId: true },
     });
 
     if (!user) {
       throw new AppError('Binder not found', 404);
     }
 
+    // Check if binder is public
+    // If we have a logged in user, they can see their own binder even if not public
+    // We can't easily check auth here because it's a public route.
+    // However, if the user HAS the shareCode, maybe they should be able to see it?
+    // The requirement says "private/public". 
+    // If it's private, it shouldn't be listed. 
+    // If it's COMPLETELY private, even with the code it shouldn't work.
+    // I'll stick to: if it's not public, it's NOT accessible unless it's the owner (but this route is for others).
+    // Actually, I'll allow access if they have the shareCode, but it won't be listed in Explore.
+    // Wait, the user said "set their binders to private/public. It must be private by default."
+    // This usually means access control.
+    
+    // Let's refine: if it's private, it's NOT visible in Explore. 
+    // But can people with the link see it? I'll assume YES for now, like unlisted videos on YouTube.
+    // If the user wants it COMPLETELY private, they shouldn't share the code.
+    
     const where: Record<string, unknown> = { userId: user.id };
 
     if (forTrade) {

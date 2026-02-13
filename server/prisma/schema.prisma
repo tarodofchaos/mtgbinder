@@ -47,6 +47,8 @@ model User {
   email        String   @unique
   passwordHash String
   displayName  String
+  avatarId     String?
+  isPublic     Boolean  @default(false)
   shareCode    String   @unique
   resetToken        String?
   resetTokenExpires DateTime?

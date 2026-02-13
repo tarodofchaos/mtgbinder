@@ -14,15 +14,22 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  Menu,
+  MenuItem,
+  Avatar,
+  ListItemIcon,
 } from '@mui/material';
 import {
   DarkMode as DarkModeIcon,
   LightMode as LightModeIcon,
+  Settings as SettingsIcon,
+  Logout as LogoutIcon,
 } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
 import { useAuth } from '../../context/auth-context';
 import { useTheme } from '../../context/theme-context';
 import { NotificationBell } from '../notifications/NotificationBell';
+import { SettingsModal, AVATARS } from './SettingsModal';
 
 const styles: Record<string, SxProps<Theme>> = {
   appBar: {
@@ -52,6 +59,13 @@ const styles: Record<string, SxProps<Theme>> = {
   userName: {
     color: 'text.secondary',
     fontSize: '0.875rem',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 1,
+    '&:hover': {
+      color: 'text.primary',
+    },
   },
   textLink: {
     color: 'text.secondary',
@@ -67,10 +81,27 @@ export function Header() {
   const { t } = useTranslation();
   const { user, logout, isAuthenticated } = useAuth();
   const { mode, toggleTheme } = useTheme();
+  
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
 
   const handleLogoutClick = () => {
+    handleMenuClose();
     setShowLogoutConfirm(true);
+  };
+
+  const handleSettingsClick = () => {
+    handleMenuClose();
+    setShowSettings(true);
   };
 
   const handleLogoutConfirm = () => {
@@ -81,6 +112,8 @@ export function Header() {
   const handleLogoutCancel = () => {
     setShowLogoutConfirm(false);
   };
+
+  const userAvatar = AVATARS.find(a => a.id === user?.avatarId);
 
   return (
     <AppBar position="static" elevation={0} sx={styles.appBar}>
@@ -103,14 +136,42 @@ export function Header() {
           {isAuthenticated ? (
             <>
               <NotificationBell />
-              <Typography sx={styles.userName}>{user?.displayName}</Typography>
-              <Link
-                component="button"
-                onClick={handleLogoutClick}
-                sx={styles.textLink}
+              <Box onClick={handleMenuOpen} sx={styles.userName}>
+                <Avatar 
+                  sx={{ 
+                    width: 32, 
+                    height: 32, 
+                    bgcolor: userAvatar?.color || 'primary.main',
+                    fontSize: '0.875rem'
+                  }}
+                >
+                  {user?.displayName.charAt(0).toUpperCase()}
+                </Avatar>
+                <Typography variant="body2" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                  {user?.displayName}
+                </Typography>
+              </Box>
+              
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
               >
-                {t('header.logout')}
-              </Link>
+                <MenuItem onClick={handleSettingsClick}>
+                  <ListItemIcon>
+                    <SettingsIcon fontSize="small" />
+                  </ListItemIcon>
+                  {t('header.settings', 'Settings')}
+                </MenuItem>
+                <MenuItem onClick={handleLogoutClick}>
+                  <ListItemIcon>
+                    <LogoutIcon fontSize="small" />
+                  </ListItemIcon>
+                  {t('header.logout')}
+                </MenuItem>
+              </Menu>
             </>
           ) : (
             <>
@@ -129,6 +190,11 @@ export function Header() {
           )}
         </Box>
       </Toolbar>
+
+      <SettingsModal 
+        open={showSettings} 
+        onClose={() => setShowSettings(false)} 
+      />
 
       {/* Logout confirmation dialog */}
       <Dialog open={showLogoutConfirm} onClose={handleLogoutCancel}>

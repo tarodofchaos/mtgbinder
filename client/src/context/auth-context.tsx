@@ -8,10 +8,11 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, displayName: string, inviteCode?: string) => Promise<void>;
+  register: (email: string, password: string, displayName: string, avatarId?: string, inviteCode?: string) => Promise<void>;
   logout: () => void;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, password: string) => Promise<void>;
+  updateUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -53,8 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(userData);
   }
 
-  async function register(email: string, password: string, displayName: string, inviteCode?: string) {
-    const response = await api.post('/auth/register', { email, password, displayName, inviteCode });
+  async function register(email: string, password: string, displayName: string, avatarId?: string, inviteCode?: string) {
+    const response = await api.post('/auth/register', { email, password, displayName, avatarId, inviteCode });
     const { user: userData, token: newToken } = response.data.data;
 
     localStorage.setItem(TOKEN_KEY, newToken);
@@ -69,6 +70,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function resetPassword(token: string, password: string) {
     await api.post('/auth/reset-password', { token, password });
+  }
+
+  function updateUser(userData: User) {
+    setUser(userData);
   }
 
   function logout() {
@@ -90,6 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         forgotPassword,
         resetPassword,
+        updateUser,
       }}
     >
       {children}

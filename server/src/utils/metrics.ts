@@ -68,7 +68,7 @@ export async function getMetrics() {
     
     return appMetrics + '\n' + prismaMetrics;
   } catch (error) {
-    logger.error('Error collecting metrics', error);
+    logger.error({ error }, 'Error collecting metrics');
     return register.metrics();
   }
 }

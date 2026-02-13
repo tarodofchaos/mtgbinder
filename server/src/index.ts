@@ -65,10 +65,13 @@ app.use((req, res, next) => {
   res.on('finish', () => {
     const duration = process.hrtime(start);
     const durationInSeconds = duration[0] + duration[1] / 1e9;
-    const route = req.route?.path || req.path;
     
-    // Only track API routes to keep metrics clean
-    if (req.path.startsWith('/api')) {
+    // Get the route pattern if available, otherwise fallback to the path
+    // We use req.baseUrl + req.route.path to get the full pattern (e.g., /api/cards/:id)
+    const route = req.route ? (req.baseUrl + req.route.path) : req.path;
+    
+    // Ignore health and metrics endpoints to avoid noise from scraping
+    if (req.path !== '/health' && req.path !== '/metrics') {
       httpRequestDurationMicroseconds
         .labels(req.method, route, res.statusCode.toString())
         .observe(durationInSeconds);

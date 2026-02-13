@@ -19,10 +19,15 @@ prisma.card.count().then(count => {
 });
 ")
 
-  if [ "$CARD_COUNT" = "0" ]; then
-    echo "No cards found. Importing card data from MTGJSON in background..."
-    echo "This will take several minutes. Server is starting now."
-    node server/dist/scripts/import-mtgjson.js &
+  # Threshold check: baseline is ~108k. If less than 100k, we likely have an incomplete import.
+  if [ "$CARD_COUNT" -lt "100000" ]; then
+    if [ "$CARD_COUNT" = "0" ]; then
+      echo "No cards found. Importing card data from MTGJSON in background..."
+    else
+      echo "Only $CARD_COUNT cards found. Resuming/Updating card data in background..."
+    fi
+    # Pipe output to stdout so it shows in docker logs (Coolify/Docker)
+    node server/dist/scripts/import-mtgjson.js > /proc/1/fd/1 2>&1 &
   else
     echo "Card data already exists ($CARD_COUNT cards). Skipping import."
     # Check if Spanish names need to be populated
@@ -47,8 +52,7 @@ prisma.card.count({ where: { nameEs: { not: null } } }).then(count => {
 
   if [ "$SPANISH_COUNT" = "0" ]; then
     echo "No Spanish names found. Updating card data in background..."
-    echo "This will take several minutes. Server is starting now."
-    node server/dist/scripts/update-spanish-names.js &
+    node server/dist/scripts/update-spanish-names.js > /proc/1/fd/1 2>&1 &
   else
     echo "Spanish names already populated ($SPANISH_COUNT cards). Skipping update."
   fi

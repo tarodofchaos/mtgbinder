@@ -116,6 +116,11 @@ async function importCardsStreaming(filePath: string): Promise<void> {
       const set = value;
       const setCode = key;
       setsProcessed++;
+      
+      // Log every set during early stages, then less frequently
+      if (setsProcessed <= 20 || setsProcessed % 50 === 0) {
+        console.log(`Processing set ${setsProcessed}: ${set.name} (${setCode}) - ${set.cards.length} cards...`);
+      }
 
       for (const card of set.cards) {
         if (!card.uuid) continue; // Skip cards without UUID
@@ -144,10 +149,16 @@ async function importCardsStreaming(filePath: string): Promise<void> {
           pipeline.pause();
 
           try {
-            importedCards += await flushBatch(batch);
+            const count = await flushBatch(batch);
+            importedCards += count;
             batch = [];
-            process.stdout.write(`\rImported ${importedCards} cards from ${setsProcessed} sets...`);
+            
+            // Periodically log progress to stdout (every ~5000 cards)
+            if (importedCards % 5000 < BATCH_SIZE) {
+              console.log(`Progress: Imported ${importedCards} cards from ${setsProcessed} sets...`);
+            }
           } catch (err) {
+            console.error('Import process interrupted:', err);
             pipeline.destroy();
             reject(err);
             return;

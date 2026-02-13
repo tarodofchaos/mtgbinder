@@ -1,12 +1,13 @@
 import 'dotenv/config';
-import { createReadStream, existsSync } from 'fs';
-import { mkdir, unlink, writeFile } from 'fs/promises';
+import { createReadStream, existsSync, createWriteStream } from 'fs';
+import { mkdir, unlink } from 'fs/promises';
 import { createGunzip } from 'zlib';
 import { PrismaClient } from '@prisma/client';
 import { parser } from 'stream-json';
 import { pick } from 'stream-json/filters/Pick';
 import { streamObject } from 'stream-json/streamers/StreamObject';
 import { chain } from 'stream-chain';
+import { pipeline as streamPipeline } from 'stream/promises';
 
 const prisma = new PrismaClient();
 
@@ -60,15 +61,17 @@ interface CardRecord {
 }
 
 async function downloadFile(url: string, dest: string): Promise<void> {
-  console.log(`Downloading ${url}...`);
+  console.log(`Downloading ${url} to ${dest}...`);
 
   const response = await fetch(url);
-  if (!response.ok) {
+  if (!response.ok || !response.body) {
     throw new Error(`Failed to download: ${response.statusText}`);
   }
 
-  const buffer = await response.arrayBuffer();
-  await writeFile(dest, Buffer.from(buffer));
+  // Use streaming pipeline to save memory
+  // @ts-ignore - Node 22 fetch body is a ReadableStream
+  await streamPipeline(response.body, createWriteStream(dest));
+  
   console.log('Download complete');
 }
 
@@ -93,21 +96,28 @@ async function flushBatch(batch: CardRecord[]): Promise<number> {
 
 async function importCardsStreaming(filePath: string): Promise<void> {
   console.log('Starting streaming card import...');
+  
+  // Optimization: Get already processed set codes to skip them entirely
+  const existingSetCodes = await prisma.card.findMany({
+    select: { setCode: true },
+    distinct: ['setCode'],
+  }).then(results => new Set(results.map(r => r.setCode)));
+  
+  console.log(`Already have ${existingSetCodes.size} sets in database.`);
   console.log('This will take several minutes for ~100k+ cards...\n');
 
   let batch: CardRecord[] = [];
   let importedCards = 0;
   let setsProcessed = 0;
+  let setsSkipped = 0;
 
   return new Promise((resolve, reject) => {
-    // MTGJSON structure: { "meta": {...}, "data": { "SET_CODE": { name, cards: [...] }, ... } }
-    // We use pick to select 'data' and streamObject to get each set
     const pipeline = chain([
       createReadStream(filePath),
       createGunzip(),
       parser(),
-      pick({ filter: 'data' }), // Select the 'data' object
-      streamObject(), // Stream each set as { key: 'SET_CODE', value: { name, cards, ... } }
+      pick({ filter: 'data' }), 
+      streamObject(),
     ]);
 
     pipeline.on('data', async ({ key, value }: { key: string; value: MTGJSONSet }) => {
@@ -115,17 +125,22 @@ async function importCardsStreaming(filePath: string): Promise<void> {
 
       const set = value;
       const setCode = key;
+      
+      // Skip if we already have this set fully processed
+      if (existingSetCodes.has(setCode)) {
+        setsSkipped++;
+        return;
+      }
+
       setsProcessed++;
       
-      // Log every set during early stages, then less frequently
       if (setsProcessed <= 20 || setsProcessed % 50 === 0) {
-        console.log(`Processing set ${setsProcessed}: ${set.name} (${setCode}) - ${set.cards.length} cards...`);
+        console.log(`Processing set ${setsProcessed} (total seen: ${setsProcessed + setsSkipped}): ${set.name} (${setCode}) - ${set.cards.length} cards...`);
       }
 
       for (const card of set.cards) {
-        if (!card.uuid) continue; // Skip cards without UUID
+        if (!card.uuid) continue;
 
-        // Extract Spanish name from foreignData if available
         const spanishName = card.foreignData?.find(fd => fd.language === 'Spanish')?.name || null;
 
         batch.push({
@@ -145,7 +160,6 @@ async function importCardsStreaming(filePath: string): Promise<void> {
         });
 
         if (batch.length >= BATCH_SIZE) {
-          // Pause stream while we flush
           pipeline.pause();
 
           try {
@@ -153,9 +167,8 @@ async function importCardsStreaming(filePath: string): Promise<void> {
             importedCards += count;
             batch = [];
             
-            // Periodically log progress to stdout (every ~5000 cards)
-            if (importedCards % 5000 < BATCH_SIZE) {
-              console.log(`Progress: Imported ${importedCards} cards from ${setsProcessed} sets...`);
+            if (importedCards > 0 && importedCards % 5000 < BATCH_SIZE) {
+              console.log(`Progress: Imported ${importedCards} new cards from ${setsProcessed} new sets...`);
             }
           } catch (err) {
             console.error('Import process interrupted:', err);
@@ -171,11 +184,11 @@ async function importCardsStreaming(filePath: string): Promise<void> {
 
     pipeline.on('end', async () => {
       try {
-        // Flush remaining cards
         importedCards += await flushBatch(batch);
         console.log(`\n\nImport complete!`);
-        console.log(`  Total sets: ${setsProcessed}`);
-        console.log(`  Total cards: ${importedCards}`);
+        console.log(`  New sets processed: ${setsProcessed}`);
+        console.log(`  Sets skipped (already in DB): ${setsSkipped}`);
+        console.log(`  New cards imported: ${importedCards}`);
         resolve();
       } catch (err) {
         reject(err);
@@ -190,22 +203,18 @@ async function importCardsStreaming(filePath: string): Promise<void> {
 
 async function main(): Promise<void> {
   try {
-    // Create data directory
     if (!existsSync(DATA_DIR)) {
       await mkdir(DATA_DIR, { recursive: true });
     }
 
-    // Download if not exists
     if (!existsSync(COMPRESSED_FILE)) {
       await downloadFile(MTGJSON_URL, COMPRESSED_FILE);
     } else {
       console.log('Using cached AllPrintings.json.gz');
     }
 
-    // Stream parse and import
     await importCardsStreaming(COMPRESSED_FILE);
 
-    // Cleanup
     console.log('\nCleaning up...');
     await unlink(COMPRESSED_FILE);
 

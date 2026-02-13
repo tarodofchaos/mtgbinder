@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { logger } from '../utils/logger';
 import { config } from '../utils/config';
 import { prisma } from '../utils/prisma';
+import { activeSocketConnections } from '../utils/metrics';
 
 let io: Server | null = null;
 
@@ -48,6 +49,7 @@ export function initializeSocket(httpServer: HttpServer): Server {
   });
 
   io.on('connection', (socket: AuthenticatedSocket) => {
+    activeSocketConnections.inc();
     logger.info({ userId: socket.userId }, 'User connected to socket');
 
     // Join user's personal room
@@ -179,6 +181,7 @@ export function initializeSocket(httpServer: HttpServer): Server {
     });
 
     socket.on('disconnect', (reason) => {
+      activeSocketConnections.dec();
       logger.info({ userId: socket.userId, reason }, 'User disconnected from socket');
     });
   });

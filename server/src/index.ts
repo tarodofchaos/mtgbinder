@@ -16,6 +16,7 @@ import { prisma } from './utils/prisma';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
 import { initializeSocket } from './services/socket-service';
 import { startPriceCheckScheduler } from './services/price-check-service';
+import { getMetrics, httpRequestDurationMicroseconds, httpRequestsTotal } from './utils/metrics';
 
 // Routes
 import { authRouter } from './routes/auth';
@@ -41,7 +42,7 @@ app.use(
   pinoHttp({
     logger,
     autoLogging: {
-      ignore: (req) => req.url === '/health',
+      ignore: (req) => req.url === '/health' || req.url === '/metrics',
     },
     customLogLevel: (_req, res, error) => {
       if (error || res.statusCode >= 500) return 'error';
@@ -56,6 +57,30 @@ app.use(
     },
   })
 );
+
+// Prometheus metrics middleware
+app.use((req, res, next) => {
+  const start = process.hrtime();
+  
+  res.on('finish', () => {
+    const duration = process.hrtime(start);
+    const durationInSeconds = duration[0] + duration[1] / 1e9;
+    const route = req.route?.path || req.path;
+    
+    // Only track API routes to keep metrics clean
+    if (req.path.startsWith('/api')) {
+      httpRequestDurationMicroseconds
+        .labels(req.method, route, res.statusCode.toString())
+        .observe(durationInSeconds);
+        
+      httpRequestsTotal
+        .labels(req.method, route, res.statusCode.toString())
+        .inc();
+    }
+  });
+  
+  next();
+});
 
 // Security middleware
 app.use(
@@ -118,7 +143,7 @@ const apiLimiter = rateLimit({
   },
   standardHeaders: true, // Return rate limit info in headers
   legacyHeaders: false, // Disable X-RateLimit-* headers
-  skip: (req) => req.path === '/health', // Don't rate limit health checks
+  skip: (req) => req.path === '/health' || req.path === '/metrics', // Don't rate limit health/metrics checks
 });
 
 // Stricter rate limit for auth endpoints to prevent brute force
@@ -136,6 +161,16 @@ const authLimiter = rateLimit({
 // Health check (before rate limiting)
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Metrics endpoint (ideally should be restricted to internal network)
+app.get('/metrics', async (_req, res) => {
+  try {
+    res.set('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+    res.end(await getMetrics());
+  } catch (error) {
+    res.status(500).end(error instanceof Error ? error.message : 'Error collecting metrics');
+  }
 });
 
 // Serve uploaded images

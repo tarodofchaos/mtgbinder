@@ -2,6 +2,7 @@ import { NotificationType } from '@prisma/client';
 import { prisma } from '../utils/prisma';
 import { logger } from '../utils/logger';
 import { emitToUser } from './socket-service';
+import { priceAlertsTotal } from '../utils/metrics';
 
 interface PriceDropAlert {
   userId: string;
@@ -97,6 +98,9 @@ export async function checkWishlistPrices(): Promise<number> {
             card: true,
           },
         });
+
+        // Increment Prometheus counter
+        priceAlertsTotal.inc();
 
         // Emit socket event to user
         emitToUser(alert.userId, 'notification', {

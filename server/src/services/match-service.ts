@@ -1,5 +1,6 @@
 import { CardCondition } from '@prisma/client';
 import { prisma } from '../utils/prisma';
+import { tradeMatchesTotal } from '../utils/metrics';
 
 interface TradeMatch {
   cardId: string;
@@ -41,6 +42,9 @@ export async function computeTradeMatches(
   userAId: string,
   userBId: string
 ): Promise<TradeMatchResult> {
+  // Increment Prometheus counter
+  tradeMatchesTotal.inc();
+
   // Get ALL cards User A has for trade
   const userATradeableRaw = await prisma.$queryRaw<
     Array<{

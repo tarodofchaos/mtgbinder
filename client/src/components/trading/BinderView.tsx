@@ -17,6 +17,7 @@ import {
   OpenInNew as ExternalLinkIcon,
 } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { CollectionItem, CardCondition, getCardmarketUrl } from '@mtg-binder/shared';
 import { CardImage } from '../cards/CardImage';
 
@@ -33,15 +34,6 @@ const CARDS_PER_SPREAD = CARDS_PER_PAGE * 2; // Left + right page
 // Two pages side by side = 6 cards wide, 3 cards tall
 // Spread ratio ≈ (6 × 0.716) / 3 = 1.43, but we add some padding
 const SPREAD_ASPECT_RATIO = '1.5 / 1';
-
-const conditionLabels: Record<CardCondition, string> = {
-  M: 'Mint',
-  NM: 'Near Mint',
-  LP: 'Lightly Played',
-  MP: 'Moderately Played',
-  HP: 'Heavily Played',
-  DMG: 'Damaged',
-};
 
 const styles: Record<string, SxProps<Theme>> = {
   container: {
@@ -206,6 +198,7 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 export function BinderView({ items }: BinderViewProps) {
+  const { t } = useTranslation();
   const [currentSpread, setCurrentSpread] = useState(0);
   const [isFlipping, setIsFlipping] = useState(false);
   const [flipDirection, setFlipDirection] = useState<'next' | 'prev' | null>(null);
@@ -260,6 +253,18 @@ export function BinderView({ items }: BinderViewProps) {
 
   const handleCloseModal = () => {
     setSelectedCard(null);
+  };
+
+  const getConditionLabel = (condition: CardCondition): string => {
+    const labels: Record<CardCondition, string> = {
+      M: t('conditions.mint'),
+      NM: t('conditions.nearMint'),
+      LP: t('conditions.lightlyPlayed'),
+      MP: t('conditions.moderatelyPlayed'),
+      HP: t('conditions.heavilyPlayed'),
+      DMG: t('conditions.damaged'),
+    };
+    return labels[condition] || condition;
   };
 
   const renderCardSlot = (item: CollectionItem | undefined, index: number) => {
@@ -373,10 +378,10 @@ export function BinderView({ items }: BinderViewProps) {
 
         <Box sx={styles.pageInfo}>
           <Typography variant="body2" color="text.secondary">
-            Pages {currentSpread * 2 + 1}-{currentSpread * 2 + 2}
+            {t('publicBinder.pages', { start: currentSpread * 2 + 1, end: currentSpread * 2 + 2 })}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            of {totalSpreads * 2}
+            {t('publicBinder.ofTotal', { total: totalSpreads * 2 })}
           </Typography>
         </Box>
 
@@ -391,7 +396,7 @@ export function BinderView({ items }: BinderViewProps) {
       </Box>
 
       <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
-        {items.length} cards in binder • Tap a card to enlarge
+        {t('publicBinder.binderHelp', { count: items.length })}
       </Typography>
 
       {/* Card Detail Modal */}
@@ -437,24 +442,24 @@ export function BinderView({ items }: BinderViewProps) {
                 </Typography>
                 <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1 }}>
                   <Chip
-                    label={conditionLabels[selectedCard.condition as CardCondition]}
+                    label={getConditionLabel(selectedCard.condition as CardCondition)}
                     size="small"
                     variant="outlined"
                   />
                   <Chip
-                    label={`${selectedCard.forTrade} for trade`}
+                    label={t('collection.copiesForTrade', { count: selectedCard.forTrade })}
                     size="small"
                     color="success"
                   />
                   {selectedCard.isAlter && (
-                    <Chip label="Alter" size="small" color="secondary" />
+                    <Chip label={t('common.alter')} size="small" color="secondary" />
                   )}
                   {selectedCard.foilQuantity > 0 && (
-                    <Chip label="Foil" size="small" color="warning" />
+                    <Chip label={t('common.foil')} size="small" color="warning" />
                   )}
                   {selectedCard.tradePrice !== null && (
                     <Chip
-                      label={`€${selectedCard.tradePrice.toFixed(2)} each`}
+                      label={t('trade.eachPrice', { price: selectedCard.tradePrice.toFixed(2) })}
                       size="small"
                       color="primary"
                     />
@@ -477,7 +482,7 @@ export function BinderView({ items }: BinderViewProps) {
                   rel="noopener noreferrer"
                   sx={{ mt: 2 }}
                 >
-                  View on Cardmarket
+                  {t('publicBinder.viewOnCardmarket')}
                 </Button>
               </Paper>
             </>

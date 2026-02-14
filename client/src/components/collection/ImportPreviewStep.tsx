@@ -27,6 +27,7 @@ import {
   Edit as EditIcon,
 } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import type { Card } from '@mtg-binder/shared';
 import { DuplicateMode, PreviewRow, PreviewStats } from '../../services/import-service';
 import { CardImage } from '../cards/CardImage';
@@ -120,6 +121,7 @@ export function ImportPreviewStep({
   isLoading,
   deckInfo,
 }: ImportPreviewStepProps) {
+  const { t } = useTranslation();
   const [showAll, setShowAll] = useState(false);
   const [printingSelectorRow, setPrintingSelectorRow] = useState<number | null>(null);
 
@@ -139,7 +141,7 @@ export function ImportPreviewStep({
       return (
         <Chip
           icon={<ReadyIcon />}
-          label="Custom"
+          label={t('import.custom')}
           color="info"
           size="small"
         />
@@ -151,7 +153,7 @@ export function ImportPreviewStep({
         return (
           <Chip
             icon={<ReadyIcon />}
-            label="Ready"
+            label={t('import.readyLabel')}
             color="success"
             size="small"
           />
@@ -160,7 +162,7 @@ export function ImportPreviewStep({
         return (
           <Chip
             icon={<ErrorIcon />}
-            label="Not Found"
+            label={t('import.notFoundLabel')}
             color="error"
             size="small"
           />
@@ -169,7 +171,7 @@ export function ImportPreviewStep({
         return (
           <Chip
             icon={<ErrorIcon />}
-            label="Error"
+            label={t('import.error')}
             color="error"
             size="small"
           />
@@ -185,8 +187,8 @@ export function ImportPreviewStep({
       {deckInfo && (deckInfo.name || deckInfo.author) && (
         <Alert severity="success" sx={{ mb: 1 }}>
           <Typography variant="body2">
-            <strong>{deckInfo.name || 'Deck'}</strong>
-            {deckInfo.author && ` by ${deckInfo.author}`}
+            <strong>{deckInfo.name || t('import.decklist')}</strong>
+            {deckInfo.author && ' ' + t('import.byAuthor', { author: deckInfo.author })}
             {deckInfo.source && ` (${deckInfo.source})`}
           </Typography>
         </Alert>
@@ -195,19 +197,19 @@ export function ImportPreviewStep({
       {/* Stats summary */}
       <Box sx={styles.statsRow}>
         <Chip
-          label={`${stats.total} total cards`}
+          label={t('import.totalCards', { count: stats.total })}
           variant="outlined"
           sx={styles.statChip}
         />
         <Chip
-          label={`${stats.ready} ready`}
+          label={t('import.ready', { count: stats.ready })}
           color="success"
           variant="outlined"
           sx={styles.statChip}
         />
         {stats.notFound > 0 && (
           <Chip
-            label={`${stats.notFound} not found`}
+            label={t('import.notFound', { count: stats.notFound })}
             color="error"
             variant="outlined"
             sx={styles.statChip}
@@ -215,7 +217,7 @@ export function ImportPreviewStep({
         )}
         {stats.errors > 0 && (
           <Chip
-            label={`${stats.errors} errors`}
+            label={t('import.errors', { count: stats.errors })}
             color="error"
             variant="outlined"
             sx={styles.statChip}
@@ -226,8 +228,7 @@ export function ImportPreviewStep({
       {/* Not found warning */}
       {stats.notFound > 0 && (
         <Alert severity="warning">
-          {stats.notFound} card{stats.notFound > 1 ? 's were' : ' was'} not found in the database.
-          You can click the card row to select a different printing, or these cards will be skipped during import.
+          {t('import.notFoundWarning', { count: stats.notFound })}
         </Alert>
       )}
 
@@ -236,7 +237,7 @@ export function ImportPreviewStep({
         <FormControl component="fieldset">
           <FormLabel component="legend">
             <Typography variant="subtitle2" sx={{ mb: 1 }}>
-              If a card already exists in your collection:
+              {t('import.duplicateModeTitle')}
             </Typography>
           </FormLabel>
           <RadioGroup
@@ -249,9 +250,9 @@ export function ImportPreviewStep({
               control={<Radio size="small" />}
               label={
                 <Box>
-                  <Typography variant="body2">Add to existing</Typography>
+                  <Typography variant="body2">{t('import.addToExisting')}</Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Increase quantities
+                    {t('import.addToExistingHelp')}
                   </Typography>
                 </Box>
               }
@@ -261,9 +262,9 @@ export function ImportPreviewStep({
               control={<Radio size="small" />}
               label={
                 <Box>
-                  <Typography variant="body2">Skip duplicates</Typography>
+                  <Typography variant="body2">{t('import.skipDuplicates')}</Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Only import new cards
+                    {t('import.skipDuplicatesHelp')}
                   </Typography>
                 </Box>
               }
@@ -273,9 +274,9 @@ export function ImportPreviewStep({
               control={<Radio size="small" />}
               label={
                 <Box>
-                  <Typography variant="body2">Replace existing</Typography>
+                  <Typography variant="body2">{t('import.replaceExisting')}</Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Overwrite quantities
+                    {t('import.replaceExistingHelp')}
                   </Typography>
                 </Box>
               }
@@ -289,12 +290,12 @@ export function ImportPreviewStep({
         <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell>Card</TableCell>
-              <TableCell align="center">Qty</TableCell>
-              <TableCell align="center">Foil</TableCell>
-              <TableCell align="center">Condition</TableCell>
-              <TableCell align="center">For Trade</TableCell>
-              <TableCell sx={styles.statusCell}>Status</TableCell>
+              <TableCell>{t('import.cardName')}</TableCell>
+              <TableCell align="center">{t('common.qty')}</TableCell>
+              <TableCell align="center">{t('common.foil')}</TableCell>
+              <TableCell align="center">{t('common.condition')}</TableCell>
+              <TableCell align="center">{t('collection.forTrade')}</TableCell>
+              <TableCell sx={styles.statusCell}>{t('import.status')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -341,7 +342,7 @@ export function ImportPreviewStep({
                           e.stopPropagation();
                           setPrintingSelectorRow(index);
                         }}
-                        title="Change printing"
+                        title={t('import.changePrinting')}
                       >
                         <EditIcon fontSize="small" />
                       </IconButton>
@@ -370,8 +371,8 @@ export function ImportPreviewStep({
             size="small"
           >
             {showAll
-              ? 'Show less'
-              : `Show all ${previewRows.length} cards`}
+              ? t('import.showLess')
+              : t('import.showAll', { count: previewRows.length })}
           </Button>
         </Box>
       )}
@@ -383,14 +384,14 @@ export function ImportPreviewStep({
           onClick={onBack}
           disabled={isLoading}
         >
-          Back
+          {t('common.back')}
         </Button>
         <Button
           variant="contained"
           onClick={onImport}
           disabled={!canImport || isLoading}
         >
-          {isLoading ? 'Preparing...' : `Import ${stats.ready} Cards`}
+          {isLoading ? t('import.preparing') : t('import.importCards', { count: stats.ready })}
         </Button>
       </Box>
 

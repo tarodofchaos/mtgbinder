@@ -223,7 +223,7 @@ export function MatchList({
                     </Box>
                   )}
                   {match.isAlter && (
-                    <Chip label="Alter" size="small" color="secondary" sx={{ height: 20, fontSize: '0.65rem' }} />
+                    <Chip label={t('common.alter')} size="small" color="secondary" sx={{ height: 20, fontSize: '0.65rem' }} />
                   )}
                 </Box>
                 <Typography variant="body2" color="text.secondary">
@@ -251,7 +251,7 @@ export function MatchList({
                 <TextField
                   select
                   size="small"
-                  label="Qty"
+                  label={t('common.qty')}
                   value={selectedQuantity || 1}
                   sx={styles.quantitySelector}
                   onClick={(e) => e.stopPropagation()}
@@ -272,7 +272,7 @@ export function MatchList({
                 {unitPrice > 0 && (
                   <>
                     <Typography variant="caption" color="text.secondary" display="block">
-                      €{unitPrice.toFixed(2)} each
+                      {t('trade.eachPrice', { price: unitPrice.toFixed(2) })}
                     </Typography>
                     <Typography variant="body2" sx={styles.price} fontWeight={600}>
                       €{(unitPrice * (isSelectable && isSelected ? selectedQuantity : match.availableQuantity)).toFixed(2)}

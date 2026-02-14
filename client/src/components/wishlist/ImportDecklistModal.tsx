@@ -153,7 +153,7 @@ export function ImportDecklistModal({ isOpen, onClose, onSuccess }: ImportDeckli
       const result = await importFromUrl(url, 'wishlist');
 
       if (result.entries.length === 0) {
-        setUrlError('No cards found in the deck.');
+        setUrlError(t('import.noCardsFoundInDeck'));
         setIsUrlLoading(false);
         return;
       }
@@ -176,7 +176,7 @@ export function ImportDecklistModal({ isOpen, onClose, onSuccess }: ImportDeckli
         source: result.source,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to fetch deck';
+      const message = error instanceof Error ? error.message : t('import.fetchFailed');
       setUrlError(message);
     } finally {
       setIsUrlLoading(false);
@@ -203,12 +203,12 @@ export function ImportDecklistModal({ isOpen, onClose, onSuccess }: ImportDeckli
 
   const getStatusText = (item: DecklistPreviewItem) => {
     if (!item.matchedCard) {
-      return t('import.notFound', 'Not found');
+      return t('import.notFound');
     }
     if (item.alreadyInWishlist) {
-      return t('import.alreadyInWishlist', 'Already in wishlist');
+      return t('import.alreadyInWishlist');
     }
-    return t('import.readyToImport', 'Ready to import');
+    return t('import.readyToImport');
   };
 
   const cardsToImport = preview?.filter(
@@ -216,7 +216,7 @@ export function ImportDecklistModal({ isOpen, onClose, onSuccess }: ImportDeckli
   ).length || 0;
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title={t('wishlist.importDecklist', 'Import Decklist')} size="xl">
+    <Modal isOpen={isOpen} onClose={handleClose} title={t('wishlist.importDecklist')} size="xl">
       <Stack spacing={3}>
         {!preview ? (
           <>
@@ -226,67 +226,67 @@ export function ImportDecklistModal({ isOpen, onClose, onSuccess }: ImportDeckli
               onChange={handleMethodChange}
               sx={styles.tabs}
             >
-              <Tab label={t('import.tabText', 'Paste Text')} value="text" />
-              <Tab label={t('import.tabUrl', 'Import URL')} value="url" />
+              <Tab label={t('import.tabText')} value="text" />
+              <Tab label={t('import.tabUrl')} value="url" />
             </Tabs>
 
             {importMethod === 'text' && (
               <>
                 <Alert severity="info" sx={styles.helpText}>
                   <Typography variant="body2" gutterBottom>
-                    <strong>{t('import.supportedFormats', 'Supported formats:')}</strong>
+                    <strong>{t('import.supportedFormats')}</strong>
                   </Typography>
                   <Typography variant="body2" component="div">
                     • 4 Lightning Bolt<br />
                     • 4x Card Name<br />
                     • Card Name x4<br />
-                    • 4 Lightning Bolt (M10) - {t('import.withSetCode', 'with set code')}
+                    • 4 Lightning Bolt (M10) - {t('import.withSetCode')}
                   </Typography>
                   <Typography variant="body2" sx={{ mt: 1 }}>
-                    {t('import.sideboardNote', 'Sideboard markers (Sideboard:, SB:) will be ignored.')}
+                    {t('import.sideboardNote')}
                   </Typography>
                 </Alert>
 
                 <TextField
-                  label={t('import.decklist', 'Decklist')}
+                  label={t('import.decklist')}
                   multiline
                   rows={12}
                   fullWidth
                   value={decklistText}
                   onChange={(e) => setDecklistText(e.target.value)}
                   placeholder="4 Lightning Bolt&#10;3x Counterspell&#10;Brainstorm x2"
-                  helperText={t('import.pasteDecklist', 'Paste your decklist here')}
+                  helperText={t('import.pasteDecklist')}
                 />
 
                 <TextField
                   select
-                  label={t('import.defaultPriority', 'Default Priority')}
+                  label={t('import.defaultPriority')}
                   value={priority}
                   onChange={(e) => setPriority(e.target.value as WishlistPriority)}
                   fullWidth
                 >
-                  <MenuItem value={WishlistPriority.LOW}>{t('priorities.low', 'Low')}</MenuItem>
-                  <MenuItem value={WishlistPriority.NORMAL}>{t('priorities.normal', 'Normal')}</MenuItem>
-                  <MenuItem value={WishlistPriority.HIGH}>{t('priorities.high', 'High')}</MenuItem>
-                  <MenuItem value={WishlistPriority.URGENT}>{t('priorities.urgent', 'Urgent')}</MenuItem>
+                  <MenuItem value={WishlistPriority.LOW}>{t('priorities.low')}</MenuItem>
+                  <MenuItem value={WishlistPriority.NORMAL}>{t('priorities.normal')}</MenuItem>
+                  <MenuItem value={WishlistPriority.HIGH}>{t('priorities.high')}</MenuItem>
+                  <MenuItem value={WishlistPriority.URGENT}>{t('priorities.urgent')}</MenuItem>
                 </TextField>
 
                 {previewMutation.isError && (
                   <Alert severity="error">
-                    {t('import.parseError', 'Failed to parse decklist. Please check the format and try again.')}
+                    {t('import.parseError')}
                   </Alert>
                 )}
 
                 <Box sx={styles.buttonGroup}>
                   <Button variant="outlined" onClick={handleClose}>
-                    {t('common.cancel', 'Cancel')}
+                    {t('common.cancel')}
                   </Button>
                   <Button
                     variant="contained"
                     onClick={handlePreview}
                     disabled={!decklistText.trim() || previewMutation.isPending}
                   >
-                    {previewMutation.isPending ? t('import.parsing', 'Parsing...') : t('import.previewImport', 'Preview Import')}
+                    {previewMutation.isPending ? t('import.parsing') : t('import.previewImport')}
                   </Button>
                 </Box>
               </>
@@ -296,16 +296,16 @@ export function ImportDecklistModal({ isOpen, onClose, onSuccess }: ImportDeckli
               <>
                 <TextField
                   select
-                  label={t('import.defaultPriority', 'Default Priority')}
+                  label={t('import.defaultPriority')}
                   value={priority}
                   onChange={(e) => setPriority(e.target.value as WishlistPriority)}
                   fullWidth
                   sx={{ mb: 2 }}
                 >
-                  <MenuItem value={WishlistPriority.LOW}>{t('priorities.low', 'Low')}</MenuItem>
-                  <MenuItem value={WishlistPriority.NORMAL}>{t('priorities.normal', 'Normal')}</MenuItem>
-                  <MenuItem value={WishlistPriority.HIGH}>{t('priorities.high', 'High')}</MenuItem>
-                  <MenuItem value={WishlistPriority.URGENT}>{t('priorities.urgent', 'Urgent')}</MenuItem>
+                  <MenuItem value={WishlistPriority.LOW}>{t('priorities.low')}</MenuItem>
+                  <MenuItem value={WishlistPriority.NORMAL}>{t('priorities.normal')}</MenuItem>
+                  <MenuItem value={WishlistPriority.HIGH}>{t('priorities.high')}</MenuItem>
+                  <MenuItem value={WishlistPriority.URGENT}>{t('priorities.urgent')}</MenuItem>
                 </TextField>
 
                 <UrlImportTab
@@ -316,7 +316,7 @@ export function ImportDecklistModal({ isOpen, onClose, onSuccess }: ImportDeckli
 
                 <Box sx={styles.buttonGroup}>
                   <Button variant="outlined" onClick={handleClose}>
-                    {t('common.cancel', 'Cancel')}
+                    {t('common.cancel')}
                   </Button>
                 </Box>
               </>
@@ -328,8 +328,8 @@ export function ImportDecklistModal({ isOpen, onClose, onSuccess }: ImportDeckli
             {deckInfo && (deckInfo.name || deckInfo.author) && (
               <Alert severity="success" sx={styles.deckInfo}>
                 <Typography variant="body2">
-                  <strong>{deckInfo.name || 'Deck'}</strong>
-                  {deckInfo.author && ` by ${deckInfo.author}`}
+                  <strong>{deckInfo.name || t('import.deck')}</strong>
+                  {deckInfo.author && ' ' + t('import.byAuthor', { author: deckInfo.author })}
                   {deckInfo.source && ` (${deckInfo.source})`}
                 </Typography>
               </Alert>
@@ -337,14 +337,14 @@ export function ImportDecklistModal({ isOpen, onClose, onSuccess }: ImportDeckli
 
             <Alert severity="info">
               <Typography variant="body2">
-                {t('import.foundCards', 'Found {{count}} cards.', { count: preview.length })} {cardsToImport} {t('import.willBeImported', 'will be imported.')}
+                {t('import.foundCards', { count: preview.length })} {cardsToImport} {t('import.willBeImported')}
               </Typography>
             </Alert>
 
             {parseErrors.length > 0 && (
               <Alert severity="warning">
                 <Typography variant="body2" fontWeight={500}>
-                  {t('import.someLinesFailed', 'Some lines could not be parsed:')}
+                  {t('import.someLinesFailed')}
                 </Typography>
                 <Box component="ul" sx={{ mt: 1, mb: 0, pl: 2 }}>
                   {parseErrors.slice(0, 5).map((error, idx) => (
@@ -355,7 +355,7 @@ export function ImportDecklistModal({ isOpen, onClose, onSuccess }: ImportDeckli
                   {parseErrors.length > 5 && (
                     <li>
                       <Typography variant="caption">
-                        ... {t('import.andMore', 'and {{count}} more', { count: parseErrors.length - 5 })}
+                        ... {t('import.andMore', { count: parseErrors.length - 5 })}
                       </Typography>
                     </li>
                   )}
@@ -369,11 +369,11 @@ export function ImportDecklistModal({ isOpen, onClose, onSuccess }: ImportDeckli
                   <TableRow>
                     <TableCell sx={styles.statusCell}></TableCell>
                     <TableCell sx={styles.cardImageCell}></TableCell>
-                    <TableCell>{t('import.cardName', 'Card Name')}</TableCell>
-                    <TableCell>{t('import.set', 'Set')}</TableCell>
-                    <TableCell align="center">{t('import.need', 'Need')}</TableCell>
-                    <TableCell align="center">{t('import.own', 'Own')}</TableCell>
-                    <TableCell>{t('import.status', 'Status')}</TableCell>
+                    <TableCell>{t('import.cardName')}</TableCell>
+                    <TableCell>{t('import.set')}</TableCell>
+                    <TableCell align="center">{t('import.need')}</TableCell>
+                    <TableCell align="center">{t('import.own')}</TableCell>
+                    <TableCell>{t('import.status')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -445,13 +445,13 @@ export function ImportDecklistModal({ isOpen, onClose, onSuccess }: ImportDeckli
 
             {confirmMutation.isError && (
               <Alert severity="error">
-                {t('import.importError', 'Failed to import cards. Please try again.')}
+                {t('import.importError')}
               </Alert>
             )}
 
             <Box sx={styles.buttonGroup}>
               <Button variant="outlined" onClick={handleClose}>
-                {t('common.cancel', 'Cancel')}
+                {t('common.cancel')}
               </Button>
               <Button
                 variant="outlined"
@@ -461,7 +461,7 @@ export function ImportDecklistModal({ isOpen, onClose, onSuccess }: ImportDeckli
                   setDeckInfo(null);
                 }}
               >
-                {t('common.back', 'Back')}
+                {t('common.back')}
               </Button>
               <Button
                 variant="contained"
@@ -469,8 +469,8 @@ export function ImportDecklistModal({ isOpen, onClose, onSuccess }: ImportDeckli
                 disabled={cardsToImport === 0 || confirmMutation.isPending}
               >
                 {confirmMutation.isPending
-                  ? t('import.importing', 'Importing...')
-                  : t('import.importCards', 'Import {{count}} Cards', { count: cardsToImport })}
+                  ? t('import.importing')
+                  : t('import.importCards', { count: cardsToImport })}
               </Button>
             </Box>
           </>

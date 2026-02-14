@@ -149,7 +149,7 @@ export function NotificationBell() {
       <IconButton
         onClick={handleClick}
         sx={styles.iconButton}
-        aria-label="notifications"
+        aria-label={t('notifications.title')}
         aria-controls={open ? 'notification-menu' : undefined}
         aria-haspopup="true"
         aria-expanded={open ? 'true' : undefined}

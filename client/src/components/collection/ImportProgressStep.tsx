@@ -5,6 +5,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { BatchProgress } from '../../services/import-service';
 
 interface ImportProgressStepProps {
@@ -37,15 +38,16 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 export function ImportProgressStep({ progress, totalCards }: ImportProgressStepProps) {
+  const { t } = useTranslation();
   const isSmallImport = totalCards <= 100;
 
   if (isSmallImport || !progress) {
     return (
       <Box sx={styles.container}>
         <CircularProgress size={60} />
-        <Typography variant="h6">Importing cards...</Typography>
+        <Typography variant="h6">{t('import.importing')}</Typography>
         <Typography variant="body2" color="text.secondary">
-          Please wait while we add {totalCards} cards to your collection
+          {t('import.progressMessage', { count: totalCards })}
         </Typography>
       </Box>
     );
@@ -54,7 +56,7 @@ export function ImportProgressStep({ progress, totalCards }: ImportProgressStepP
   return (
     <Box sx={styles.container}>
       <CircularProgress size={60} />
-      <Typography variant="h6">Importing cards...</Typography>
+      <Typography variant="h6">{t('import.importing')}</Typography>
 
       <Box sx={styles.progressWrapper}>
         <LinearProgress
@@ -64,7 +66,7 @@ export function ImportProgressStep({ progress, totalCards }: ImportProgressStepP
         />
         <Box sx={styles.progressText}>
           <Typography variant="body2" color="text.secondary">
-            Batch {progress.currentBatch} of {progress.totalBatches}
+            {t('import.batchProgress', { current: progress.currentBatch, total: progress.totalBatches })}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             {progress.percentage}%
@@ -73,7 +75,7 @@ export function ImportProgressStep({ progress, totalCards }: ImportProgressStepP
       </Box>
 
       <Typography variant="body2" color="text.secondary">
-        Processing {totalCards} cards in {progress.totalBatches} batches
+        {t('import.processingBatches', { count: totalCards, batches: progress.totalBatches })}
       </Typography>
     </Box>
   );

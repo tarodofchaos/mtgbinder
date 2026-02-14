@@ -17,6 +17,7 @@ import {
   ExpandLess as CollapseIcon,
 } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { ImportResult } from '../../services/import-service';
 
 interface ImportResultsStepProps {
@@ -68,6 +69,7 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 export function ImportResultsStep({ result, onClose }: ImportResultsStepProps) {
+  const { t } = useTranslation();
   const [showErrors, setShowErrors] = useState(false);
 
   const isSuccess = result.failed === 0;
@@ -84,15 +86,15 @@ export function ImportResultsStep({ result, onClose }: ImportResultsStepProps) {
 
       {/* Title */}
       <Typography variant="h5">
-        {isSuccess ? 'Import Complete!' : 'Import Completed with Errors'}
+        {isSuccess ? t('import.importComplete') : t('import.importCompleteWithErrors')}
       </Typography>
 
       {/* Summary alert */}
       <Alert severity={isSuccess ? 'success' : 'warning'} sx={{ width: '100%' }}>
-        {result.imported > 0 && `${result.imported} new card${result.imported !== 1 ? 's' : ''} imported. `}
-        {result.updated > 0 && `${result.updated} card${result.updated !== 1 ? 's' : ''} updated. `}
-        {result.skipped > 0 && `${result.skipped} card${result.skipped !== 1 ? 's' : ''} skipped. `}
-        {result.failed > 0 && `${result.failed} card${result.failed !== 1 ? 's' : ''} failed. `}
+        {result.imported > 0 && t('import.importedCardsMsg', { count: result.imported }) + ' '}
+        {result.updated > 0 && t('import.updatedCardsMsg', { count: result.updated }) + ' '}
+        {result.skipped > 0 && t('import.skippedCardsMsg', { count: result.skipped }) + ' '}
+        {result.failed > 0 && t('import.failedCardsMsg', { count: result.failed }) + ' '}
       </Alert>
 
       {/* Stats grid */}
@@ -101,25 +103,25 @@ export function ImportResultsStep({ result, onClose }: ImportResultsStepProps) {
           <Typography sx={{ ...styles.statValue, color: 'success.main' }}>
             {result.imported}
           </Typography>
-          <Typography sx={styles.statLabel}>New Cards</Typography>
+          <Typography sx={styles.statLabel}>{t('import.newCards')}</Typography>
         </Paper>
         <Paper sx={styles.statCard} elevation={1}>
           <Typography sx={{ ...styles.statValue, color: 'info.main' }}>
             {result.updated}
           </Typography>
-          <Typography sx={styles.statLabel}>Updated</Typography>
+          <Typography sx={styles.statLabel}>{t('import.updated')}</Typography>
         </Paper>
         <Paper sx={styles.statCard} elevation={1}>
           <Typography sx={{ ...styles.statValue, color: 'text.secondary' }}>
             {result.skipped}
           </Typography>
-          <Typography sx={styles.statLabel}>Skipped</Typography>
+          <Typography sx={styles.statLabel}>{t('import.skipped')}</Typography>
         </Paper>
         <Paper sx={styles.statCard} elevation={1}>
           <Typography sx={{ ...styles.statValue, color: result.failed > 0 ? 'error.main' : 'text.secondary' }}>
             {result.failed}
           </Typography>
-          <Typography sx={styles.statLabel}>Failed</Typography>
+          <Typography sx={styles.statLabel}>{t('import.failed')}</Typography>
         </Paper>
       </Box>
 
@@ -132,7 +134,7 @@ export function ImportResultsStep({ result, onClose }: ImportResultsStepProps) {
             color="error"
             size="small"
           >
-            {showErrors ? 'Hide' : 'Show'} {result.errors.length} error{result.errors.length !== 1 ? 's' : ''}
+            {showErrors ? t('common.hide') : t('common.show')} {t('import.errorCount', { count: result.errors.length })}
           </Button>
           <Collapse in={showErrors}>
             <Paper variant="outlined" sx={styles.errorsList}>
@@ -142,7 +144,7 @@ export function ImportResultsStep({ result, onClose }: ImportResultsStepProps) {
                     <ListItemText
                       primary={
                         <Typography variant="body2" color="error">
-                          Row {error.row}: {error.cardName}
+                          {t('import.rowError', { row: error.row, cardName: error.cardName })}
                         </Typography>
                       }
                       secondary={error.error}
@@ -158,7 +160,7 @@ export function ImportResultsStep({ result, onClose }: ImportResultsStepProps) {
       {/* Close button */}
       <Box sx={styles.actions}>
         <Button variant="contained" onClick={onClose} size="large">
-          Done
+          {t('common.done')}
         </Button>
       </Box>
     </Box>

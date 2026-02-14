@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material';
 import { History as HistoryIcon } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { getTradeHistory } from '../../services/trade-service';
 import { useAuth } from '../../context/auth-context';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
@@ -58,6 +59,7 @@ const styles: Record<string, SxProps<Theme>> = {
 
 export function TradeHistoryTab() {
   const { user } = useAuth();
+  const { t, i18n } = useTranslation();
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [sort, setSort] = useState<'asc' | 'desc'>('desc');
@@ -87,7 +89,7 @@ export function TradeHistoryTab() {
         <Paper sx={{ p: 2 }}>
           <Box sx={styles.filterBar}>
             <TextField
-              label="Start Date"
+              label={t('trade.historySort.startDate')}
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
@@ -96,7 +98,7 @@ export function TradeHistoryTab() {
               sx={{ flexGrow: 1 }}
             />
             <TextField
-              label="End Date"
+              label={t('trade.historySort.endDate')}
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
@@ -105,14 +107,15 @@ export function TradeHistoryTab() {
               sx={{ flexGrow: 1 }}
             />
             <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>Sort By</InputLabel>
+              <InputLabel id="history-sort-label">{t('trade.historySort.label')}</InputLabel>
               <Select
+                labelId="history-sort-label"
                 value={sort}
-                label="Sort By"
+                label={t('trade.historySort.label')}
                 onChange={(e) => setSort(e.target.value as 'asc' | 'desc')}
               >
-                <MenuItem value="desc">Newest First</MenuItem>
-                <MenuItem value="asc">Oldest First</MenuItem>
+                <MenuItem value="desc">{t('trade.historySort.newestFirst')}</MenuItem>
+                <MenuItem value="asc">{t('trade.historySort.oldestFirst')}</MenuItem>
               </Select>
             </FormControl>
           </Box>
@@ -123,17 +126,17 @@ export function TradeHistoryTab() {
           <Box sx={styles.emptyState}>
             <HistoryIcon sx={{ fontSize: 64, mb: 2, opacity: 0.3 }} />
             <Typography variant="h6" gutterBottom>
-              No Trade History
+              {t('trade.noHistory')}
             </Typography>
             <Typography variant="body2">
-              Your completed trade sessions will appear here.
+              {t('trade.noHistoryDescription')}
             </Typography>
           </Box>
         ) : (
           sessions.map((session) => {
             const partner =
               session.initiatorId === user?.id ? session.joiner : session.initiator;
-            const sessionDate = new Date(session.createdAt).toLocaleDateString('en-US', {
+            const sessionDate = new Date(session.createdAt).toLocaleDateString(i18n.language, {
               year: 'numeric',
               month: 'short',
               day: 'numeric',
@@ -148,18 +151,18 @@ export function TradeHistoryTab() {
                     <Box sx={styles.sessionHeader}>
                       <Box>
                         <Typography variant="h6" gutterBottom>
-                          {partner?.displayName || 'Unknown User'}
+                          {partner?.displayName || t('trade.unknownUser')}
                         </Typography>
                         <Box sx={styles.sessionMeta}>
                           <Typography component="span">{sessionDate}</Typography>
                           <Typography component="span">•</Typography>
                           <Typography component="span">
-                            Code: {session.sessionCode}
+                            {t('trade.session', { code: session.sessionCode })}
                           </Typography>
                         </Box>
                       </Box>
                       <Chip
-                        label={`${session.matchCount || 0} matches`}
+                        label={t('matchList.matches', { count: session.matchCount || 0 })}
                         color="primary"
                         size="small"
                       />

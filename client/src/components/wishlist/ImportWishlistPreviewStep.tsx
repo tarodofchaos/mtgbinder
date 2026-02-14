@@ -28,6 +28,7 @@ import {
   Inventory as CollectionIcon,
 } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import type { Card } from '@mtg-binder/shared';
 import { WishlistPreviewRow, PreviewStats } from '../../services/import-service';
 import { CardImage } from '../cards/CardImage';
@@ -130,6 +131,7 @@ export function ImportWishlistPreviewStep({
   onBack,
   isLoading,
 }: ImportWishlistPreviewStepProps) {
+  const { t } = useTranslation();
   const [showAll, setShowAll] = useState(false);
   const [printingSelectorRow, setPrintingSelectorRow] = useState<number | null>(null);
 
@@ -154,20 +156,20 @@ export function ImportWishlistPreviewStep({
       {/* Stats */}
       <Box sx={styles.statsRow}>
         <Chip
-          label={`${stats.total} Total`}
+          label={t('import.totalStats', { count: stats.total })}
           color="primary"
           variant="outlined"
           sx={styles.statChip}
         />
         <Chip
-          label={`${stats.ready} Ready`}
+          label={t('import.readyStats', { count: stats.ready })}
           color="success"
           icon={<ReadyIcon />}
           sx={styles.statChip}
         />
         {stats.notFound > 0 && (
           <Chip
-            label={`${stats.notFound} Not Found`}
+            label={t('import.notFoundStats', { count: stats.notFound })}
             color="error"
             icon={<ErrorIcon />}
             sx={styles.statChip}
@@ -180,7 +182,7 @@ export function ImportWishlistPreviewStep({
         <FormControl component="fieldset">
           <FormLabel component="legend">
             <Typography variant="subtitle2">
-              If card already in wishlist:
+              {t('import.duplicateWishlistTitle')}
             </Typography>
           </FormLabel>
           <RadioGroup
@@ -191,12 +193,12 @@ export function ImportWishlistPreviewStep({
             <FormControlLabel
               value="skip"
               control={<Radio />}
-              label="Skip (keep existing)"
+              label={t('import.skipKeep')}
             />
             <FormControlLabel
               value="update"
               control={<Radio />}
-              label="Update (replace with new values)"
+              label={t('import.updateReplace')}
             />
           </RadioGroup>
         </FormControl>
@@ -207,13 +209,13 @@ export function ImportWishlistPreviewStep({
         <Table stickyHeader size="small">
           <TableHead>
             <TableRow>
-              <TableCell>Card</TableCell>
-              <TableCell align="center">Qty</TableCell>
-              <TableCell align="center">Priority</TableCell>
-              <TableCell align="center">Max Price</TableCell>
-              <TableCell align="center">Min Condition</TableCell>
-              <TableCell align="center">Foil Only</TableCell>
-              <TableCell align="center">Status</TableCell>
+              <TableCell>{t('import.cardName')}</TableCell>
+              <TableCell align="center">{t('common.qty')}</TableCell>
+              <TableCell align="center">{t('wishlist.priority')}</TableCell>
+              <TableCell align="center">{t('collection.askingPrice')}</TableCell>
+              <TableCell align="center">{t('import.minCondition')}</TableCell>
+              <TableCell align="center">{t('import.foilOnly')}</TableCell>
+              <TableCell align="center">{t('import.status')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -246,7 +248,7 @@ export function ImportWishlistPreviewStep({
                           {row.inCollection && (
                             <Chip
                               icon={<CollectionIcon />}
-                              label="In Collection"
+                              label={t('import.inCollection')}
                               size="small"
                               color="info"
                               variant="outlined"
@@ -258,7 +260,7 @@ export function ImportWishlistPreviewStep({
                           size="small"
                           sx={styles.changeButton}
                           onClick={() => handleChangePrinting(index)}
-                          title="Change printing"
+                          title={t('import.changePrinting')}
                         >
                           <EditIcon fontSize="small" />
                         </IconButton>
@@ -283,18 +285,18 @@ export function ImportWishlistPreviewStep({
                   {row.maxPrice !== null ? `€${row.maxPrice.toFixed(2)}` : '-'}
                 </TableCell>
                 <TableCell align="center">{row.minCondition || '-'}</TableCell>
-                <TableCell align="center">{row.foilOnly ? 'Yes' : 'No'}</TableCell>
+                <TableCell align="center">{row.foilOnly ? t('common.yes') : t('common.no')}</TableCell>
                 <TableCell align="center" sx={styles.statusCell}>
                   {row.status === 'ready' ? (
                     <Chip
-                      label="Ready"
+                      label={t('import.readyLabel')}
                       size="small"
                       color="success"
                       icon={<ReadyIcon />}
                     />
                   ) : (
                     <Chip
-                      label="Not Found"
+                      label={t('import.notFoundLabel')}
                       size="small"
                       color="error"
                       icon={<ErrorIcon />}
@@ -316,7 +318,7 @@ export function ImportWishlistPreviewStep({
             onClick={() => setShowAll(!showAll)}
             endIcon={showAll ? <CollapseIcon /> : <ExpandIcon />}
           >
-            {showAll ? 'Show Less' : `Show All (${previewRows.length} total)`}
+            {showAll ? t('import.showLess') : t('import.showAllSummary', { count: previewRows.length })}
           </Button>
         </Box>
       )}
@@ -324,22 +326,21 @@ export function ImportWishlistPreviewStep({
       {/* Warning for not found cards */}
       {stats.notFound > 0 && (
         <Alert severity="warning">
-          {stats.notFound} card{stats.notFound > 1 ? 's' : ''} could not be found in the database.
-          They will be skipped during import. You can manually change the printing for specific cards.
+          {t('import.notFoundWarningWishlist', { count: stats.notFound })}
         </Alert>
       )}
 
       {/* Buttons */}
       <Box sx={styles.buttonGroup}>
         <Button variant="outlined" onClick={onBack} disabled={isLoading}>
-          Back
+          {t('common.back')}
         </Button>
         <Button
           variant="contained"
           onClick={onImport}
           disabled={!canImport || isLoading}
         >
-          {isLoading ? 'Importing...' : `Import ${stats.ready} Card${stats.ready !== 1 ? 's' : ''}`}
+          {isLoading ? t('import.importing') : t('import.importCards', { count: stats.ready })}
         </Button>
       </Box>
 

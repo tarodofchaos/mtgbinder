@@ -12,6 +12,7 @@ import {
 import Grid from '@mui/material/Grid';
 import type { SxProps, Theme } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { getTradeHistoryDetail } from '../../services/trade-service';
 import { useAuth } from '../../context/auth-context';
 import { MatchList } from './MatchList';
@@ -64,6 +65,7 @@ const styles: Record<string, SxProps<Theme>> = {
 
 export function TradeHistoryDetail({ sessionId, onClose }: TradeHistoryDetailProps) {
   const { user } = useAuth();
+  const { t, i18n } = useTranslation();
 
   const { data: session, isLoading, error } = useQuery({
     queryKey: ['tradeHistoryDetail', sessionId],
@@ -89,7 +91,7 @@ export function TradeHistoryDetail({ sessionId, onClose }: TradeHistoryDetailPro
 
   const valueDifference = myTotalValue - theirTotalValue;
   const sessionDate = session
-    ? new Date(session.createdAt).toLocaleDateString('en-US', {
+    ? new Date(session.createdAt).toLocaleDateString(i18n.language, {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -102,7 +104,7 @@ export function TradeHistoryDetail({ sessionId, onClose }: TradeHistoryDetailPro
     <Dialog open onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={styles.dialogTitle}>
         <Box>
-          <Typography variant="h6">Trade with {partner?.displayName}</Typography>
+          <Typography variant="h6">{t('trade.tradeWith', { name: partner?.displayName || t('trade.unknownUser') })}</Typography>
           <Typography variant="caption" color="text.secondary">
             {sessionDate}
           </Typography>
@@ -121,7 +123,7 @@ export function TradeHistoryDetail({ sessionId, onClose }: TradeHistoryDetailPro
 
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
-            Failed to load trade session details
+            {t('trade.failedToLoadDetail')}
           </Alert>
         )}
 
@@ -131,13 +133,13 @@ export function TradeHistoryDetail({ sessionId, onClose }: TradeHistoryDetailPro
             <Paper sx={styles.comparisonCard}>
               <Box sx={styles.comparisonGrid}>
                 <Box>
-                  <Typography sx={styles.comparisonLabel}>You Offered</Typography>
+                  <Typography sx={styles.comparisonLabel}>{t('trade.youOffered')}</Typography>
                   <Typography sx={{ ...styles.comparisonValue, color: 'success.main' }}>
                     €{myTotalValue.toFixed(2)}
                   </Typography>
                 </Box>
                 <Box>
-                  <Typography sx={styles.comparisonLabel}>Difference</Typography>
+                  <Typography sx={styles.comparisonLabel}>{t('trade.difference')}</Typography>
                   <Typography
                     sx={{
                       ...styles.comparisonValue,
@@ -148,7 +150,7 @@ export function TradeHistoryDetail({ sessionId, onClose }: TradeHistoryDetailPro
                   </Typography>
                 </Box>
                 <Box>
-                  <Typography sx={styles.comparisonLabel}>They Offered</Typography>
+                  <Typography sx={styles.comparisonLabel}>{t('trade.theyOffered')}</Typography>
                   <Typography sx={{ ...styles.comparisonValue, color: 'primary.main' }}>
                     €{theirTotalValue.toFixed(2)}
                   </Typography>
@@ -164,7 +166,7 @@ export function TradeHistoryDetail({ sessionId, onClose }: TradeHistoryDetailPro
                     {myOffers.filter((m) => m.isMatch).length}
                   </Typography>
                   <Typography sx={styles.summaryLabel}>
-                    Your matches ({myOffers.length} total)
+                    {t('trade.yourMatchesSummary', { count: myOffers.length })}
                   </Typography>
                 </Paper>
               </Grid>
@@ -174,7 +176,7 @@ export function TradeHistoryDetail({ sessionId, onClose }: TradeHistoryDetailPro
                     {theirOffers.filter((m) => m.isMatch).length}
                   </Typography>
                   <Typography sx={styles.summaryLabel}>
-                    Their matches ({theirOffers.length} total)
+                    {t('trade.theirMatchesSummary', { count: theirOffers.length })}
                   </Typography>
                 </Paper>
               </Grid>
@@ -184,16 +186,16 @@ export function TradeHistoryDetail({ sessionId, onClose }: TradeHistoryDetailPro
             <MatchList
               matches={myOffers}
               totalValue={myTotalValue}
-              title="Cards You Offered"
-              emptyMessage="No cards were offered"
+              title={t('trade.cardsYouOffered')}
+              emptyMessage={t('trade.noCardsOffered')}
             />
 
             <Box sx={{ mt: 3 }}>
               <MatchList
                 matches={theirOffers}
                 totalValue={theirTotalValue}
-                title="Cards They Offered"
-                emptyMessage="No cards were offered"
+                title={t('trade.cardsTheyOffered')}
+                emptyMessage={t('trade.noCardsOffered')}
               />
             </Box>
           </Box>

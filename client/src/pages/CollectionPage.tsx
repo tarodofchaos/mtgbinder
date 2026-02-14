@@ -492,8 +492,8 @@ export function CollectionPage() {
                   />
                 ))}
                 {rarity && <Chip label={t('filters.rarityFilter', { rarity })} size="small" onDelete={() => updateFilters({ rarity: null })} />}
-                {priceMin && <Chip label={`Min: €${priceMin}`} size="small" onDelete={() => updateFilters({ priceMin: null })} />}
-                {priceMax && <Chip label={`Max: €${priceMax}`} size="small" onDelete={() => updateFilters({ priceMax: null })} />}
+                {priceMin && <Chip label={`${t('filters.minPrice')}: €${priceMin}`} size="small" onDelete={() => updateFilters({ priceMin: null })} />}
+                {priceMax && <Chip label={`${t('filters.maxPrice')}: €${priceMax}`} size="small" onDelete={() => updateFilters({ priceMax: null })} />}
                 {forTradeOnly && <Chip label={t('collection.forTradeOnly')} size="small" onDelete={() => updateFilters({ forTrade: null })} />}
               </Box>
             )}

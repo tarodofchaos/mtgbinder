@@ -35,8 +35,6 @@ interface ImportCollectionModalProps {
 type ImportStep = 'input' | 'preview' | 'progress' | 'results';
 type ImportMethod = 'csv' | 'text' | 'url';
 
-const STEPS = ['Input', 'Preview', 'Import', 'Done'];
-
 const styles: Record<string, SxProps<Theme>> = {
   stepper: {
     mb: 3,
@@ -81,6 +79,13 @@ export function ImportCollectionModal({ isOpen, onClose, onSuccess }: ImportColl
   // Results step state
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
 
+  const steps = [
+    t('import.inputStep'),
+    t('import.previewStep'),
+    t('import.importStep'),
+    t('common.done'),
+  ];
+
   // Reset state when modal closes
   const handleClose = useCallback(() => {
     setCurrentStep('input');
@@ -113,7 +118,7 @@ export function ImportCollectionModal({ isOpen, onClose, onSuccess }: ImportColl
       }
 
       if (rows.length === 0) {
-        setParseErrors([{ row: 0, message: 'No valid rows found in CSV file.' }]);
+        setParseErrors([{ row: 0, message: t('import.noValidRows') }]);
         setIsLoading(false);
         return;
       }
@@ -125,12 +130,12 @@ export function ImportCollectionModal({ isOpen, onClose, onSuccess }: ImportColl
       setPreviewStats(stats);
       setCurrentStep('preview');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to parse CSV file';
+      const message = error instanceof Error ? error.message : t('import.parseFailed');
       setParseErrors([{ row: 0, message }]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   // Handle text import
   const handleTextParse = useCallback(async (text: string) => {
@@ -141,7 +146,7 @@ export function ImportCollectionModal({ isOpen, onClose, onSuccess }: ImportColl
       const result = await parseTextImport(text, 'collection');
 
       if (result.entries.length === 0) {
-        setTextError('No valid cards found in the text.');
+        setTextError(t('import.noValidCardsText'));
         setIsLoading(false);
         return;
       }
@@ -159,12 +164,12 @@ export function ImportCollectionModal({ isOpen, onClose, onSuccess }: ImportColl
       setDeckInfo(null);
       setCurrentStep('preview');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to parse text';
+      const message = error instanceof Error ? error.message : t('import.parseFailedText');
       setTextError(message);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   // Handle URL import
   const handleUrlFetch = useCallback(async (url: string) => {
@@ -175,7 +180,7 @@ export function ImportCollectionModal({ isOpen, onClose, onSuccess }: ImportColl
       const result = await importFromUrl(url, 'collection');
 
       if (result.entries.length === 0) {
-        setUrlError('No cards found in the deck.');
+        setUrlError(t('import.noCardsFoundInDeck'));
         setIsLoading(false);
         return;
       }
@@ -197,12 +202,12 @@ export function ImportCollectionModal({ isOpen, onClose, onSuccess }: ImportColl
       });
       setCurrentStep('preview');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to fetch deck';
+      const message = error instanceof Error ? error.message : t('import.fetchFailed');
       setUrlError(message);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   // Handle card override from PrintingSelector
   const handleCardOverride = useCallback((rowIndex: number, card: Card) => {
@@ -254,7 +259,7 @@ export function ImportCollectionModal({ isOpen, onClose, onSuccess }: ImportColl
         onSuccess();
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Import failed';
+      const message = error instanceof Error ? error.message : t('import.importFailed');
       setImportResult({
         imported: 0,
         updated: 0,
@@ -264,7 +269,7 @@ export function ImportCollectionModal({ isOpen, onClose, onSuccess }: ImportColl
       });
       setCurrentStep('results');
     }
-  }, [previewRows, duplicateMode, onSuccess]);
+  }, [previewRows, duplicateMode, onSuccess, t]);
 
   // Handle back from preview
   const handleBack = useCallback(() => {
@@ -302,13 +307,13 @@ export function ImportCollectionModal({ isOpen, onClose, onSuccess }: ImportColl
     <Modal
       isOpen={isOpen}
       onClose={currentStep === 'progress' ? () => {} : handleClose}
-      title={t('import.importCollection', 'Import Collection')}
+      title={t('import.importCollection')}
       size="lg"
     >
       <Box>
         {/* Stepper */}
         <Stepper activeStep={getActiveStep()} sx={styles.stepper}>
-          {STEPS.map((label) => (
+          {steps.map((label) => (
             <Step key={label}>
               <StepLabel>{label}</StepLabel>
             </Step>
@@ -325,9 +330,9 @@ export function ImportCollectionModal({ isOpen, onClose, onSuccess }: ImportColl
                 onChange={handleMethodChange}
                 sx={styles.tabs}
               >
-                <Tab label={t('import.tabCsv', 'CSV File')} value="csv" />
-                <Tab label={t('import.tabText', 'Paste Text')} value="text" />
-                <Tab label={t('import.tabUrl', 'Import URL')} value="url" />
+                <Tab label={t('import.tabCsv')} value="csv" />
+                <Tab label={t('import.tabText')} value="text" />
+                <Tab label={t('import.tabUrl')} value="url" />
               </Tabs>
 
               {importMethod === 'csv' && (

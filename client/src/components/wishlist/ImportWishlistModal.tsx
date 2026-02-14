@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Box, Stepper, Step, StepLabel } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import type { Card } from '@mtg-binder/shared';
 import { Modal } from '../ui/Modal';
 import { ImportWishlistUploadStep } from './ImportWishlistUploadStep';
@@ -28,8 +29,6 @@ interface ImportWishlistModalProps {
 type ImportStep = 'upload' | 'preview' | 'progress' | 'results';
 type WishlistDuplicateMode = 'skip' | 'update';
 
-const STEPS = ['Upload', 'Preview', 'Import', 'Done'];
-
 const styles: Record<string, SxProps<Theme>> = {
   stepper: {
     mb: 3,
@@ -40,6 +39,7 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 export function ImportWishlistModal({ isOpen, onClose, onSuccess }: ImportWishlistModalProps) {
+  const { t } = useTranslation();
   // Step state
   const [currentStep, setCurrentStep] = useState<ImportStep>('upload');
   const [isLoading, setIsLoading] = useState(false);
@@ -62,6 +62,13 @@ export function ImportWishlistModal({ isOpen, onClose, onSuccess }: ImportWishli
 
   // Results step state
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+
+  const steps = [
+    t('import.uploadStep'),
+    t('import.previewStep'),
+    t('import.importStep'),
+    t('common.done'),
+  ];
 
   // Reset state when modal closes
   const handleClose = useCallback(() => {
@@ -201,13 +208,13 @@ export function ImportWishlistModal({ isOpen, onClose, onSuccess }: ImportWishli
     <Modal
       isOpen={isOpen}
       onClose={currentStep === 'progress' ? () => {} : handleClose}
-      title="Import Wishlist from CSV"
+      title={t('import.importWishlistTitle')}
       size="lg"
     >
       <Box>
         {/* Stepper */}
         <Stepper activeStep={getActiveStep()} sx={styles.stepper}>
-          {STEPS.map((label) => (
+          {steps.map((label) => (
             <Step key={label}>
               <StepLabel>{label}</StepLabel>
             </Step>

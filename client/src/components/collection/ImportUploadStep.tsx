@@ -11,6 +11,7 @@ import {
   Download as DownloadIcon,
 } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { downloadCSVTemplate, CSVParseError } from '../../services/import-service';
 
 interface ImportUploadStepProps {
@@ -85,6 +86,7 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 export function ImportUploadStep({ onFileSelected, parseErrors, isLoading }: ImportUploadStepProps) {
+  const { t } = useTranslation();
   const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -148,7 +150,7 @@ export function ImportUploadStep({ onFileSelected, parseErrors, isLoading }: Imp
         role="button"
         tabIndex={0}
         onKeyDown={(e: React.KeyboardEvent) => e.key === 'Enter' && handleDropzoneClick()}
-        aria-label="Upload CSV file"
+        aria-label={t('import.uploadCsvAria')}
       >
         <input
           ref={fileInputRef}
@@ -160,13 +162,13 @@ export function ImportUploadStep({ onFileSelected, parseErrors, isLoading }: Imp
         />
         <UploadIcon sx={styles.uploadIcon} />
         <Typography variant="h6" gutterBottom>
-          {isDragActive ? 'Drop your CSV file here' : 'Drag & drop your CSV file'}
+          {isDragActive ? t('import.dropFileActive') : t('import.dropFile')}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          or click to browse
+          {t('import.clickToBrowse')}
         </Typography>
         <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-          Maximum 1000 cards • 5MB file size limit
+          {t('import.limits')}
         </Typography>
       </Box>
 
@@ -174,17 +176,17 @@ export function ImportUploadStep({ onFileSelected, parseErrors, isLoading }: Imp
       {parseErrors.length > 0 && (
         <Alert severity="error" sx={styles.errorList}>
           <Typography variant="subtitle2" gutterBottom>
-            CSV parsing errors:
+            {t('import.parseErrors')}
           </Typography>
           <Box component="ul" sx={{ m: 0, pl: 2 }}>
             {parseErrors.slice(0, 10).map((error, idx) => (
               <li key={idx}>
-                {error.row > 0 ? `Row ${error.row}: ` : ''}
+                {error.row > 0 ? t('import.row', { row: error.row }) + ': ' : ''}
                 {error.message}
               </li>
             ))}
             {parseErrors.length > 10 && (
-              <li>...and {parseErrors.length - 10} more errors</li>
+              <li>{t('import.andMoreErrors', { count: parseErrors.length - 10 })}</li>
             )}
           </Box>
         </Alert>
@@ -194,51 +196,51 @@ export function ImportUploadStep({ onFileSelected, parseErrors, isLoading }: Imp
       <Box sx={styles.templateSection}>
         <FileIcon color="action" />
         <Typography variant="body2" color="text.secondary">
-          Need a template to get started?
+          {t('import.needTemplate')}
         </Typography>
         <Button
           startIcon={<DownloadIcon />}
           onClick={handleDownloadTemplate}
           size="small"
         >
-          Download CSV Template
+          {t('import.downloadTemplate')}
         </Button>
       </Box>
 
       {/* Format info */}
       <Box sx={styles.formatInfo}>
         <Typography variant="subtitle2" gutterBottom>
-          CSV Format
+          {t('import.csvFormat')}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Required columns:
+          {t('import.requiredColumns')}
         </Typography>
         <Box component="ul" sx={styles.formatList}>
           <Typography component="li" variant="body2">
-            <strong>name</strong> - Card name (required)
+            <strong>name</strong> - {t('import.csvInstructions.name')}
           </Typography>
         </Box>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          Optional columns:
+          {t('import.optionalColumns')}
         </Typography>
         <Box component="ul" sx={styles.formatList}>
           <Typography component="li" variant="body2">
-            <strong>quantity</strong> - Number of regular copies (default: 1)
+            <strong>quantity</strong> - {t('import.csvInstructions.quantity')}
           </Typography>
           <Typography component="li" variant="body2">
-            <strong>foilQuantity</strong> - Number of foil copies (default: 0)
+            <strong>foilQuantity</strong> - {t('import.csvInstructions.foilQuantity')}
           </Typography>
           <Typography component="li" variant="body2">
-            <strong>condition</strong> - M, NM, LP, MP, HP, DMG (default: NM)
+            <strong>condition</strong> - {t('import.csvInstructions.condition')}
           </Typography>
           <Typography component="li" variant="body2">
-            <strong>language</strong> - Language code like EN, ES, DE (default: EN)
+            <strong>language</strong> - {t('import.csvInstructions.language')}
           </Typography>
           <Typography component="li" variant="body2">
-            <strong>forTrade</strong> - Copies available for trade (default: 0)
+            <strong>forTrade</strong> - {t('import.csvInstructions.forTrade')}
           </Typography>
           <Typography component="li" variant="body2">
-            <strong>tradePrice</strong> - Your asking price in EUR (optional)
+            <strong>tradePrice</strong> - {t('import.csvInstructions.tradePrice')}
           </Typography>
         </Box>
       </Box>

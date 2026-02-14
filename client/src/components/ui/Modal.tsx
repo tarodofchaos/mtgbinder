@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 
 interface ModalProps {
   isOpen: boolean;
@@ -37,6 +38,8 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
+  const { t } = useTranslation();
+
   return (
     <Dialog
       open={isOpen}
@@ -59,7 +62,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
             <IconButton
               onClick={onClose}
               sx={styles.closeButton}
-              aria-label="Close"
+              aria-label={t('common.close')}
             >
               <CloseIcon />
             </IconButton>

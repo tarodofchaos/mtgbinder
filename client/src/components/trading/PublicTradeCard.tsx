@@ -168,14 +168,14 @@ export function PublicTradeCard({ item }: PublicTradeCardProps) {
             x{item.forTrade}
             {hasFoil && (
               <Box component="span" sx={styles.foilText}>
-                (foil)
+                ({t('common.foil').toLowerCase()})
               </Box>
             )}
           </Box>
 
           {item.tradePrice !== null && (
             <Chip
-              label={`€${item.tradePrice.toFixed(2)} each`}
+              label={t('trade.eachPrice', { price: item.tradePrice.toFixed(2) })}
               color="success"
               size="small"
               sx={styles.priceBadge}
@@ -257,19 +257,19 @@ export function PublicTradeCard({ item }: PublicTradeCardProps) {
                 variant="outlined"
               />
               <Chip
-                label={`${item.forTrade} for trade`}
+                label={t('collection.copiesForTrade', { count: item.forTrade })}
                 size="small"
                 color="success"
               />
               {item.isAlter && (
-                <Chip label={t('collection.isAlter')} size="small" color="secondary" />
+                <Chip label={t('common.alter')} size="small" color="secondary" />
               )}
               {hasFoil && (
-                <Chip label="Foil" size="small" color="warning" />
+                <Chip label={t('common.foil')} size="small" color="warning" />
               )}
               {item.tradePrice !== null && (
                 <Chip
-                  label={`€${item.tradePrice.toFixed(2)} each`}
+                  label={t('trade.eachPrice', { price: item.tradePrice.toFixed(2) })}
                   size="small"
                   color="primary"
                 />
@@ -293,7 +293,7 @@ export function PublicTradeCard({ item }: PublicTradeCardProps) {
               sx={{ mt: 2 }}
               onClick={(e) => e.stopPropagation()}
             >
-              View on Cardmarket
+              {t('publicBinder.viewOnCardmarket')}
             </Button>
           </Paper>
         </DialogContent>

@@ -448,7 +448,7 @@ export function WishlistPage() {
                           {...field}
                           type="number"
                           label={t('wishlist.maxPrice')}
-                          placeholder="Optional"
+                          placeholder={t('common.optional')}
                           fullWidth
                           slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
                         />
@@ -516,7 +516,7 @@ export function WishlistPage() {
                 <Box
                   sx={styles.clickableImage}
                   onClick={() => setEditPendingCardName(editingItem.card?.name || null)}
-                  title="Click to change printing"
+                  title={t('collection.clickToChangePrinting')}
                 >
                   <CardImage
                     scryfallId={editSelectedCard?.scryfallId || editingItem.card?.scryfallId || null}

@@ -11,6 +11,7 @@ import {
   Download as DownloadIcon,
 } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { downloadWishlistCSVTemplate, CSVParseError } from '../../services/import-service';
 
 interface ImportWishlistUploadStepProps {
@@ -82,6 +83,7 @@ const styles: Record<string, SxProps<Theme>> = {
 };
 
 export function ImportWishlistUploadStep({ onFileSelected, parseErrors, isLoading }: ImportWishlistUploadStepProps) {
+  const { t } = useTranslation();
   const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -145,7 +147,7 @@ export function ImportWishlistUploadStep({ onFileSelected, parseErrors, isLoadin
         role="button"
         tabIndex={0}
         onKeyDown={(e: React.KeyboardEvent) => e.key === 'Enter' && handleDropzoneClick()}
-        aria-label="Upload wishlist CSV file"
+        aria-label={t('import.uploadWishlistCsvAria')}
       >
         <input
           ref={fileInputRef}
@@ -157,13 +159,13 @@ export function ImportWishlistUploadStep({ onFileSelected, parseErrors, isLoadin
         />
         <UploadIcon sx={styles.uploadIcon} />
         <Typography variant="h6" gutterBottom>
-          {isDragActive ? 'Drop your CSV file here' : 'Drag & drop your wishlist CSV file'}
+          {isDragActive ? t('import.dropFileActive') : t('import.dropWishlistFile')}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          or click to browse
+          {t('import.clickToBrowse')}
         </Typography>
         <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-          Maximum 1000 cards • 5MB file size limit
+          {t('import.limits')}
         </Typography>
       </Box>
 
@@ -171,17 +173,17 @@ export function ImportWishlistUploadStep({ onFileSelected, parseErrors, isLoadin
       {parseErrors.length > 0 && (
         <Alert severity="error" sx={styles.errorList}>
           <Typography variant="subtitle2" gutterBottom>
-            CSV parsing errors:
+            {t('import.parseErrors')}
           </Typography>
           <Box component="ul" sx={{ m: 0, pl: 2 }}>
             {parseErrors.slice(0, 10).map((error, idx) => (
               <li key={idx}>
-                {error.row > 0 ? `Row ${error.row}: ` : ''}
+                {error.row > 0 ? t('import.row', { row: error.row }) + ': ' : ''}
                 {error.message}
               </li>
             ))}
             {parseErrors.length > 10 && (
-              <li>...and {parseErrors.length - 10} more errors</li>
+              <li>{t('import.andMoreErrors', { count: parseErrors.length - 10 })}</li>
             )}
           </Box>
         </Alert>
@@ -191,48 +193,48 @@ export function ImportWishlistUploadStep({ onFileSelected, parseErrors, isLoadin
       <Box sx={styles.templateSection}>
         <FileIcon color="action" />
         <Typography variant="body2" color="text.secondary">
-          Need a template to get started?
+          {t('import.needTemplate')}
         </Typography>
         <Button
           startIcon={<DownloadIcon />}
           onClick={handleDownloadTemplate}
           size="small"
         >
-          Download Wishlist CSV Template
+          {t('import.downloadWishlistTemplate')}
         </Button>
       </Box>
 
       {/* Format info */}
       <Box sx={styles.formatInfo}>
         <Typography variant="subtitle2" gutterBottom>
-          CSV Format
+          {t('import.csvFormat')}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Required columns:
+          {t('import.requiredColumns')}
         </Typography>
         <Box component="ul" sx={styles.formatList}>
           <Typography component="li" variant="body2">
-            <strong>name</strong> - Card name (required)
+            <strong>name</strong> - {t('import.csvInstructions.name')}
           </Typography>
         </Box>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          Optional columns:
+          {t('import.optionalColumns')}
         </Typography>
         <Box component="ul" sx={styles.formatList}>
           <Typography component="li" variant="body2">
-            <strong>quantity</strong> - Number of copies wanted (default: 1)
+            <strong>quantity</strong> - {t('import.csvInstructions.copiesWanted')}
           </Typography>
           <Typography component="li" variant="body2">
-            <strong>priority</strong> - LOW, NORMAL, HIGH, URGENT (default: NORMAL)
+            <strong>priority</strong> - {t('import.csvInstructions.priority')}
           </Typography>
           <Typography component="li" variant="body2">
-            <strong>maxPrice</strong> - Maximum price in EUR (optional)
+            <strong>maxPrice</strong> - {t('import.csvInstructions.maxPrice')}
           </Typography>
           <Typography component="li" variant="body2">
-            <strong>minCondition</strong> - M, NM, LP, MP, HP, DMG (optional)
+            <strong>minCondition</strong> - {t('import.csvInstructions.minCondition')}
           </Typography>
           <Typography component="li" variant="body2">
-            <strong>foilOnly</strong> - true/false (default: false)
+            <strong>foilOnly</strong> - {t('import.csvInstructions.foilOnly')}
           </Typography>
         </Box>
       </Box>

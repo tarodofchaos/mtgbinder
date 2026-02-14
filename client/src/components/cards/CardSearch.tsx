@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 interface CardSearchProps {
   onSelect: (card: CardAutocompleteResult) => void;
   placeholder?: string;
+  autoFocus?: boolean;
 }
 
 const styles: Record<string, SxProps<Theme>> = {
@@ -52,7 +53,7 @@ const styles: Record<string, SxProps<Theme>> = {
   },
 };
 
-export function CardSearch({ onSelect, placeholder }: CardSearchProps) {
+export function CardSearch({ onSelect, placeholder, autoFocus }: CardSearchProps) {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -69,6 +70,16 @@ export function CardSearch({ onSelect, placeholder }: CardSearchProps) {
   useEffect(() => {
     setHighlightedIndex(0);
   }, [results]);
+
+  useEffect(() => {
+    if (autoFocus) {
+      // Small delay to ensure the modal/dialog transition has finished
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [autoFocus]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!isOpen || results.length === 0) return;
@@ -105,6 +116,7 @@ export function CardSearch({ onSelect, placeholder }: CardSearchProps) {
     <Box sx={styles.container}>
       <TextField
         inputRef={inputRef}
+        autoFocus={autoFocus}
         value={query}
         onChange={(e) => {
           setQuery(e.target.value);

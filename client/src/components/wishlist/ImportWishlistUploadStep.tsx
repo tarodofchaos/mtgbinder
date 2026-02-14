@@ -66,7 +66,9 @@ const styles: Record<string, SxProps<Theme>> = {
   },
   formatInfo: {
     p: 2,
-    bgcolor: 'grey.50',
+    bgcolor: 'action.hover',
+    border: '1px solid',
+    borderColor: 'divider',
     borderRadius: 1,
   },
   formatList: {

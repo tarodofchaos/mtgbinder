@@ -205,6 +205,7 @@ export function AddCardForm({ onSuccess, onCancel }: AddCardFormProps) {
             <CardSearch
               onSelect={handleCardNameSelected}
               placeholder={t('collection.typeCardName')}
+              autoFocus={true}
             />
           </Box>
         )}

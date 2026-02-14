@@ -366,6 +366,7 @@ export function WishlistPage() {
             <CardSearch
               onSelect={handleCardNameSelected}
               placeholder={t('collection.typeCardName')}
+              autoFocus={true}
             />
           )}
 

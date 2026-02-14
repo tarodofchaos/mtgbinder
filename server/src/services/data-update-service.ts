@@ -24,10 +24,17 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * Updates card data from AllPrintings.json
  */
 export async function updateCardsWeekly(force = false): Promise<void> {
-  const lastUpdate = await prisma.systemSetting.findUnique({ where: { key: 'last_card_update' } });
+  let lastUpdateValue: string | null = null;
+  try {
+    const lastUpdate = await prisma.systemSetting.findUnique({ where: { key: 'last_card_update' } });
+    lastUpdateValue = lastUpdate?.value || null;
+  } catch (err) {
+    logger.warn('SystemSetting table not found, proceeding with card update');
+  }
+
   const now = new Date();
 
-  if (!force && lastUpdate && (now.getTime() - new Date(lastUpdate.value).getTime() < WEEK_MS)) {
+  if (!force && lastUpdateValue && (now.getTime() - new Date(lastUpdateValue).getTime() < WEEK_MS)) {
     logger.info('Skipping weekly card update, recently updated');
     return;
   }
@@ -174,10 +181,17 @@ interface MTGJSONPriceData {
  * Updates prices from AllPricesToday.json
  */
 export async function updatePricesDaily(force = false): Promise<void> {
-  const lastUpdate = await prisma.systemSetting.findUnique({ where: { key: 'last_price_update' } });
+  let lastUpdateValue: string | null = null;
+  try {
+    const lastUpdate = await prisma.systemSetting.findUnique({ where: { key: 'last_price_update' } });
+    lastUpdateValue = lastUpdate?.value || null;
+  } catch (err) {
+    logger.warn('SystemSetting table not found, proceeding with price update');
+  }
+
   const now = new Date();
 
-  if (!force && lastUpdate && (now.getTime() - new Date(lastUpdate.value).getTime() < DAY_MS)) {
+  if (!force && lastUpdateValue && (now.getTime() - new Date(lastUpdateValue).getTime() < DAY_MS)) {
     logger.info('Skipping daily price update, recently updated');
     return;
   }

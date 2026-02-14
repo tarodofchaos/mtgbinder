@@ -23,7 +23,7 @@ import {
   DeleteForever as DeleteIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../context/auth-context';
-import axios from 'axios';
+import { api } from '../../services/api';
 
 interface SettingsModalProps {
   open: boolean;
@@ -72,7 +72,9 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
       setCurrentPassword('');
       setNewPassword('');
     }
-  }, [open, user]);
+    // Only reset form when modal is opened
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const handleSave = async () => {
     setIsLoading(true);
@@ -97,7 +99,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
         if (newPassword) data.newPassword = newPassword;
       }
       
-      const response = await axios.put('/api/auth/me', data);
+      const response = await api.put('/auth/me', data);
       updateUser(response.data.data);
       setSuccess(t('settings.saveSuccess', 'Settings saved successfully'));
       setCurrentPassword('');
@@ -106,6 +108,26 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
       setError(err.response?.data?.error || t('settings.saveError', 'Error saving settings'));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleTogglePublic = async (newVal: boolean) => {
+    setIsPublic(newVal);
+    setError(null);
+    setSuccess(null);
+    
+    try {
+      const response = await api.put('/auth/me', { isPublic: newVal });
+      updateUser(response.data.data);
+      setSuccess(t('settings.visibilityUpdated', 'Binder visibility updated successfully'));
+      
+      // Clear success message after 3 seconds for better UX
+      setTimeout(() => {
+        setSuccess(null);
+      }, 3000);
+    } catch (err: any) {
+      setIsPublic(!newVal);
+      setError(err.response?.data?.error || t('settings.saveError', 'Error saving settings'));
     }
   };
 
@@ -119,7 +141,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
     setError(null);
     
     try {
-      await axios.delete('/api/auth/me', { data: { password: deletePassword } });
+      await api.delete('/auth/me', { data: { password: deletePassword } });
       window.location.href = '/'; // Force reload and redirect to landing
     } catch (err: any) {
       setError(err.response?.data?.error || t('settings.deleteError', 'Error deleting account'));
@@ -183,7 +205,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
             control={
               <Switch
                 checked={isPublic}
-                onChange={(e) => setIsPublic(e.target.checked)}
+                onChange={(e) => handleTogglePublic(e.target.checked)}
                 color="primary"
               />
             }

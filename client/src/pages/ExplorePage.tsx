@@ -18,7 +18,7 @@ import {
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { Search as SearchIcon } from '@mui/icons-material';
-import axios from 'axios';
+import { api } from '../services/api';
 import type { UserPublic, ApiResponse, PaginatedResponse } from '@mtg-binder/shared';
 import { AVATARS } from '../components/layout/SettingsModal';
 
@@ -31,7 +31,7 @@ export function ExplorePage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['explore', page, search],
     queryFn: async () => {
-      const response = await axios.get<ApiResponse<PaginatedResponse<UserPublic>>>('/api/binder', {
+      const response = await api.get<ApiResponse<PaginatedResponse<UserPublic>>>('/binder', {
         params: { page, pageSize, search },
       });
       return response.data.data;

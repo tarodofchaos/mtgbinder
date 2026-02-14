@@ -52,7 +52,7 @@ export async function getTradeHistory(params?: TradeHistoryParams): Promise<Trad
 }
 
 export async function getTradeHistoryDetail(id: string): Promise<TradeSession> {
-  const response = await api.get(`/history/${id}`);
+  const response = await api.get(`/trade/history/${id}`);
   return response.data.data;
 }
 

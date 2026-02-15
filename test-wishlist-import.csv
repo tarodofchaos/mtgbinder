@@ -1,6 +1,0 @@
-name,quantity,priority,maxPrice,minCondition,foilOnly
-Lightning Bolt,4,HIGH,2.00,NM,false
-Force of Will,1,URGENT,80.00,LP,false
-Mana Crypt,1,HIGH,150.00,NM,true
-Sol Ring,2,NORMAL,1.50,LP,false
-Black Lotus,1,URGENT,,M,false

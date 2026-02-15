@@ -31,6 +31,7 @@ import {
   updateTradeSelection,
   acceptTrade 
 } from '../services/trade-service';
+import { getWishlist, removeFromWishlist } from '../services/wishlist-service';
 import { useAuth } from '../context/auth-context';
 import { MatchList } from '../components/trading/MatchList';
 import { LoadingPage } from '../components/ui/LoadingSpinner';
@@ -113,6 +114,8 @@ export function TradeSessionPage() {
 
   const [confirmCompleteOpen, setConfirmCompleteOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [confirmWishlistRemoveOpen, setConfirmWishlistRemoveOpen] = useState(false);
+  const [matchedWishlistItems, setMatchedWishlistItems] = useState<{ id: string; name: string }[]>([]);
   
   // Track if initial data has been loaded to avoid overriding state with server data repeatedly
   const initialLoadDone = useRef(false);
@@ -123,6 +126,12 @@ export function TradeSessionPage() {
     queryFn: () => getTradeMatches(code!),
     enabled: !!code,
     refetchInterval: 30000,
+  });
+
+  const { data: wishlist } = useQuery({
+    queryKey: ['wishlist'],
+    queryFn: () => getWishlist({ pageSize: 1000 }),
+    enabled: !!user,
   });
 
   useEffect(() => {
@@ -229,6 +238,25 @@ export function TradeSessionPage() {
     mutationFn: () => completeTradeSession(code!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tradeSessions'] });
+      queryClient.invalidateQueries({ queryKey: ['collection'] });
+      
+      // Check for wishlist matches
+      if (wishlist?.data && tradeBalance.myReceives.length > 0) {
+        const matches = wishlist.data
+          .filter(wishItem => 
+            tradeBalance.myReceives.some(receive => 
+              receive.card.name.toLowerCase() === wishItem.card?.name.toLowerCase()
+            )
+          )
+          .map(item => ({ id: item.id, name: item.card?.name || '' }));
+
+        if (matches.length > 0) {
+          setMatchedWishlistItems(matches);
+          setConfirmWishlistRemoveOpen(true);
+          return;
+        }
+      }
+
       navigate('/trade', {
         state: {
           message: t('trade.completedSuccess', 'Trade completed successfully! Cards have been moved to your collection.'),
@@ -250,6 +278,21 @@ export function TradeSessionPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tradeSessions'] });
       navigate('/trade');
+    },
+  });
+
+  const removeWishlistMutation = useMutation({
+    mutationFn: async (items: { id: string; name: string }[]) => {
+      await Promise.all(items.map(item => removeFromWishlist(item.id)));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['wishlist'] });
+      navigate('/trade', {
+        state: {
+          message: t('trade.completedSuccess', 'Trade completed successfully! Cards have been moved to your collection.'),
+          severity: 'success'
+        }
+      });
     },
   });
 
@@ -584,12 +627,10 @@ export function TradeSessionPage() {
         }}
         title={t('trade.completeSession')}
         message={
-          (
-            <Box>
-              <Typography>{t('trade.confirmCompleteBriefing', 'Review the trade before finalizing. This action cannot be undone.')}</Typography>
-              <Briefing />
-            </Box>
-          ) as any
+          <Box>
+            <Typography>{t('trade.confirmCompleteBriefing', 'Review the trade before finalizing. This action cannot be undone.')}</Typography>
+            <Briefing />
+          </Box>
         }
         severity="success"
         isLoading={completeMutation.isPending}
@@ -606,6 +647,40 @@ export function TradeSessionPage() {
         message={t('trade.confirmDelete')}
         severity="error"
         isLoading={deleteMutation.isPending}
+      />
+
+      <ConfirmationModal
+        isOpen={confirmWishlistRemoveOpen}
+        onClose={() => {
+          setConfirmWishlistRemoveOpen(false);
+          navigate('/trade', {
+            state: {
+              message: t('trade.completedSuccess', 'Trade completed successfully! Cards have been moved to your collection.'),
+              severity: 'success'
+            }
+          });
+        }}
+        onConfirm={() => {
+          removeWishlistMutation.mutate(matchedWishlistItems);
+          setConfirmWishlistRemoveOpen(false);
+        }}
+        title={t('trade.removeFromWishlistTitle')}
+        message={
+          <Box>
+            <Typography sx={{ mb: 2 }}>{t('trade.removeFromWishlistMessage')}</Typography>
+            <List dense sx={{ bgcolor: 'action.hover', borderRadius: 1 }}>
+              {matchedWishlistItems.map((item) => (
+                <ListItem key={item.id}>
+                  <ListItemText primary={item.name} />
+                </ListItem>
+              ))}
+            </List>
+          </Box>
+        }
+        confirmText={t('trade.confirmRemoveFromWishlist')}
+        cancelText={t('trade.keepInWishlist')}
+        severity="success"
+        isLoading={removeWishlistMutation.isPending}
       />
     </Stack>
   );

@@ -369,6 +369,10 @@
     "youGiveValue": "YOU GIVE VALUE",
     "youReceiveValue": "YOU RECEIVE VALUE",
     "unknownUser": "Unknown User",
+    "removeFromWishlistTitle": "Remove from Wishlist?",
+    "removeFromWishlistMessage": "The following cards you received are in your wishlist. Do you want to remove them?",
+    "confirmRemoveFromWishlist": "Remove Selected",
+    "keepInWishlist": "Keep in Wishlist",
     "historySort": {
       "label": "Sort By",
       "newestFirst": "Newest First",

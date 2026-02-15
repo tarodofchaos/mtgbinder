@@ -370,6 +370,10 @@
     "youGiveValue": "VALOR QUE ENTREGAS",
     "youReceiveValue": "VALOR QUE RECIBES",
     "unknownUser": "Usuario Desconocido",
+    "removeFromWishlistTitle": "¿Eliminar de la lista de deseos?",
+    "removeFromWishlistMessage": "Las siguientes cartas que has recibido están en tu lista de deseos. ¿Quieres eliminarlas?",
+    "confirmRemoveFromWishlist": "Eliminar seleccionadas",
+    "keepInWishlist": "Mantener en la lista",
     "historySort": {
       "label": "Ordenar por",
       "newestFirst": "Más recientes primero",

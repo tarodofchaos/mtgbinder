@@ -32,6 +32,7 @@ import { ImportCollectionModal } from '../components/collection/ImportCollection
 import { CardImage } from '../components/cards/CardImage';
 import { PrintingSelector } from '../components/cards/PrintingSelector';
 import { Modal } from '../components/ui/Modal';
+import { ConfirmationModal } from '../components/ui/ConfirmationModal';
 import { LoadingPage } from '../components/ui/LoadingSpinner';
 import { DebouncedTextField } from '../components/ui/DebouncedTextField';
 import { ManaSymbol } from '../components/ui/ManaSymbol';
@@ -173,6 +174,7 @@ export function CollectionPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [editingItem, setEditingItem] = useState<CollectionItem | null>(null);
+  const [itemToRemove, setItemToRemove] = useState<CollectionItem | null>(null);
   const [editPendingCardName, setEditPendingCardName] = useState<string | null>(null);
   const [editSelectedCard, setEditSelectedCard] = useState<Card | null>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -294,8 +296,13 @@ export function CollectionPage() {
   };
 
   const handleRemove = (item: CollectionItem) => {
-    if (confirm(t('collection.confirmRemove', { cardName: item.card?.name }))) {
-      removeMutation.mutate(item.id);
+    setItemToRemove(item);
+  };
+
+  const handleConfirmRemove = () => {
+    if (itemToRemove) {
+      removeMutation.mutate(itemToRemove.id);
+      setItemToRemove(null);
     }
   };
 
@@ -784,6 +791,16 @@ export function CollectionPage() {
           queryClient.invalidateQueries({ queryKey: ['collection'] });
           queryClient.invalidateQueries({ queryKey: ['collectionStats'] });
         }}
+      />
+
+      <ConfirmationModal
+        isOpen={!!itemToRemove}
+        onClose={() => setItemToRemove(null)}
+        onConfirm={handleConfirmRemove}
+        title={t('common.delete')}
+        message={t('collection.confirmRemove', { cardName: itemToRemove?.card?.name })}
+        severity="error"
+        isLoading={removeMutation.isPending}
       />
     </Box>
   );

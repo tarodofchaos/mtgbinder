@@ -26,6 +26,7 @@ import { CardSearch } from '../components/cards/CardSearch';
 import { CardImage } from '../components/cards/CardImage';
 import { PrintingSelector } from '../components/cards/PrintingSelector';
 import { Modal } from '../components/ui/Modal';
+import { ConfirmationModal } from '../components/ui/ConfirmationModal';
 import { LoadingPage } from '../components/ui/LoadingSpinner';
 import { DebouncedTextField } from '../components/ui/DebouncedTextField';
 import { ImportDecklistModal } from '../components/wishlist/ImportDecklistModal';
@@ -107,6 +108,7 @@ export function WishlistPage() {
   const [pendingCardName, setPendingCardName] = useState<string | null>(null);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [editingItem, setEditingItem] = useState<WishlistItem | null>(null);
+  const [itemToRemove, setItemToRemove] = useState<WishlistItem | null>(null);
   const [editPendingCardName, setEditPendingCardName] = useState<string | null>(null);
   const [editSelectedCard, setEditSelectedCard] = useState<Card | null>(null);
   const [search, setSearch] = useState('');
@@ -235,8 +237,13 @@ export function WishlistPage() {
   };
 
   const handleRemove = (item: WishlistItem) => {
-    if (confirm(t('wishlist.confirmRemove', { cardName: item.card?.name }))) {
-      removeMutation.mutate(item.id);
+    setItemToRemove(item);
+  };
+
+  const handleConfirmRemove = () => {
+    if (itemToRemove) {
+      removeMutation.mutate(itemToRemove.id);
+      setItemToRemove(null);
     }
   };
 
@@ -663,6 +670,16 @@ export function WishlistPage() {
         isOpen={showCSVImportModal}
         onClose={() => setShowCSVImportModal(false)}
         onSuccess={handleImportSuccess}
+      />
+
+      <ConfirmationModal
+        isOpen={!!itemToRemove}
+        onClose={() => setItemToRemove(null)}
+        onConfirm={handleConfirmRemove}
+        title={t('common.delete')}
+        message={t('wishlist.confirmRemove', { cardName: itemToRemove?.card?.name })}
+        severity="error"
+        isLoading={removeMutation.isPending}
       />
     </Box>
   );

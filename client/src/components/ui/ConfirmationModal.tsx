@@ -1,3 +1,4 @@
+import { ReactNode } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -13,9 +14,9 @@ interface ConfirmationModalProps {
   onClose: () => void;
   onConfirm: () => void;
   title: string;
-  message: string;
-  confirmLabel?: string;
-  cancelLabel?: string;
+  message: ReactNode;
+  confirmText?: string;
+  cancelText?: string;
   severity?: 'primary' | 'error' | 'success' | 'warning';
   isLoading?: boolean;
 }
@@ -26,8 +27,8 @@ export function ConfirmationModal({
   onConfirm,
   title,
   message,
-  confirmLabel,
-  cancelLabel,
+  confirmText,
+  cancelText,
   severity = 'primary',
   isLoading = false,
 }: ConfirmationModalProps) {
@@ -46,13 +47,19 @@ export function ConfirmationModal({
         {title}
       </DialogTitle>
       <DialogContent>
-        <DialogContentText id="confirmation-dialog-description">
-          {message}
-        </DialogContentText>
+        {typeof message === 'string' ? (
+          <DialogContentText id="confirmation-dialog-description">
+            {message}
+          </DialogContentText>
+        ) : (
+          <div id="confirmation-dialog-description">
+            {message}
+          </div>
+        )}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} disabled={isLoading}>
-          {cancelLabel || t('common.cancel')}
+          {cancelText || t('common.cancel')}
         </Button>
         <Button
           onClick={onConfirm}
@@ -61,7 +68,7 @@ export function ConfirmationModal({
           autoFocus
           disabled={isLoading}
         >
-          {confirmLabel || t('common.confirm')}
+          {confirmText || t('common.confirm')}
         </Button>
       </DialogActions>
     </Dialog>

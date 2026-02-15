@@ -70,14 +70,27 @@ export async function updateCardsWeekly(force = false): Promise<void> {
         
         setsProcessed++;
 
-        for (const card of value.cards) {
-          if (!card.uuid) continue;
+                for (const card of value.cards) {
 
-          // Skip digital-only cards (Alchemy, MTGO exclusives, etc.)
-          if (card.isOnlineOnly || isDigitalOnlySet || card.name.startsWith('A-')) {
-            skippedDigital++;
-            continue;
-          }
+                  if (!card.uuid) continue;
+
+        
+
+                  // Skip digital-only cards (Alchemy, MTGO exclusives, etc.)
+
+                  // But allow Art Series cards even if they are marked onlineOnly in some contexts
+
+                  const isArtSeries = setName.toLowerCase().includes('art series') || (card.setCode && card.setCode.startsWith('A') && card.setCode.length === 4);
+
+                  
+
+                  if (!isArtSeries && (card.isOnlineOnly || isDigitalOnlySet || card.name.startsWith('A-'))) {
+
+                    skippedDigital++;
+
+                    continue;
+
+                  }
 
           const spanishName = card.foreignData?.find(fd => fd.language === 'Spanish')?.name || null;
 

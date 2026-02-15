@@ -326,7 +326,7 @@ export function ImportWishlistPreviewStep({
       {/* Warning for not found cards */}
       {stats.notFound > 0 && (
         <Alert severity="warning">
-          {t('import.notFoundWarningWishlist', { count: stats.notFound })}
+          {t('import.notFoundWarning', { count: stats.notFound })}
         </Alert>
       )}
 

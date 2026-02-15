@@ -64,29 +64,48 @@ export async function resolveCardNames(cardNames: string[]): Promise<ResolveCard
 
   // Normalize names for case-insensitive matching
   const normalizedNames = cardNames.map(name => name.trim().toLowerCase());
-  const uniqueNames = [...new Set(normalizedNames)];
+  
+  // Add versions without "Art Series: " prefix if present to the query
+  const namesToQuery = new Set<string>();
+  for (const name of normalizedNames) {
+    namesToQuery.add(name);
+    if (name.startsWith('art series: ')) {
+      namesToQuery.add(name.replace('art series: ', '').trim());
+    }
+  }
+
+  const uniqueNames = [...namesToQuery];
 
   // Use raw query to get the most recent printing per card name
   // DISTINCT ON with ORDER BY setCode DESC gives us the latest set
+  // We include setName to help with Art Series prioritization
   const cards = await prisma.$queryRaw<Array<{
     id: string;
     name: string;
+    nameEs: string | null;
     setCode: string;
     setName: string;
     scryfallId: string | null;
     priceEur: number | null;
   }>>`
-    SELECT DISTINCT ON (LOWER(name))
-      id, name, "setCode", "setName", "scryfallId", "priceEur"
+    SELECT id, name, "nameEs", "setCode", "setName", "scryfallId", "priceEur"
     FROM cards
-    WHERE LOWER(name) = ANY(${uniqueNames})
+    WHERE LOWER(name) = ANY(${uniqueNames}) OR LOWER("nameEs") = ANY(${uniqueNames})
     ORDER BY LOWER(name), "setCode" DESC
   `;
 
-  // Build lookup map for resolved cards (lowercase name -> card data)
-  const cardMap = new Map<string, ResolvedCard['card']>();
+  // Build lookup maps
+  const cardMap = new Map<string, ResolvedCard['card'][]>();
   for (const card of cards) {
-    cardMap.set(card.name.toLowerCase(), card);
+    const nameKey = card.name.toLowerCase();
+    if (!cardMap.has(nameKey)) cardMap.set(nameKey, []);
+    cardMap.get(nameKey)!.push(card);
+    
+    if (card.nameEs) {
+      const nameEsKey = card.nameEs.toLowerCase();
+      if (!cardMap.has(nameEsKey)) cardMap.set(nameEsKey, []);
+      cardMap.get(nameEsKey)!.push(card);
+    }
   }
 
   // Match original names to resolved cards
@@ -95,10 +114,27 @@ export async function resolveCardNames(cardNames: string[]): Promise<ResolveCard
 
   for (const originalName of cardNames) {
     const normalizedName = originalName.trim().toLowerCase();
-    const card = cardMap.get(normalizedName);
+    const isArtSeriesRequest = normalizedName.startsWith('art series: ');
+    const searchName = isArtSeriesRequest 
+      ? normalizedName.replace('art series: ', '').trim()
+      : normalizedName;
 
-    if (card) {
-      resolved.push({ name: originalName, card });
+    const candidates = cardMap.get(searchName) || cardMap.get(normalizedName);
+
+    if (candidates && candidates.length > 0) {
+      let selectedMeet: ResolvedCard['card'];
+
+      if (isArtSeriesRequest) {
+        // Prioritize sets with "Art Series" in the name
+        const artSeriesMatch = candidates.find(c => 
+          c.setName.toLowerCase().includes('art series')
+        );
+        selectedMeet = artSeriesMatch || candidates[0];
+      } else {
+        selectedMeet = candidates[0];
+      }
+
+      resolved.push({ name: originalName, card: selectedMeet });
     } else {
       notFound.push(originalName);
     }

@@ -1,6 +1,6 @@
 import { CardCondition } from '@prisma/client';
 import { prisma } from '../utils/prisma';
-import { resolveCardNames, importCollectionItems, DuplicateMode } from './import-service';
+import { resolveCardNames, importCollectionItems, resolveEntriesWithPrintings } from './import-service';
 
 // Mock Prisma
 jest.mock('../utils/prisma', () => ({
@@ -9,6 +9,7 @@ jest.mock('../utils/prisma', () => ({
     $transaction: jest.fn(),
     card: {
       findUnique: jest.fn(),
+      findMany: jest.fn(),
     },
     collectionItem: {
       findUnique: jest.fn(),
@@ -64,6 +65,30 @@ describe('import-service', () => {
       expect(result.notFound).toHaveLength(0);
     });
 
+    it('should resolve Spanish card names', async () => {
+      const mockCards = [
+        {
+          id: 'card-1',
+          name: 'Lightning Bolt',
+          nameEs: 'Rayo',
+          setCode: 'M21',
+          setName: 'Core Set 2021',
+          scryfallId: 'scry-1',
+          priceEur: 0.5,
+        },
+      ];
+
+      (mockPrisma.$queryRaw as jest.Mock).mockResolvedValue(mockCards);
+
+      const result = await resolveCardNames(['Rayo']);
+
+      expect(result.resolved).toHaveLength(1);
+      expect(result.resolved[0].name).toBe('Rayo');
+      expect(result.resolved[0].card.name).toBe('Lightning Bolt');
+      expect(result.resolved[0].card.id).toBe('card-1');
+      expect(result.notFound).toHaveLength(0);
+    });
+
     it('should handle case-insensitive matching', async () => {
       const mockCards = [
         {
@@ -106,6 +131,37 @@ describe('import-service', () => {
       expect(result.resolved).toHaveLength(1);
       expect(result.resolved[0].name).toBe('Lightning Bolt');
       expect(result.notFound).toEqual(['Fake Card Name']);
+    });
+
+    it('should handle Art Series: prefix by stripping it and prioritizing Art Series sets', async () => {
+      const mockCards = [
+        {
+          id: 'card-regular',
+          name: 'Diversion Specialist',
+          setCode: 'DSK',
+          setName: 'Duskmourn',
+          scryfallId: 'scry-reg',
+          priceEur: 0.5,
+        },
+        {
+          id: 'card-art',
+          name: 'Diversion Specialist',
+          setCode: 'ADSK',
+          setName: 'Duskmourn Art Series',
+          scryfallId: 'scry-art',
+          priceEur: 0.2,
+        },
+      ];
+
+      (mockPrisma.$queryRaw as jest.Mock).mockResolvedValue(mockCards);
+
+      const result = await resolveCardNames(['Art Series: Diversion Specialist']);
+
+      expect(result.resolved).toHaveLength(1);
+      expect(result.resolved[0].name).toBe('Art Series: Diversion Specialist');
+      expect(result.resolved[0].card.id).toBe('card-art');
+      expect(result.resolved[0].card.setName).toBe('Duskmourn Art Series');
+      expect(result.notFound).toHaveLength(0);
     });
 
     it('should deduplicate card names before querying', async () => {
@@ -320,6 +376,35 @@ describe('import-service', () => {
       expect(calls[0][0].data.condition).toBe(CardCondition.NM);
       expect(calls[1][0].data.condition).toBe(CardCondition.LP);
       expect(calls[2][0].data.condition).toBe(CardCondition.DMG);
+    });
+  });
+
+  describe('resolveEntriesWithPrintings', () => {
+    it('should resolve entries with Spanish names', async () => {
+      const mockCards = [
+        {
+          id: 'card-1',
+          name: 'Lightning Bolt',
+          nameEs: 'Rayo',
+          setCode: 'M21',
+          setName: 'Core Set 2021',
+          scryfallId: 'scry-1',
+          priceEur: 0.5,
+        },
+      ];
+
+      (mockPrisma.$queryRaw as jest.Mock).mockResolvedValue(mockCards);
+
+      const entries = [
+        { quantity: 4, cardName: 'Rayo' }
+      ];
+
+      const result = await resolveEntriesWithPrintings(entries as any);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].status).toBe('matched');
+      expect(result[0].resolvedCard?.name).toBe('Lightning Bolt');
+      expect(result[0].cardName).toBe('Rayo');
     });
   });
 });

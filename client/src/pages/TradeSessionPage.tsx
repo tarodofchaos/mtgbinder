@@ -21,7 +21,6 @@ import {
   Delete as DeleteIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
-  Close as CloseIcon,
 } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
 import { useTranslation } from 'react-i18next';
@@ -186,7 +185,7 @@ export function TradeSessionPage() {
       refetch();
     };
 
-    const handleAcceptanceUpdated = (payload: { userId: string; accepted: boolean }) => {
+    const handleAcceptanceUpdated = (_payload: { userId: string; accepted: boolean }) => {
       refetch();
     };
 
@@ -582,10 +581,12 @@ export function TradeSessionPage() {
         }}
         title={t('trade.completeSession')}
         message={
-          <Box>
-            <Typography>{t('trade.confirmCompleteBriefing', 'Review the trade before finalizing. This action cannot be undone.')}</Typography>
-            <Briefing />
-          </Box>
+          (
+            <Box>
+              <Typography>{t('trade.confirmCompleteBriefing', 'Review the trade before finalizing. This action cannot be undone.')}</Typography>
+              <Briefing />
+            </Box>
+          ) as any
         }
         severity="success"
         isLoading={completeMutation.isPending}

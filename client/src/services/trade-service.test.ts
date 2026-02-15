@@ -30,6 +30,8 @@ describe('Trade History Service', () => {
           expiresAt: new Date('2026-02-10'),
           createdAt: new Date('2026-02-03'),
           matchCount: 5,
+          userAAccepted: false,
+          userBAccepted: false,
         },
       ];
 
@@ -75,6 +77,8 @@ describe('Trade History Service', () => {
           expiresAt: new Date('2026-02-10'),
           createdAt: new Date('2026-02-03'),
           matchCount: 5,
+          userAAccepted: false,
+          userBAccepted: false,
         },
         {
           id: '2',
@@ -85,6 +89,8 @@ describe('Trade History Service', () => {
           expiresAt: new Date('2026-02-09'),
           createdAt: new Date('2026-02-02'),
           matchCount: 3,
+          userAAccepted: false,
+          userBAccepted: false,
         },
       ];
 
@@ -128,6 +134,8 @@ describe('Trade History Service', () => {
           avatarId: 'avatar-2',
         },
         matchCount: 5,
+        userAAccepted: false,
+        userBAccepted: false,
       };
 
       vi.mocked(api.get).mockResolvedValue({

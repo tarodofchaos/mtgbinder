@@ -62,7 +62,7 @@ export async function getTradeHistoryDetail(id: string): Promise<TradeSession> {
 }
 
 export async function getTradeMessages(code: string, limit = 50): Promise<TradeMessage[]> {
-  const response = await api.get('/trade/${code}/messages', {
+  const response = await api.get(`/trade/${code}/messages`, {
     params: { limit },
   });
   return response.data.data;

@@ -99,6 +99,8 @@ describe('TradeHistoryTab', () => {
           avatarId: 'avatar-1',
         },
         matchCount: 5,
+        userAAccepted: false,
+        userBAccepted: false,
       },
     ];
 
@@ -131,6 +133,8 @@ describe('TradeHistoryTab', () => {
           avatarId: 'avatar-2',
         },
         matchCount: 3,
+        userAAccepted: false,
+        userBAccepted: false,
       },
     ];
 
@@ -176,6 +180,8 @@ describe('TradeHistoryTab', () => {
           avatarId: 'avatar-1',
         },
         matchCount: 5,
+        userAAccepted: false,
+        userBAccepted: false,
       },
     ];
 
@@ -214,6 +220,8 @@ describe('TradeHistoryTab', () => {
           avatarId: 'avatar-1',
         },
         matchCount: 5,
+        userAAccepted: false,
+        userBAccepted: false,
       },
     ];
 
@@ -271,6 +279,8 @@ describe('TradeHistoryTab', () => {
           avatarId: 'avatar-1',
         },
         matchCount: 5,
+        userAAccepted: false,
+        userBAccepted: false,
       },
     ];
 

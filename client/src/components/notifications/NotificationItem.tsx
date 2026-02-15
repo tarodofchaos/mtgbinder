@@ -212,7 +212,7 @@ export function NotificationItem({ notification, onMarkAsRead, onDelete, onClick
         return (
           <Box sx={{ mt: 0.5, mb: 1 }}>
             <Typography variant="body2" color="text.secondary">
-              {translatedMessage}
+              {translatedMessage as any}
             </Typography>
             <Button 
               variant="contained" 
@@ -252,7 +252,7 @@ export function NotificationItem({ notification, onMarkAsRead, onDelete, onClick
     // Default: just show message if nothing specialized
     return (
       <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-        {translatedMessage}
+        {translatedMessage as any}
       </Typography>
     );
   };

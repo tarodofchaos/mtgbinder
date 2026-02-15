@@ -230,6 +230,20 @@ router.get('/:code/matches', async (req: AuthenticatedRequest, res: Response, ne
       throw new AppError('Waiting for another user to join', 400);
     }
 
+    // If it is completed, use the cached matches instead of computed ones to preserve history
+    if (session.status === TradeSessionStatus.COMPLETED && session.matchesJson) {
+      const cachedMatches = session.matchesJson as any;
+      res.json({
+        data: {
+          session,
+          ...cachedMatches,
+          userASelectedJson: session.userASelectedJson || {},
+          userBSelectedJson: session.userBSelectedJson || {},
+        },
+      });
+      return;
+    }
+
     const matches = await computeTradeMatches(session.initiatorId, session.joinerId);
 
     // Transform matches to include nested card object as expected by shared TradeMatch interface

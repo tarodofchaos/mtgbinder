@@ -91,7 +91,12 @@ export function ExplorePage() {
               return (
                 <Grid key={user.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
                   <Card>
-                    <CardActionArea component={RouterLink} to={`/binder/${user.shareCode}`}>
+                    <CardActionArea 
+                      component="a" 
+                      href={`/binder/${user.shareCode}`} 
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Avatar
                           sx={{

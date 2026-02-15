@@ -3,6 +3,7 @@ import { prisma } from '../utils/prisma';
 import { tradeMatchesTotal } from '../utils/metrics';
 
 interface TradeMatch {
+  collectionItemId: string;
   cardId: string;
   cardName: string;
   setCode: string;
@@ -48,6 +49,7 @@ export async function computeTradeMatches(
   // Get ALL cards User A has for trade
   const userATradeableRaw = await prisma.$queryRaw<
     Array<{
+      collectionItemId: string;
       cardId: string;
       cardName: string;
       setCode: string;
@@ -74,6 +76,7 @@ export async function computeTradeMatches(
     }>
   >`
     SELECT
+      ci.id as "collectionItemId",
       c.id as "cardId",
       c.name as "cardName",
       c."setCode",
@@ -106,6 +109,7 @@ export async function computeTradeMatches(
   // Get ALL cards User B has for trade
   const userBTradeableRaw = await prisma.$queryRaw<
     Array<{
+      collectionItemId: string;
       cardId: string;
       cardName: string;
       setCode: string;
@@ -132,6 +136,7 @@ export async function computeTradeMatches(
     }>
   >`
     SELECT
+      ci.id as "collectionItemId",
       c.id as "cardId",
       c.name as "cardName",
       c."setCode",
@@ -180,67 +185,69 @@ export async function computeTradeMatches(
   const userAWantsNames = new Set(userAWishlistNames.map((w) => w.cardName.toLowerCase()));
 
   // Transform User A's tradeable cards, marking matches by NAME
-  const userAOffers: TradeMatch[] = userATradeableRaw.map((item) => {
-    const isMatch = userBWantsNames.has(item.cardName.toLowerCase());
+  const userAOffers: TradeMatch[] = userATradeableRaw.map((item: any) => {
+    const isMatch = userBWantsNames.has((item.cardName || item.cardname || '').toLowerCase());
     return {
-      cardId: item.cardId,
-      cardName: item.cardName,
-      setCode: item.setCode,
-      setName: item.setName,
-      scryfallId: item.scryfallId,
+      collectionItemId: item.collectionItemId || item.collectionitemid,
+      cardId: item.cardId || item.cardid,
+      cardName: item.cardName || item.cardname,
+      setCode: item.setCode || item.setcode,
+      setName: item.setName || item.setname,
+      scryfallId: item.scryfallId || item.scryfallid,
       rarity: item.rarity,
-      manaCost: item.manaCost,
-      manaValue: item.manaValue,
-      typeLine: item.typeLine,
-      oracleText: item.oracleText,
-      collectorNumber: item.collectorNumber,
-      imageUri: item.imageUri,
-      priceUsd: item.priceUsd,
-      priceUsdFoil: item.priceUsdFoil,
+      manaCost: item.manaCost || item.manacost,
+      manaValue: item.manaValue || item.manavalue,
+      typeLine: item.typeLine || item.typeline,
+      oracleText: item.oracleText || item.oracletext,
+      collectorNumber: item.collectorNumber || item.collectornumber,
+      imageUri: item.imageUri || item.imageuri,
+      priceUsd: item.priceUsd || item.priceusd,
+      priceUsdFoil: item.priceUsdFoil || item.priceusdfoil,
       offererUserId: userAId,
       receiverUserId: userBId,
-      availableQuantity: item.forTrade,
+      availableQuantity: item.forTrade || item.fortrade,
       condition: item.condition,
       language: item.language,
-      isAlter: item.isAlter,
-      photoUrl: item.photoUrl,
-      isFoil: item.foilQuantity > 0,
+      isAlter: item.isAlter || item.isalter,
+      photoUrl: item.photoUrl || item.photourl,
+      isFoil: (item.foilQuantity || item.foilquantity || 0) > 0,
       priority: null,
-      priceEur: item.priceEur,
-      tradePrice: item.tradePrice,
+      priceEur: item.priceEur || item.priceeur,
+      tradePrice: item.tradePrice || item.tradeprice,
       isMatch,
     };
   });
 
   // Transform User B's tradeable cards, marking matches by NAME
-  const userBOffers: TradeMatch[] = userBTradeableRaw.map((item) => {
-    const isMatch = userAWantsNames.has(item.cardName.toLowerCase());
+  const userBOffers: TradeMatch[] = userBTradeableRaw.map((item: any) => {
+    const isMatch = userAWantsNames.has((item.cardName || item.cardname || '').toLowerCase());
     return {
-      cardId: item.cardId,
-      cardName: item.cardName,
-      setCode: item.setCode,
-      setName: item.setName,
-      scryfallId: item.scryfallId,
+      collectionItemId: item.collectionItemId || item.collectionitemid,
+      cardId: item.cardId || item.cardid,
+      cardName: item.cardName || item.cardname,
+      setCode: item.setCode || item.setcode,
+      setName: item.setName || item.setname,
+      scryfallId: item.scryfallId || item.scryfallid,
       rarity: item.rarity,
-      manaCost: item.manaCost,
-      manaValue: item.manaValue,
-      typeLine: item.typeLine,
-      oracleText: item.oracleText,
-      collectorNumber: item.collectorNumber,
-      imageUri: item.imageUri,
-      priceUsd: item.priceUsd,
-      priceUsdFoil: item.priceUsdFoil,
+      manaCost: item.manaCost || item.manacost,
+      manaValue: item.manaValue || item.manavalue,
+      typeLine: item.typeLine || item.typeline,
+      oracleText: item.oracleText || item.oracletext,
+      collectorNumber: item.collectorNumber || item.collectornumber,
+      imageUri: item.imageUri || item.imageuri,
+      priceUsd: item.priceUsd || item.priceusd,
+      priceUsdFoil: item.priceUsdFoil || item.priceusdfoil,
       offererUserId: userBId,
       receiverUserId: userAId,
-      availableQuantity: item.forTrade,
+      availableQuantity: item.forTrade || item.fortrade,
       condition: item.condition,
       language: item.language,
-      isAlter: item.isAlter,
-      photoUrl: item.photoUrl,
-      isFoil: item.foilQuantity > 0,
+      isAlter: item.isAlter || item.isalter,
+      photoUrl: item.photoUrl || item.photourl,
+      isFoil: (item.foilQuantity || item.foilquantity || 0) > 0,
       priority: null,
-      priceEur: item.priceEur,
-      tradePrice: item.tradePrice,
+      priceEur: item.priceEur || item.priceeur,
+      tradePrice: item.tradePrice || item.tradeprice,
       isMatch,
     };
   });

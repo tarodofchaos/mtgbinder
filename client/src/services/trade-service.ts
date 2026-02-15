@@ -31,6 +31,11 @@ export async function updateTradeSelection(code: string, selectionJson: Record<s
   return response.data.data;
 }
 
+export async function acceptTrade(code: string, accepted: boolean): Promise<TradeSession> {
+  const response = await api.post(`/trade/${code}/accept`, { accepted });
+  return response.data.data;
+}
+
 export async function completeTradeSession(code: string): Promise<TradeSession> {
   const response = await api.post(`/trade/${code}/complete`);
   return response.data.data;
@@ -57,7 +62,7 @@ export async function getTradeHistoryDetail(id: string): Promise<TradeSession> {
 }
 
 export async function getTradeMessages(code: string, limit = 50): Promise<TradeMessage[]> {
-  const response = await api.get(`/trade/${code}/messages`, {
+  const response = await api.get('/trade/${code}/messages', {
     params: { limit },
   });
   return response.data.data;

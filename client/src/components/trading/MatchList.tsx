@@ -20,7 +20,7 @@ interface MatchListProps {
   totalValue: number;
   title: string;
   emptyMessage?: string;
-  onToggleSelect?: (cardId: string, quantity: number) => void;
+  onToggleSelect?: (collectionItemId: string, quantity: number) => void;
   selectedJson?: Record<string, number>;
   isSelectable?: boolean;
 }
@@ -55,6 +55,7 @@ const styles: Record<string, SxProps<Theme>> = {
     alignItems: 'center',
     p: 2,
     cursor: 'pointer',
+    position: 'relative',
     '&:hover': {
       bgcolor: 'action.hover',
     },
@@ -64,6 +65,7 @@ const styles: Record<string, SxProps<Theme>> = {
     alignItems: 'center',
     p: 2,
     cursor: 'pointer',
+    position: 'relative',
     bgcolor: '#e8f5e9', // Light green background (green-50)
     borderLeft: '4px solid',
     borderLeftColor: 'success.main',
@@ -79,7 +81,10 @@ const styles: Record<string, SxProps<Theme>> = {
     },
   },
   listItemSelected: {
-    bgcolor: 'action.selected !important',
+    bgcolor: 'rgba(25, 118, 210, 0.12) !important', // More visible primary background
+    borderLeftWidth: '6px !important',
+    borderLeftStyle: 'solid !important',
+    borderLeftColor: 'primary.main !important',
     '&::after': {
       content: '""',
       position: 'absolute',
@@ -177,7 +182,7 @@ export function MatchList({
 
       <List disablePadding>
         {matches.map((match, index) => {
-          const selectedQuantity = selectedJson[match.card.id] || 0;
+          const selectedQuantity = selectedJson[match.collectionItemId] || 0;
           const isSelected = selectedQuantity > 0;
           const itemStyle: SxProps<Theme> = [
             match.isMatch ? styles.listItemMatch : styles.listItem,
@@ -188,17 +193,17 @@ export function MatchList({
 
           return (
             <ListItem
-              key={`${match.card.id}-${index}`}
+              key={`${match.collectionItemId}-${index}`}
               divider={index < matches.length - 1}
               sx={itemStyle}
-              onClick={() => isSelectable && onToggleSelect?.(match.card.id, isSelected ? 0 : 1)}
+              onClick={() => isSelectable && match.collectionItemId && onToggleSelect?.(match.collectionItemId, isSelected ? 0 : 1)}
             >
               {isSelectable && (
                 <Checkbox
                   checked={isSelected}
                   sx={{ ml: -1, mr: 1 }}
                   onClick={(e) => e.stopPropagation()}
-                  onChange={() => onToggleSelect?.(match.card.id, isSelected ? 0 : 1)}
+                  onChange={() => match.collectionItemId && onToggleSelect?.(match.collectionItemId, isSelected ? 0 : 1)}
                 />
               )}
               
@@ -255,7 +260,7 @@ export function MatchList({
                   value={selectedQuantity || 1}
                   sx={styles.quantitySelector}
                   onClick={(e) => e.stopPropagation()}
-                  onChange={(e) => onToggleSelect?.(match.card.id, parseInt(e.target.value))}
+                  onChange={(e) => onToggleSelect?.(match.collectionItemId, parseInt(e.target.value))}
                 >
                   {[...Array(match.availableQuantity)].map((_, i) => (
                     <MenuItem key={i + 1} value={i + 1}>

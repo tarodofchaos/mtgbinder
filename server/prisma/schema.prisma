@@ -143,8 +143,10 @@ model TradeSession {
   joinerId    String?
   status      TradeSessionStatus @default(PENDING)
   matchesJson Json?
-  userASelectedJson Json?        // { cardId: quantity } - Cards User A wants from User B
-  userBSelectedJson Json?        // { cardId: quantity } - Cards User B wants from User A
+  userASelectedJson Json?        // { collectionItemId: quantity } - Items User A wants from User B
+  userBSelectedJson Json?        // { collectionItemId: quantity } - Items User B wants from User A
+  userAAccepted     Boolean      @default(false)
+  userBAccepted     Boolean      @default(false)
   expiresAt   DateTime
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt

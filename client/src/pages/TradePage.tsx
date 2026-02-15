@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Box,
@@ -13,6 +13,7 @@ import {
   Divider,
   Tabs,
   Tab,
+  Snackbar,
 } from '@mui/material';
 import {
   QrCodeScanner as ScanIcon,
@@ -78,6 +79,7 @@ const styles: Record<string, SxProps<Theme>> = {
 
 export function TradePage() {
   const { t } = useTranslation();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState(0);
   const [joinCode, setJoinCode] = useState('');
   const [showScanner, setShowScanner] = useState(false);
@@ -85,6 +87,24 @@ export function TradePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' | 'warning' }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
+
+  useEffect(() => {
+    if (location.state?.message) {
+      setSnackbar({
+        open: true,
+        message: location.state.message,
+        severity: location.state.severity || 'success',
+      });
+      // Clear state to prevent showing again on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   const publicTradesUrl = user?.shareCode
     ? `${window.location.origin}/binder/${user.shareCode}`
@@ -340,6 +360,16 @@ export function TradePage() {
 
       {/* History tab content */}
       {activeTab === 1 && <TradeHistoryTab />}
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert severity={snackbar.severity} sx={{ width: '100%' }} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Stack>
   );
 }

@@ -110,6 +110,7 @@ export function TradeChatPanel({ sessionCode, partnerName }: TradeChatPanelProps
   const [messages, setMessages] = useState<TradeMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -122,6 +123,12 @@ export function TradeChatPanel({ sessionCode, partnerName }: TradeChatPanelProps
 
   // Use a ref to track if initial messages have been loaded to prevent overwriting
   const initialLoadedRef = useRef(false);
+
+  // Reset state when sessionCode changes
+  useEffect(() => {
+    setMessages([]);
+    initialLoadedRef.current = false;
+  }, [sessionCode]);
 
   useEffect(() => {
     if (initialMessages && !initialLoadedRef.current) {
@@ -161,7 +168,9 @@ export function TradeChatPanel({ sessionCode, partnerName }: TradeChatPanelProps
   }, [messages, isPartnerTyping]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -239,7 +248,7 @@ export function TradeChatPanel({ sessionCode, partnerName }: TradeChatPanelProps
         </Typography>
       </Box>
 
-      <Box sx={styles.messagesContainer}>
+      <Box ref={messagesContainerRef} sx={styles.messagesContainer}>
         {messages.length === 0 ? (
           <Box sx={styles.emptyState}>
             <Typography variant="body2">

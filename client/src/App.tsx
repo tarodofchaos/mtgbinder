@@ -5,6 +5,7 @@ import { useAuth } from './context/auth-context';
 import { Header } from './components/layout/Header';
 import { BottomNav } from './components/layout/BottomNav';
 import { LoadingPage } from './components/ui/LoadingSpinner';
+import { ScrollToTop } from './components/layout/ScrollToTop';
 
 // Pages
 import { LoginPage } from './pages/LoginPage';
@@ -86,148 +87,151 @@ export default function App() {
   const { isAuthenticated } = useAuth();
 
   return (
-    <Routes>
-      {/* Teaser Landing Page */}
-      <Route
-        path="/"
-        element={
-          <PublicRoute>
-            <LandingPage />
-          </PublicRoute>
-        }
-      />
+    <>
+      <ScrollToTop />
+      <Routes>
+        {/* Teaser Landing Page */}
+        <Route
+          path="/"
+          element={
+            <PublicRoute>
+              <LandingPage />
+            </PublicRoute>
+          }
+        />
 
-      {/* Public routes */}
-      <Route
-        path="/login"
-        element={
-          <PublicRoute>
-            <LoginPage />
-          </PublicRoute>
-        }
-      />
-      <Route
-        path="/register"
-        element={
-          <PublicRoute>
-            <RegisterPage />
-          </PublicRoute>
-        }
-      />
-      <Route
-        path="/forgot-password"
-        element={
-          <PublicRoute>
-            <ForgotPasswordPage />
-          </PublicRoute>
-        }
-      />
-      <Route
-        path="/reset-password"
-        element={
-          <PublicRoute>
-            <ResetPasswordPage />
-          </PublicRoute>
-        }
-      />
+        {/* Public routes */}
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <LoginPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <PublicRoute>
+              <RegisterPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <PublicRoute>
+              <ForgotPasswordPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <PublicRoute>
+              <ResetPasswordPage />
+            </PublicRoute>
+          }
+        />
 
-      {/* Truly public route - no auth check, accessible by anyone */}        
-      <Route
-        path="/binder/:shareCode"
-        element={
-          <MinimalLayout>
-            <PublicTradesPage />
-          </MinimalLayout>
-        }
-      />
+        {/* Truly public route - no auth check, accessible by anyone */}        
+        <Route
+          path="/binder/:shareCode"
+          element={
+            <MinimalLayout>
+              <PublicTradesPage />
+            </MinimalLayout>
+          }
+        />
 
-      {/* Protected routes */}
-      <Route
-        path="/collection"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <CollectionPage />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/wishlist"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <WishlistPage />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/sets"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <SetsPage />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/sets/:setCode"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <SetDetailPage />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/explore"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <ExplorePage />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/trade"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <TradePage />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/trade/:code"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <TradeSessionPage />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/search"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <SearchPage />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
+        {/* Protected routes */}
+        <Route
+          path="/collection"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <CollectionPage />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/wishlist"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <WishlistPage />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sets"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <SetsPage />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sets/:setCode"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <SetDetailPage />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/explore"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <ExplorePage />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/trade"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <TradePage />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/trade/:code"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <TradeSessionPage />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/search"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <SearchPage />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
 
-      {/* Default redirect */}
-      <Route 
-        path="*" 
-        element={<Navigate to={isAuthenticated ? "/collection" : "/"} replace />} 
-      />
-    </Routes>
+        {/* Default redirect */}
+        <Route 
+          path="*" 
+          element={<Navigate to={isAuthenticated ? "/collection" : "/"} replace />} 
+        />
+      </Routes>
+    </>
   );
 }

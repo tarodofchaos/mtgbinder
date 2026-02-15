@@ -179,16 +179,22 @@ router.post('/:code/join', async (req: AuthenticatedRequest, res: Response, next
       data: {
         userId: session.initiatorId,
         type: NotificationType.TRADE_MATCH,
-        title: 'User joined your trade session!',
-        message: `${joiner?.displayName} has joined your trade session ${session.sessionCode}`,
+        title: 'notifications.userJoinedTitle',
+        message: 'notifications.userJoinedMessage',
         data: {
           sessionCode: session.sessionCode,
+          userName: joiner?.displayName,
           type: 'join',
         },
       },
     });
 
     emitToUser(session.initiatorId, 'notification', notification);
+
+    // Notify initiator and others in the room via socket
+    emitToTradeSession(session.sessionCode, 'trade:user-joined', {
+      user: updatedSession.joiner,
+    });
 
     res.json({ data: updatedSession });
   } catch (error) {
@@ -228,6 +234,7 @@ router.get('/:code/matches', async (req: AuthenticatedRequest, res: Response, ne
 
     // Transform matches to include nested card object as expected by shared TradeMatch interface
     const transformMatch = (match: any) => ({
+      collectionItemId: match.collectionItemId,
       card: {
         id: match.cardId,
         name: match.cardName,
@@ -289,7 +296,7 @@ router.get('/:code/matches', async (req: AuthenticatedRequest, res: Response, ne
 router.post('/:code/selection', async (req: AuthenticatedRequest, res: Response, next) => {
   try {
     const { code } = req.params;
-    const { selectionJson } = req.body; // Map of { cardId: quantity }
+    const { selectionJson } = req.body; // Map of { collectionItemId: quantity }
 
     if (!selectionJson || typeof selectionJson !== 'object') {
       throw new AppError('selectionJson must be an object', 400);
@@ -310,7 +317,12 @@ router.post('/:code/selection', async (req: AuthenticatedRequest, res: Response,
       throw new AppError('Not authorized to update selections in this session', 403);
     }
 
-    const updateData: any = {};
+    const updateData: any = {
+      // Reset acceptance when selection changes
+      userAAccepted: false,
+      userBAccepted: false,
+    };
+    
     if (isInitiator) {
       updateData.userASelectedJson = selectionJson;
     } else {
@@ -326,6 +338,52 @@ router.post('/:code/selection', async (req: AuthenticatedRequest, res: Response,
     emitToTradeSession(session.sessionCode, 'trade:selection-updated', {
       userId: req.userId,
       selectionJson,
+      userAAccepted: false,
+      userBAccepted: false,
+    });
+
+    res.json({ data: updatedSession });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/:code/accept', async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const { code } = req.params;
+    const { accepted } = req.body;
+
+    const session = await prisma.tradeSession.findUnique({
+      where: { sessionCode: code.toUpperCase() },
+    });
+
+    if (!session) {
+      throw new AppError('Trade session not found', 404);
+    }
+
+    const isInitiator = req.userId === session.initiatorId;
+    const isJoiner = req.userId === session.joinerId;
+
+    if (!isInitiator && !isJoiner) {
+      throw new AppError('Not authorized to accept in this session', 403);
+    }
+
+    const updateData: any = {};
+    if (isInitiator) {
+      updateData.userAAccepted = !!accepted;
+    } else {
+      updateData.userBAccepted = !!accepted;
+    }
+
+    const updatedSession = await prisma.tradeSession.update({
+      where: { id: session.id },
+      data: updateData,
+    });
+
+    // Notify other user via socket
+    emitToTradeSession(session.sessionCode, 'trade:acceptance-updated', {
+      userId: req.userId,
+      accepted: !!accepted,
     });
 
     res.json({ data: updatedSession });
@@ -350,9 +408,103 @@ router.post('/:code/complete', async (req: AuthenticatedRequest, res: Response, 
       throw new AppError('Only the session initiator can complete the session', 403);
     }
 
-    const updatedSession = await prisma.tradeSession.update({
+    if (!session.userAAccepted || !session.userBAccepted) {
+      throw new AppError('Both users must accept the trade before completion', 400);
+    }
+
+    if (!session.joinerId) {
+      throw new AppError('Trade session has no partner', 400);
+    }
+
+    // Move cards between collections in a transaction
+    await prisma.$transaction(async (tx) => {
+      const moveItems = async (fromId: string, toId: string, selectedJson: any) => {
+        if (!selectedJson || typeof selectedJson !== 'object') return;
+        
+        for (const [collectionItemId, qty] of Object.entries(selectedJson)) {
+          // Skip invalid keys that might have slipped from the frontend
+          if (collectionItemId === 'undefined' || collectionItemId === 'null') continue;
+          
+          const quantity = qty as number;
+          if (quantity <= 0) continue;
+
+          const item = await tx.collectionItem.findUnique({
+            where: { id: collectionItemId }
+          });
+
+          if (!item || item.userId !== fromId || item.quantity < quantity) {
+            throw new AppError(`Invalid collection item or insufficient quantity for item ${collectionItemId}`, 400);
+          }
+
+          // Subtract from sender
+          if (item.quantity === quantity) {
+            await tx.collectionItem.delete({ where: { id: collectionItemId } });
+          } else {
+            await tx.collectionItem.update({
+              where: { id: collectionItemId },
+              data: {
+                quantity: item.quantity - quantity,
+                forTrade: Math.max(0, item.forTrade - quantity),
+                // If it was foil, we assume we are moving foil first if needed? 
+                // This is a bit simplified as the trade doesn't specify foil qty.
+                foilQuantity: Math.max(0, item.foilQuantity - quantity) 
+              }
+            });
+          }
+
+          // Add to receiver
+          const existing = await tx.collectionItem.findUnique({
+            where: {
+              userId_cardId_condition_language_isAlter: {
+                userId: toId,
+                cardId: item.cardId,
+                condition: item.condition,
+                language: item.language,
+                isAlter: item.isAlter
+              }
+            }
+          });
+
+          if (existing) {
+            await tx.collectionItem.update({
+              where: { id: existing.id },
+              data: { 
+                quantity: existing.quantity + quantity,
+                foilQuantity: existing.foilQuantity + (item.foilQuantity > 0 ? Math.min(quantity, item.foilQuantity) : 0)
+              }
+            });
+          } else {
+            await tx.collectionItem.create({
+              data: {
+                userId: toId,
+                cardId: item.cardId,
+                quantity: quantity,
+                condition: item.condition,
+                language: item.language,
+                isAlter: item.isAlter,
+                photoUrl: item.photoUrl,
+                foilQuantity: item.foilQuantity > 0 ? Math.min(quantity, item.foilQuantity) : 0
+              }
+            });
+          }
+        }
+      };
+
+      // User A receives cards from User B (userASelectedJson)
+      await moveItems(session.joinerId!, session.initiatorId, session.userASelectedJson);
+      
+      // User B receives cards from User A (userBSelectedJson)
+      await moveItems(session.initiatorId, session.joinerId!, session.userBSelectedJson);
+
+      // Mark session as completed
+      await tx.tradeSession.update({
+        where: { id: session.id },
+        data: { status: TradeSessionStatus.COMPLETED },
+      });
+    });
+
+    const updatedSession = await prisma.tradeSession.findUnique({
       where: { id: session.id },
-      data: { status: TradeSessionStatus.COMPLETED },
     });
 
     // Notify joiner
@@ -361,8 +513,8 @@ router.post('/:code/complete', async (req: AuthenticatedRequest, res: Response, 
         data: {
           userId: session.joinerId,
           type: NotificationType.TRADE_MATCH,
-          title: 'Trade completed!',
-          message: `The trade session ${session.sessionCode} has been completed.`,
+          title: 'notifications.tradeCompletedTitle',
+          message: 'notifications.tradeCompletedMessage',
           data: { sessionCode: session.sessionCode, type: 'complete' },
         },
       });
@@ -585,15 +737,21 @@ router.post('/:code/message', async (req: AuthenticatedRequest, res: Response, n
     const otherUserId = session.initiatorId === req.userId ? session.joinerId : session.initiatorId;
     if (otherUserId) {
       const user = await prisma.user.findUnique({ where: { id: req.userId } });
-      await prisma.notification.create({
+      const notification = await prisma.notification.create({
         data: {
           userId: otherUserId,
           type: NotificationType.TRADE_MATCH,
-          title: `New message from ${user?.displayName}`,
+          title: 'notifications.newMessageTitle',
           message: trimmedContent.length > 50 ? `${trimmedContent.substring(0, 47)}...` : trimmedContent,
-          data: { sessionCode: session.sessionCode, type: 'message' },
+          data: { 
+            sessionCode: session.sessionCode, 
+            userName: user?.displayName,
+            type: 'message' 
+          },
         },
       });
+      
+      emitToUser(otherUserId, 'notification', notification);
     }
 
     res.status(201).json({ data: message });

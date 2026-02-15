@@ -207,6 +207,7 @@ export function NotificationBell() {
                   notification={notification}
                   onMarkAsRead={handleMarkAsRead}
                   onDelete={handleDelete}
+                  onClick={handleClose}
                 />
               </Box>
             ))

@@ -135,6 +135,8 @@ export interface TradeSession {
   joiner?: UserPublic;
   matchCount?: number; // For history view
   matchesJson?: unknown; // Cached match results
+  userAAccepted: boolean;
+  userBAccepted: boolean;
 }
 
 export interface TradeMessage {
@@ -147,6 +149,7 @@ export interface TradeMessage {
 }
 
 export interface TradeMatch {
+  collectionItemId: string;
   card: Card;
   offererUserId: string;
   receiverUserId: string;

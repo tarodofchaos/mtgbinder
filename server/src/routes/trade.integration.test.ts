@@ -77,6 +77,9 @@ jest.mock('../utils/prisma', () => ({
       updateMany: (...args: unknown[]) => mockSessionUpdateMany(...args),
       delete: (...args: unknown[]) => mockSessionDelete(...args),
     },
+    notification: {
+      create: jest.fn().mockResolvedValue({}),
+    },
   },
 }));
 

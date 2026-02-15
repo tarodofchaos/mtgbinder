@@ -74,7 +74,7 @@ export function Tutorial({ run: initialRun, onFinish }: TutorialProps) {
     }
   }, [initialRun]);
 
-  const steps = useMemo<Step[]>(() => {
+  const rawSteps = useMemo<Step[]>(() => {
     const onboardingSteps: Step[] = [
       {
         target: 'body',
@@ -258,6 +258,17 @@ export function Tutorial({ run: initialRun, onFinish }: TutorialProps) {
     }
   }, [tutorialType, t]);
 
+  // Manually add localized progress to each step
+  const steps = useMemo(() => {
+    return rawSteps.map((step, index) => ({
+      ...step,
+      locale: {
+        next: `${t('common.next')} (${t('common.step')} ${index + 1} ${t('common.of')} ${rawSteps.length})`,
+        last: t('common.last'),
+      },
+    }));
+  }, [rawSteps, t]);
+
   const handleJoyrideCallback = async (data: CallBackProps) => {
     const { status } = data;
     const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
@@ -297,7 +308,7 @@ export function Tutorial({ run: initialRun, onFinish }: TutorialProps) {
       steps={steps}
       run={run}
       continuous={true}
-      showProgress={true}
+      showProgress={false} // We handle progress manually in the button text now
       showSkipButton={true}
       callback={handleJoyrideCallback}
       styles={{
@@ -330,7 +341,7 @@ export function Tutorial({ run: initialRun, onFinish }: TutorialProps) {
         back: t('common.back', 'Back'),
         close: t('common.close', 'Close'),
         last: t('common.last', 'Finish'),
-        next: t('common.next', 'Next'),
+        next: t('common.next', 'Next'), // Explicitly provide translated Next for global default
         skip: t('common.skip', 'Skip'),
       }}
     />

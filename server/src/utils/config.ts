@@ -53,12 +53,18 @@ export const config = {
   rateLimitWindowMs: optionalEnvInt('RATE_LIMIT_WINDOW_MS', 15 * 60 * 1000), // 15 minutes
   rateLimitMaxRequests: optionalEnvInt('RATE_LIMIT_MAX_REQUESTS', 1000),
 
-  // Email (Mailjet)
-  mailjet: {
-    apiKey: optionalEnv('MAILJET_API_KEY', ''),
-    apiSecret: optionalEnv('MAILJET_SECRET_KEY', ''),
+  // Email (SMTP)
+  email: {
     fromEmail: optionalEnv('EMAIL_FROM', 'noreply@mtgbinder.com'),
     fromName: optionalEnv('EMAIL_FROM_NAME', 'Bring the Binder'),
+  },
+
+  smtp: {
+    host: optionalEnv('SMTP_HOST', ''),
+    port: optionalEnvInt('SMTP_PORT', 587),
+    user: optionalEnv('SMTP_USER', ''),
+    pass: optionalEnv('SMTP_PASS', ''),
+    secure: optionalEnv('SMTP_SECURE', 'false') === 'true',
   },
 
   // Derived values

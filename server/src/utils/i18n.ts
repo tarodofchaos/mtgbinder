@@ -10,10 +10,19 @@ const locales: { [key: string]: Translations } = {};
  * Load localization files from the client directory
  */
 function loadLocales() {
-  const localesDir = path.join(process.cwd(), '../client/src/i18n/locales');
+  // Path for production (locales copied to dist/locales)
+  const prodLocalesDir = path.join(__dirname, '..', 'locales');
+  
+  // Path for development (accessing client source directly)
+  // This needs to go up from server/src/utils to the root, then down
+  const devLocalesDir = path.join(__dirname, '..', '..', '..', 'client', 'src', 'i18n', 'locales');
+
+  const localesDir = fs.existsSync(prodLocalesDir) ? prodLocalesDir : devLocalesDir;
   
   if (!fs.existsSync(localesDir)) {
-    console.warn(`Locales directory not found: ${localesDir}`);
+    console.warn(`Locales directory not found in prod or dev paths.`);
+    console.warn(`Prod path tried: ${prodLocalesDir}`);
+    console.warn(`Dev path tried: ${devLocalesDir}`);
     return;
   }
 
@@ -23,6 +32,7 @@ function loadLocales() {
       const locale = file.replace('.json', '');
       const content = fs.readFileSync(path.join(localesDir, file), 'utf-8');
       locales[locale] = JSON.parse(content);
+      console.log(`Loaded locale: ${locale}`);
     }
   });
 }

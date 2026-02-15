@@ -22,6 +22,7 @@ const styles: Record<string, SxProps<Theme>> = {
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
+    overflow: 'hidden', // Prevent container from growing
   },
   header: {
     p: 2,
@@ -35,6 +36,7 @@ const styles: Record<string, SxProps<Theme>> = {
     display: 'flex',
     flexDirection: 'column',
     gap: 1.5,
+    minHeight: 0, // Critical for flex scrolling on mobile
   },
   messageRow: {
     display: 'flex',

@@ -94,6 +94,8 @@
     "save": "Guardar Cambios",
     "saveSuccess": "Ajustes guardados correctamente",
     "visibilityUpdated": "Visibilidad de la carpeta actualizada",
+    "autoAddBoughtCards": "Añadir cartas intercambiadas a mi colección automáticamente",
+    "autoAddUpdated": "Ajuste de auto-añadir actualizado correctamente",
     "saveError": "Error al guardar los ajustes",
     "deleteError": "Error al eliminar la cuenta",
     "replayTutorial": "Repetir Tutorial"
@@ -594,6 +596,18 @@
     "send": "Enviar",
     "noMessages": "Aún no hay mensajes. ¡Inicia la conversación!",
     "typing": "{{name}} está escribiendo..."
+  },
+  "emails": {
+    "passwordReset": {
+      "subject": "Restablece tu contraseña de Trae la Carpeta",
+      "greeting": "Hola {{displayName}},",
+      "requestReceived": "Hemos recibido una solicitud para restablecer la contraseña de tu cuenta de Trae la Carpeta.",
+      "buttonText": "Restablecer Contraseña",
+      "buttonSubtext": "Haz clic en el botón de abajo para elegir una nueva contraseña. Este enlace caducará en 1 hora.",
+      "ignoreNote": "Si no solicitaste esto, puedes ignorar este correo con seguridad.",
+      "linkFallback": "Si el botón no funciona, copia y pega este enlace en tu navegador:",
+      "textPart": "Hola {{displayName}}, has solicitado un restablecimiento de contraseña. Haz clic aquí para restablecerla: {{resetUrl}}"
+    }
   },
   "errors": {
     "generic": "Ha ocurrido un error. Inténtalo de nuevo.",

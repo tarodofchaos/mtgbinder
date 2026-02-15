@@ -46,6 +46,7 @@ describe('TradeHistoryTab', () => {
         shareCode: 'SHARE1',
         avatarId: 'avatar-1',
         isPublic: false,
+        autoAddBoughtCards: true,
         tutorialProgress: {},
         createdAt: new Date(),
       },

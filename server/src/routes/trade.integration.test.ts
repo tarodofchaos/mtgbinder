@@ -65,6 +65,20 @@ jest.mock('../services/match-service', () => ({
 // Mock prisma
 jest.mock('../utils/prisma', () => ({
   prisma: {
+    $transaction: jest.fn((cb) => cb({
+      user: {
+        findUnique: jest.fn().mockResolvedValue({ autoAddBoughtCards: true }),
+      },
+      collectionItem: {
+        findUnique: jest.fn().mockResolvedValue({ quantity: 1, userId: 'some-id' }),
+        delete: jest.fn().mockResolvedValue({}),
+        update: jest.fn().mockResolvedValue({}),
+        create: jest.fn().mockResolvedValue({}),
+      },
+      tradeSession: {
+        update: jest.fn().mockResolvedValue({ status: TradeSessionStatus.COMPLETED }),
+      },
+    })),
     user: {
       findUnique: (...args: unknown[]) => mockUserFindUnique(...args),
     },
@@ -146,6 +160,8 @@ describe('Trade Routes - Integration Tests', () => {
     joinerId,
     status: TradeSessionStatus.ACTIVE,
     joiner: mockJoiner,
+    userAAccepted: true,
+    userBAccepted: true,
   };
 
   describe('POST /trade/session', () => {
@@ -405,7 +421,7 @@ describe('Trade Routes - Integration Tests', () => {
 
       expect(mockSessionUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: { matchesJson: expect.any(String) },
+          data: { matchesJson: expect.any(Object) },
         })
       );
     });
@@ -413,7 +429,10 @@ describe('Trade Routes - Integration Tests', () => {
 
   describe('POST /trade/:code/complete', () => {
     it('should complete session when initiator requests', async () => {
-      mockSessionFindUnique.mockResolvedValueOnce(mockActiveSession);
+      mockSessionFindUnique
+        .mockResolvedValueOnce(mockActiveSession) // First call: check session
+        .mockResolvedValueOnce({ ...mockActiveSession, status: TradeSessionStatus.COMPLETED }); // Second call: return updated session at the end
+
       mockSessionUpdate.mockResolvedValueOnce({
         ...mockActiveSession,
         status: TradeSessionStatus.COMPLETED,

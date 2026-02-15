@@ -48,6 +48,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [avatarId, setAvatarId] = useState(user?.avatarId || 'avatar-1');
   const [isPublic, setIsPublic] = useState(user?.isPublic || false);
+  const [autoAddBoughtCards, setAutoAddBoughtCards] = useState(user?.autoAddBoughtCards ?? true);
   
   const [email, setEmail] = useState(user?.email || '');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -66,6 +67,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
       setDisplayName(user.displayName);
       setAvatarId(user.avatarId || 'avatar-1');
       setIsPublic(user.isPublic);
+      setAutoAddBoughtCards(user.autoAddBoughtCards ?? true);
       setEmail(user.email);
       setError(null);
       setSuccess(null);
@@ -86,6 +88,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
         displayName,
         avatarId,
         isPublic,
+        autoAddBoughtCards,
       };
       
       if (email !== user?.email || newPassword) {
@@ -127,6 +130,25 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
       }, 3000);
     } catch (err: any) {
       setIsPublic(!newVal);
+      setError(err.response?.data?.error || t('settings.saveError', 'Error saving settings'));
+    }
+  };
+
+  const handleToggleAutoAdd = async (newVal: boolean) => {
+    setAutoAddBoughtCards(newVal);
+    setError(null);
+    setSuccess(null);
+    
+    try {
+      const response = await api.put('/auth/me', { autoAddBoughtCards: newVal });
+      updateUser(response.data.data);
+      setSuccess(t('settings.autoAddUpdated', 'Auto-add setting updated successfully'));
+      
+      setTimeout(() => {
+        setSuccess(null);
+      }, 3000);
+    } catch (err: any) {
+      setAutoAddBoughtCards(!newVal);
       setError(err.response?.data?.error || t('settings.saveError', 'Error saving settings'));
     }
   };
@@ -210,6 +232,18 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
               />
             }
             label={t('settings.makePublic', 'Public Binder (Visible in Explore)')}
+          />
+
+          <FormControlLabel
+            sx={{ display: 'block', mt: 1 }}
+            control={
+              <Switch
+                checked={autoAddBoughtCards}
+                onChange={(e) => handleToggleAutoAdd(e.target.checked)}
+                color="primary"
+              />
+            }
+            label={t('settings.autoAddBoughtCards', 'Auto-add traded cards to collection')}
           />
 
           <Box sx={{ mt: 2 }}>

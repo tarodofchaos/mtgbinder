@@ -95,7 +95,9 @@
     "saveSuccess": "Settings saved successfully",
     "saveError": "Error saving settings",
     "deleteError": "Error deleting account",
-    "replayTutorial": "Replay Tutorial"
+    "replayTutorial": "Replay Tutorial",
+    "autoAddBoughtCards": "Auto-add traded cards to collection",
+    "autoAddUpdated": "Auto-add setting updated successfully"
   },
   "tutorial": {
     "welcome": {
@@ -602,6 +604,18 @@
     "send": "Send",
     "noMessages": "No messages yet. Start the conversation!",
     "typing": "{{name}} is typing..."
+  },
+  "emails": {
+    "passwordReset": {
+      "subject": "Reset Your Bring the Binder Password",
+      "greeting": "Hi {{displayName}},",
+      "requestReceived": "We received a request to reset your password for your Bring the Binder account.",
+      "buttonText": "Reset Password",
+      "buttonSubtext": "Click the button below to choose a new password. This link will expire in 1 hour.",
+      "ignoreNote": "If you didn't request this, you can safely ignore this email.",
+      "linkFallback": "If the button doesn't work, copy and paste this link into your browser:",
+      "textPart": "Hi {{displayName}}, you requested a password reset. Click here to reset it: {{resetUrl}}"
+    }
   },
   "errors": {
     "generic": "An error occurred. Please try again.",

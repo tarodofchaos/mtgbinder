@@ -51,6 +51,7 @@ model User {
   displayName  String
   avatarId     String?
   isPublic     Boolean  @default(false)
+  autoAddBoughtCards Boolean @default(true)
   tutorialProgress Json @default("{}")
   shareCode    String   @unique
   resetToken        String?

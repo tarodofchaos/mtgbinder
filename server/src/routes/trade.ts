@@ -416,8 +416,109 @@ router.post('/:code/complete', async (req: AuthenticatedRequest, res: Response, 
       throw new AppError('Trade session has no partner', 400);
     }
 
+    // Capture the final state of the trade for history
+    const captureTradedCards = async (offererId: string, receiverId: string, selectedJson: any) => {
+      const tradedCards: any[] = [];
+      let totalValue = 0;
+
+      if (!selectedJson || typeof selectedJson !== 'object') return { tradedCards, totalValue };
+
+      for (const [collectionItemId, qty] of Object.entries(selectedJson)) {
+        if (collectionItemId === 'undefined' || collectionItemId === 'null') continue;
+        const quantity = qty as number;
+        if (quantity <= 0) continue;
+
+        const item = await prisma.collectionItem.findUnique({
+          where: { id: collectionItemId },
+          include: { card: true }
+        });
+
+        if (item) {
+          const price = item.tradePrice ?? item.card.priceEur ?? 0;
+          totalValue += price * quantity;
+          tradedCards.push({
+            collectionItemId,
+            card: {
+              id: item.card.id,
+              name: item.card.name,
+              setCode: item.card.setCode,
+              setName: item.card.setName,
+              scryfallId: item.card.scryfallId,
+              rarity: item.card.rarity,
+              manaCost: item.card.manaCost,
+              manaValue: item.card.manaValue,
+              typeLine: item.card.typeLine,
+              oracleText: item.card.oracleText,
+              collectorNumber: item.card.collectorNumber,
+              imageUri: item.card.imageUri,
+              priceEur: item.card.priceEur,
+              priceEurFoil: item.card.priceEurFoil,
+              priceUsd: item.card.priceUsd,
+              priceUsdFoil: item.card.priceUsdFoil,
+            },
+            offererUserId: offererId,
+            receiverUserId: receiverId,
+            availableQuantity: quantity, // In history, availableQuantity means TRADED quantity
+            condition: item.condition,
+            language: item.language,
+            isAlter: item.isAlter,
+            photoUrl: item.photoUrl,
+            isFoil: item.foilQuantity > 0,
+            priority: null,
+            priceEur: item.card.priceEur,
+            tradePrice: item.tradePrice,
+            isMatch: true, // They were traded, so they are matches
+          });
+        }
+      }
+      return { tradedCards, totalValue };
+    };
+
+    const userAHistory = await captureTradedCards(session.initiatorId, session.joinerId!, session.userBSelectedJson);
+    const userBHistory = await captureTradedCards(session.joinerId!, session.initiatorId, session.userASelectedJson);
+
+    const finalMatchesJson = {
+      userAOffers: userAHistory.tradedCards, // What User A gave
+      userBOffers: userBHistory.tradedCards, // What User B gave
+      userATotalValue: userAHistory.totalValue,
+      userBTotalValue: userBHistory.totalValue,
+    };
+
     // Move cards between collections in a transaction
     await prisma.$transaction(async (tx) => {
+      const subtractItems = async (fromId: string, selectedJson: any, tx: any) => {
+        if (!selectedJson || typeof selectedJson !== 'object') return;
+        
+        for (const [collectionItemId, qty] of Object.entries(selectedJson)) {
+          if (collectionItemId === 'undefined' || collectionItemId === 'null') continue;
+          
+          const quantity = qty as number;
+          if (quantity <= 0) continue;
+
+          const item = await tx.collectionItem.findUnique({
+            where: { id: collectionItemId }
+          });
+
+          if (!item || item.userId !== fromId || item.quantity < quantity) {
+            throw new AppError(`Invalid collection item or insufficient quantity for item ${collectionItemId}`, 400);
+          }
+
+          // Subtract from sender
+          if (item.quantity === quantity) {
+            await tx.collectionItem.delete({ where: { id: collectionItemId } });
+          } else {
+            await tx.collectionItem.update({
+              where: { id: collectionItemId },
+              data: {
+                quantity: item.quantity - quantity,
+                forTrade: Math.max(0, item.forTrade - quantity),
+                foilQuantity: Math.max(0, item.foilQuantity - quantity) 
+              }
+            });
+          }
+        }
+      };
+
       const moveItems = async (fromId: string, toId: string, selectedJson: any) => {
         if (!selectedJson || typeof selectedJson !== 'object') return;
         
@@ -491,15 +592,30 @@ router.post('/:code/complete', async (req: AuthenticatedRequest, res: Response, 
       };
 
       // User A receives cards from User B (userASelectedJson)
-      await moveItems(session.joinerId!, session.initiatorId, session.userASelectedJson);
+      const userA = await tx.user.findUnique({ where: { id: session.initiatorId } });
+      if (userA?.autoAddBoughtCards) {
+        await moveItems(session.joinerId!, session.initiatorId, session.userASelectedJson);
+      } else {
+        // Just subtract from sender if autoAdd is false
+        await subtractItems(session.joinerId!, session.userASelectedJson, tx);
+      }
       
       // User B receives cards from User A (userBSelectedJson)
-      await moveItems(session.initiatorId, session.joinerId!, session.userBSelectedJson);
+      const userB = await tx.user.findUnique({ where: { id: session.joinerId! } });
+      if (userB?.autoAddBoughtCards) {
+        await moveItems(session.initiatorId, session.joinerId!, session.userBSelectedJson);
+      } else {
+        // Just subtract from sender if autoAdd is false
+        await subtractItems(session.initiatorId, session.userBSelectedJson, tx);
+      }
 
       // Mark session as completed
       await tx.tradeSession.update({
         where: { id: session.id },
-        data: { status: TradeSessionStatus.COMPLETED },
+        data: { 
+          status: TradeSessionStatus.COMPLETED,
+          matchesJson: finalMatchesJson as any
+        },
       });
     });
 
@@ -527,7 +643,7 @@ router.post('/:code/complete', async (req: AuthenticatedRequest, res: Response, 
   }
 });
 
-router.post('/:code/delete', async (req: AuthenticatedRequest, res: Response, next) => {
+router.delete('/:code', async (req: AuthenticatedRequest, res: Response, next) => {
   try {
     const { code } = req.params;
 

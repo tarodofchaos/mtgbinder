@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { config } from '../utils/config';
 import { logger } from '../utils/logger';
+import { t } from '../utils/i18n';
 
 /**
  * Sends a password reset email to the user.
@@ -8,11 +9,13 @@ import { logger } from '../utils/logger';
  * @param email - User's email address
  * @param displayName - User's display name
  * @param resetUrl - The URL the user needs to click to reset their password
+ * @param locale - The preferred language (e.g., 'en', 'es')
  */
 export async function sendPasswordResetEmail(
   email: string,
   displayName: string,
-  resetUrl: string
+  resetUrl: string,
+  locale: string = 'en'
 ): Promise<void> {
   if (!config.smtp.host || !config.smtp.user || !config.smtp.pass) {
     logger.warn('SMTP credentials not configured. Email will not be sent.');
@@ -33,25 +36,34 @@ export async function sendPasswordResetEmail(
       },
     });
 
+    const subject = t('emails.passwordReset.subject', {}, locale);
+    const greeting = t('emails.passwordReset.greeting', { displayName }, locale);
+    const requestReceived = t('emails.passwordReset.requestReceived', {}, locale);
+    const buttonText = t('emails.passwordReset.buttonText', {}, locale);
+    const buttonSubtext = t('emails.passwordReset.buttonSubtext', {}, locale);
+    const ignoreNote = t('emails.passwordReset.ignoreNote', {}, locale);
+    const linkFallback = t('emails.passwordReset.linkFallback', {}, locale);
+    const textPart = t('emails.passwordReset.textPart', { displayName, resetUrl }, locale);
+
     const info = await transporter.sendMail({
       from: `"${config.email.fromName}" <${config.email.fromEmail}>`,
       to: email,
-      subject: 'Reset Your Bring the Binder Password',
-      text: `Hi ${displayName}, you requested a password reset. Click here to reset it: ${resetUrl}`,
+      subject,
+      text: textPart,
       html: `
-        <h3>Hi ${displayName},</h3>
-        <p>We received a request to reset your password for your Bring the Binder account.</p>
-        <p>Click the button below to choose a new password. This link will expire in 1 hour.</p>
+        <h3>${greeting}</h3>
+        <p>${requestReceived}</p>
+        <p>${buttonSubtext}</p>
         <div style="margin: 30px 0;">
           <a href="${resetUrl}" 
              style="background-color: #3f51b5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
-            Reset Password
+            ${buttonText}
           </a>
         </div>
-        <p>If you didn't request this, you can safely ignore this email.</p>
+        <p>${ignoreNote}</p>
         <hr />
         <p style="font-size: 12px; color: #666;">
-          If the button doesn't work, copy and paste this link into your browser:<br />
+          ${linkFallback}<br />
           <a href="${resetUrl}">${resetUrl}</a>
         </p>
       `,

@@ -42,7 +42,7 @@ export async function completeTradeSession(code: string): Promise<TradeSession> 
 }
 
 export async function deleteTradeSession(code: string): Promise<void> {
-  await api.post(`/trade/${code}/delete`);
+  await api.delete(`/trade/${code}`);
 }
 
 export interface TradeHistoryParams {

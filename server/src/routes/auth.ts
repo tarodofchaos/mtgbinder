@@ -30,6 +30,7 @@ const loginSchema = z.object({
 
 const forgotPasswordSchema = z.object({
   email: z.string().email(),
+  locale: z.string().optional(),
 });
 
 const resetPasswordSchema = z.object({
@@ -41,6 +42,7 @@ const updateSettingsSchema = z.object({
   displayName: z.string().min(2).max(50).optional(),
   avatarId: z.string().optional(),
   isPublic: z.boolean().optional(),
+  autoAddBoughtCards: z.boolean().optional(),
   tutorialProgress: z.record(z.boolean()).optional(),
   email: z.string().email().optional(),
   currentPassword: z.string().optional(),
@@ -53,7 +55,8 @@ const deleteAccountSchema = z.object({
 
 router.post('/register', validate(registerSchema), async (req, res: Response, next) => {
   try {
-    const { email, password, displayName, avatarId, inviteCode } = req.body;
+    const { email: rawEmail, password, displayName, avatarId, inviteCode } = req.body;
+    const email = rawEmail.toLowerCase();
 
     // Registration is strictly restricted. Must have a secret configured AND the invite code must match.
     if (!config.registrationSecret || inviteCode !== config.registrationSecret) {
@@ -85,6 +88,7 @@ router.post('/register', validate(registerSchema), async (req, res: Response, ne
         shareCode: true,
         avatarId: true,
         isPublic: true,
+        autoAddBoughtCards: true,
         tutorialProgress: true,
         createdAt: true,
       },
@@ -107,7 +111,8 @@ router.post('/register', validate(registerSchema), async (req, res: Response, ne
 
 router.post('/login', validate(loginSchema), async (req, res: Response, next) => {
   try {
-    const { email, password } = req.body;
+    const { email: rawEmail, password } = req.body;
+    const email = rawEmail.toLowerCase();
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
@@ -134,6 +139,7 @@ router.post('/login', validate(loginSchema), async (req, res: Response, next) =>
           shareCode: user.shareCode,
           avatarId: user.avatarId,
           isPublic: user.isPublic,
+          autoAddBoughtCards: user.autoAddBoughtCards,
           tutorialProgress: user.tutorialProgress as Record<string, boolean>,
           createdAt: user.createdAt,
         },
@@ -148,7 +154,13 @@ router.post('/login', validate(loginSchema), async (req, res: Response, next) =>
 
 router.post('/forgot-password', validate(forgotPasswordSchema), async (req, res: Response, next) => {
   try {
-    const { email } = req.body;
+    const { email: rawEmail, locale: bodyLocale } = req.body;
+    const email = rawEmail.toLowerCase();
+    
+    // Detect locale: 1. body, 2. Accept-Language header, 3. default 'en'
+    const acceptLanguage = req.headers['accept-language'];
+    const headerLocale = acceptLanguage ? acceptLanguage.split(',')[0].split('-')[0] : 'en';
+    const locale = bodyLocale || headerLocale || 'en';
 
     const user = await prisma.user.findUnique({ where: { email } });
     
@@ -171,8 +183,8 @@ router.post('/forgot-password', validate(forgotPasswordSchema), async (req, res:
 
     const resetUrl = `${config.clientUrl}/reset-password?token=${resetToken}`;
     
-    // Send reset email via Mailjet
-    await sendPasswordResetEmail(user.email, user.displayName, resetUrl);     
+    // Send reset email
+    await sendPasswordResetEmail(user.email, user.displayName, resetUrl, locale);     
 
     res.json({ message: 'If a user with that email exists, a reset link has been sent.' });
   } catch (error) {
@@ -227,6 +239,7 @@ router.get('/me', authMiddleware, async (req: AuthenticatedRequest, res: Respons
         shareCode: true,
         avatarId: true,
         isPublic: true,
+        autoAddBoughtCards: true,
         tutorialProgress: true,
         createdAt: true,
       },
@@ -244,7 +257,7 @@ router.get('/me', authMiddleware, async (req: AuthenticatedRequest, res: Respons
 
 router.put('/me', authMiddleware, validate(updateSettingsSchema), async (req: AuthenticatedRequest, res: Response, next) => {
   try {
-    const { displayName, avatarId, isPublic, tutorialProgress, email, currentPassword, newPassword } = req.body;
+    const { displayName, avatarId, isPublic, autoAddBoughtCards, tutorialProgress, email, currentPassword, newPassword } = req.body;
 
     const user = await prisma.user.findUnique({ where: { id: req.userId } });
     if (!user) {
@@ -255,6 +268,7 @@ router.put('/me', authMiddleware, validate(updateSettingsSchema), async (req: Au
     if (displayName !== undefined) updateData.displayName = displayName;
     if (avatarId !== undefined) updateData.avatarId = avatarId;
     if (isPublic !== undefined) updateData.isPublic = isPublic;
+    if (autoAddBoughtCards !== undefined) updateData.autoAddBoughtCards = autoAddBoughtCards;
     
     if (tutorialProgress !== undefined) {
       if (Object.keys(tutorialProgress).length === 0) {
@@ -278,11 +292,12 @@ router.put('/me', authMiddleware, validate(updateSettingsSchema), async (req: Au
       }
 
       if (email) {
-        const existingEmail = await prisma.user.findUnique({ where: { email } });
+        const normalizedEmail = email.toLowerCase();
+        const existingEmail = await prisma.user.findUnique({ where: { email: normalizedEmail } });
         if (existingEmail && existingEmail.id !== user.id) {
           throw new AppError('Email already in use', 400);
         }
-        updateData.email = email;
+        updateData.email = normalizedEmail;
       }
 
       if (newPassword) {
@@ -300,6 +315,7 @@ router.put('/me', authMiddleware, validate(updateSettingsSchema), async (req: Au
         shareCode: true,
         avatarId: true,
         isPublic: true,
+        autoAddBoughtCards: true,
         tutorialProgress: true,
         createdAt: true,
       },

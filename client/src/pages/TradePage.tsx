@@ -229,6 +229,7 @@ export function TradePage() {
               {t('trade.createSessionDescription')}
             </Typography>
             <Button
+              id="trade-create-session"
               variant="contained"
               onClick={() => createMutation.mutate(undefined)}
               disabled={createMutation.isPending}
@@ -259,6 +260,7 @@ export function TradePage() {
         ) : (
           <Stack spacing={2}>
             <Button
+              id="trade-join-scan"
               variant="outlined"
               fullWidth
               startIcon={<ScanIcon />}
@@ -274,7 +276,7 @@ export function TradePage() {
               </Typography>
             </Box>
 
-            <Stack direction="row" spacing={1}>
+            <Stack id="trade-join-input" direction="row" spacing={1}>
               <TextField
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value.toUpperCase())}

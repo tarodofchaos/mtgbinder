@@ -41,6 +41,7 @@ const updateSettingsSchema = z.object({
   displayName: z.string().min(2).max(50).optional(),
   avatarId: z.string().optional(),
   isPublic: z.boolean().optional(),
+  tutorialProgress: z.record(z.boolean()).optional(),
   email: z.string().email().optional(),
   currentPassword: z.string().optional(),
   newPassword: z.string().min(8).optional(),
@@ -84,6 +85,7 @@ router.post('/register', validate(registerSchema), async (req, res: Response, ne
         shareCode: true,
         avatarId: true,
         isPublic: true,
+        tutorialProgress: true,
         createdAt: true,
       },
     });
@@ -132,6 +134,7 @@ router.post('/login', validate(loginSchema), async (req, res: Response, next) =>
           shareCode: user.shareCode,
           avatarId: user.avatarId,
           isPublic: user.isPublic,
+          tutorialProgress: user.tutorialProgress as Record<string, boolean>,
           createdAt: user.createdAt,
         },
         token,
@@ -224,6 +227,7 @@ router.get('/me', authMiddleware, async (req: AuthenticatedRequest, res: Respons
         shareCode: true,
         avatarId: true,
         isPublic: true,
+        tutorialProgress: true,
         createdAt: true,
       },
     });
@@ -240,7 +244,7 @@ router.get('/me', authMiddleware, async (req: AuthenticatedRequest, res: Respons
 
 router.put('/me', authMiddleware, validate(updateSettingsSchema), async (req: AuthenticatedRequest, res: Response, next) => {
   try {
-    const { displayName, avatarId, isPublic, email, currentPassword, newPassword } = req.body;
+    const { displayName, avatarId, isPublic, tutorialProgress, email, currentPassword, newPassword } = req.body;
 
     const user = await prisma.user.findUnique({ where: { id: req.userId } });
     if (!user) {
@@ -251,6 +255,17 @@ router.put('/me', authMiddleware, validate(updateSettingsSchema), async (req: Au
     if (displayName !== undefined) updateData.displayName = displayName;
     if (avatarId !== undefined) updateData.avatarId = avatarId;
     if (isPublic !== undefined) updateData.isPublic = isPublic;
+    
+    if (tutorialProgress !== undefined) {
+      if (Object.keys(tutorialProgress).length === 0) {
+        // Explicitly reset if empty object provided
+        updateData.tutorialProgress = {};
+      } else {
+        // Merge with existing progress
+        const existingProgress = (user.tutorialProgress as Record<string, boolean>) || {};
+        updateData.tutorialProgress = { ...existingProgress, ...tutorialProgress };
+      }
+    }
 
     // Check password if updating sensitive info
     if (email || newPassword) {
@@ -285,6 +300,7 @@ router.put('/me', authMiddleware, validate(updateSettingsSchema), async (req: Au
         shareCode: true,
         avatarId: true,
         isPublic: true,
+        tutorialProgress: true,
         createdAt: true,
       },
     });

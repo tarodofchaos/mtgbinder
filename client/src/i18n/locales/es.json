@@ -18,6 +18,8 @@
     "back": "Volver",
     "next": "Siguiente",
     "previous": "Anterior",
+    "skip": "Saltar",
+    "last": "Finalizar",
     "all": "Todos",
     "none": "Ninguno",
     "yes": "Sí",
@@ -91,7 +93,52 @@
     "saveSuccess": "Ajustes guardados correctamente",
     "visibilityUpdated": "Visibilidad de la carpeta actualizada",
     "saveError": "Error al guardar los ajustes",
-    "deleteError": "Error al eliminar la cuenta"
+    "deleteError": "Error al eliminar la cuenta",
+    "replayTutorial": "Repetir Tutorial"
+  },
+  "tutorial": {
+    "welcome": {
+      "title": "¡Bienvenido a Trae la Carpeta!",
+      "content": "Permítenos mostrarte las principales funciones de la aplicación."
+    },
+    "nav": {
+      "collection": "Esta es tu colección. Aquí puedes gestionar todas las cartas que posees.",
+      "wishlist": "Lleva un seguimiento de las cartas que quieres adquirir en tu lista de deseos (Wants).",
+      "explore": "Explora las carpetas públicas de otros usuarios y encuentra posibles intercambios.",
+      "trade": "El centro de Intercambio. Inicia sesiones de intercambio en tiempo real con otros usuarios.",
+      "settings": "Aquí puedes cambiar tu avatar y más. ¡También puedes repetir este tutorial en cualquier momento!"
+    },
+    "collection": {
+      "welcome": "En la página de Colección, gestionas tu inventario. Puedes ver estadísticas como el valor total y las cartas únicas.",
+      "addCard": "Haz clic aquí para añadir nuevas cartas a tu colección manualmente.",
+      "import": "O puedes importar tu colección en bloque desde un archivo CSV."
+    },
+    "wishlist": {
+      "welcome": "En la lista de deseos, puedes añadir las cartas que buscas. ¡Las usaremos para encontrar coincidencias de intercambio!",
+      "search": "Busca entre tus cartas deseadas por nombre o edición.",
+      "priority": "Filtra por prioridad para enfocarte en lo que más necesitas.",
+      "importDecklist": "También puedes pegar una lista de mazo para añadir rápidamente varias cartas a tu lista de deseos.",
+      "addCard": "Busca y añade manualmente ediciones específicas de las cartas que quieres."
+    },
+    "explore": {
+      "welcome": "Explora las carpetas públicas de otros coleccionistas de todo el mundo.",
+      "search": "Busca usuarios específicos por su nombre de usuario.",
+      "userCard": "Haz clic en un usuario para ver su carpeta de intercambio completa. ¡Puedes ver sus cartas y valores sin necesidad de cuenta!"
+    },
+    "trade": {
+      "welcome": "El centro de intercambio es donde ocurre la magia. Puedes iniciar o unirte a sesiones de intercambio en vivo.",
+      "create": "Crea una nueva sesión para generar un código único y un QR. ¡Compártelos con tu compañero de intercambio!",
+      "joinScan": "Si tu compañero ya ha creado una sesión, simplemente escanea su código QR para unirte al instante.",
+      "joinInput": "O introduce manualmente el código de sesión de 6 caracteres que te proporcionaron."
+    },
+    "session": {
+      "balance": "Esto muestra el balance de valor del intercambio. ¡Te ayuda a asegurar que el trato sea justo!",
+      "partnerOffers": "Estas son las cartas que tiene tu compañero que coinciden con tu lista de deseos. Haz clic en ellas para añadirlas al trato.",
+      "chat": "Puedes chatear con tu compañero en tiempo real mientras negociáis.",
+      "myOffers": "Haz clic aquí para ver cuáles de tus cartas coinciden con la lista de deseos de tu compañero.",
+      "accept": "Una vez que estés contento con la selección, haz clic en Aceptar.",
+      "complete": "Cuando ambos usuarios hayan aceptado, el iniciador puede completar el intercambio para mover las cartas entre las colecciones."
+    }
   },
   "auth": {
     "loginTitle": "Iniciar sesión en Trae la Carpeta",

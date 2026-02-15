@@ -18,6 +18,8 @@
     "back": "Back",
     "next": "Next",
     "previous": "Previous",
+    "skip": "Skip",
+    "last": "Finish",
     "all": "All",
     "none": "None",
     "yes": "Yes",
@@ -90,7 +92,52 @@
     "save": "Save Changes",
     "saveSuccess": "Settings saved successfully",
     "saveError": "Error saving settings",
-    "deleteError": "Error deleting account"
+    "deleteError": "Error deleting account",
+    "replayTutorial": "Replay Tutorial"
+  },
+  "tutorial": {
+    "welcome": {
+      "title": "Welcome to MTG Binder!",
+      "content": "Let us show you around the main features of the app."
+    },
+    "nav": {
+      "collection": "This is your collection. Here you can manage all the cards you own.",
+      "wishlist": "Keep track of the cards you want to acquire in your wishlist.",
+      "explore": "Explore other users' public binders and find potential trades.",
+      "trade": "The Trade center. Start real-time trading sessions with other users.",
+      "settings": "Here you can change your avatar and more. You can also replay this tutorial anytime!"
+    },
+    "collection": {
+      "welcome": "In the Collection page, you manage your inventory. You can see stats like total value and unique cards.",
+      "addCard": "Click here to add new cards to your collection manually.",
+      "import": "Or you can bulk import your collection from a CSV file."
+    },
+    "wishlist": {
+      "welcome": "In the wishlist, you can add cards you are looking for. We will use this to find trade matches!",
+      "search": "Search through your desired cards by name or set.",
+      "priority": "Filter by priority to focus on what you need most.",
+      "importDecklist": "You can also paste a decklist to quickly add multiple cards to your wishlist.",
+      "addCard": "Manually search and add specific printings of cards you want."
+    },
+    "explore": {
+      "welcome": "Explore public binders from other collectors around the world.",
+      "search": "Search for specific users by their display name.",
+      "userCard": "Click on a user to view their full trade binder. You can see their cards and values without an account!"
+    },
+    "trade": {
+      "welcome": "The trade center is where the magic happens. You can start or join live trading sessions.",
+      "create": "Create a new session to generate a unique code and QR. Share them with your trade partner!",
+      "joinScan": "If your partner already created a session, just scan their QR code to join instantly.",
+      "joinInput": "Or manually enter the 6-character session code they provided."
+    },
+    "session": {
+      "balance": "This shows the value balance of the trade. It helps you ensure the trade is fair!",
+      "partnerOffers": "These are the cards your partner has that match your wishlist. Click on them to add them to the trade.",
+      "chat": "You can chat with your partner in real-time while you negotiate.",
+      "myOffers": "Click here to see which of your cards match your partner's wishlist.",
+      "accept": "Once you are happy with the selection, click Accept.",
+      "complete": "When both users have accepted, the initiator can complete the trade to move the cards between collections!"
+    }
   },
   "auth": {
     "loginTitle": "Login to Bring the Binder",

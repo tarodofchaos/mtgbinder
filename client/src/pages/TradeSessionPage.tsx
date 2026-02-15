@@ -426,6 +426,7 @@ export function TradeSessionPage() {
     <Stack spacing={3} sx={styles.container}>
       {/* Balance Banner */}
       <Paper
+        id="trade-session-balance"
         sx={{
           ...styles.balanceBanner,
           bgcolor: tradeBalance.balance === 0 
@@ -468,6 +469,7 @@ export function TradeSessionPage() {
 
         <Box sx={styles.buttonGroup}>
           <Button
+            id="trade-session-accept"
             variant={myAccepted ? "contained" : "outlined"}
             color={myAccepted ? "success" : "primary"}
             startIcon={myAccepted ? <CheckIcon /> : undefined}
@@ -480,6 +482,7 @@ export function TradeSessionPage() {
           {isInitiator && (
             <>
               <Button
+                id="trade-session-complete"
                 variant="contained"
                 color="success"
                 startIcon={<CheckIcon />}
@@ -513,7 +516,7 @@ export function TradeSessionPage() {
       )}
 
       {/* Partner's Cards */}
-      <Box>
+      <Box id="trade-session-partner-offers">
         <Typography variant="h6" fontWeight={600} sx={{ mb: 1.5 }}>
           {t('trade.cardsTheyCanOffer')}
         </Typography>
@@ -529,12 +532,12 @@ export function TradeSessionPage() {
       </Box>
 
       {/* Chat Panel */}
-      <Box sx={styles.chatPanel}>
+      <Box id="trade-session-chat" sx={styles.chatPanel}>
         <TradeChatPanel sessionCode={code!} partnerName={partner?.displayName || 'Partner'} />
       </Box>
 
       {/* User's Cards */}
-      <Box>
+      <Box id="trade-session-my-offers">
         <Box 
           sx={styles.collapsibleHeader} 
           onClick={() => setIsMyCollectionOpen(!isMyCollectionOpen)}

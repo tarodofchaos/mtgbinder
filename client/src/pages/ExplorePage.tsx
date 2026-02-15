@@ -55,6 +55,7 @@ export function ExplorePage() {
 
       <Box sx={{ mb: 4 }}>
         <TextField
+          id="explore-search"
           fullWidth
           variant="outlined"
           placeholder={t('explore.searchPlaceholder', 'Search users...')}
@@ -85,11 +86,11 @@ export function ExplorePage() {
       ) : (
         <>
           <Grid container spacing={3}>
-            {data.data.map((user: UserPublic) => {
+            {data.data.map((user: UserPublic, index: number) => {
               const userAvatar = AVATARS.find(a => a.id === user.avatarId);
               return (
                 <Grid key={user.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-                  <Card>
+                  <Card id={index === 0 ? 'explore-user-card-0' : undefined}>
                     <CardActionArea 
                       component="a" 
                       href={`/binder/${user.shareCode}`} 

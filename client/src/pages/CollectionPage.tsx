@@ -374,6 +374,7 @@ export function CollectionPage() {
             {isExporting ? t('collection.exporting') : t('collection.exportCsv')}
           </Button>
           <Button
+            id="import-csv-button"
             variant="outlined"
             startIcon={<UploadIcon />}
             onClick={() => setShowImportModal(true)}
@@ -381,6 +382,7 @@ export function CollectionPage() {
             {t('collection.importCsv')}
           </Button>
           <Button
+            id="add-card-button"
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setShowAddModal(true)}

@@ -54,6 +54,7 @@ export interface User {
   shareCode: string;
   avatarId: string | null;
   isPublic: boolean;
+  tutorialProgress: Record<string, boolean>;
   createdAt: Date;
 }
 

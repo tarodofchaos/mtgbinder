@@ -76,6 +76,7 @@ export function BottomNav() {
         {navItems.map((item) => (
           <BottomNavigationAction
             key={item.path}
+            id={`nav-${item.path.substring(1)}`}
             label={t(item.labelKey)}
             icon={item.icon}
             sx={styles.action}

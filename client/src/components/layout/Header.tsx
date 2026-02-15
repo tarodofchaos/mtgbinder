@@ -136,7 +136,7 @@ export function Header() {
           {isAuthenticated ? (
             <>
               <NotificationBell />
-              <Box onClick={handleMenuOpen} sx={styles.userName}>
+              <Box id="user-menu-button" onClick={handleMenuOpen} sx={styles.userName}>
                 <Avatar 
                   sx={{ 
                     width: 32, 

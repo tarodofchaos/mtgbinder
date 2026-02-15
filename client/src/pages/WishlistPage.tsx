@@ -269,6 +269,7 @@ export function WishlistPage() {
       {/* Filters */}
       <Box sx={styles.filtersRow}>
         <DebouncedTextField
+          id="wishlist-search"
           value={search}
           onChange={(value) => {
             setSearch(value);
@@ -279,6 +280,7 @@ export function WishlistPage() {
           sx={{ flexGrow: 1 }}
         />
         <TextField
+          id="wishlist-priority-filter"
           select
           value={priorityFilter}
           onChange={(e) => {
@@ -294,6 +296,7 @@ export function WishlistPage() {
           <MenuItem value="LOW">{t('priorities.low')}</MenuItem>
         </TextField>
         <Button
+          id="wishlist-import-decklist"
           variant="outlined"
           startIcon={<UploadIcon />}
           onClick={() => setShowImportModal(true)}
@@ -301,6 +304,7 @@ export function WishlistPage() {
           {t('wishlist.importDecklist')}
         </Button>
         <Button
+          id="wishlist-import-csv"
           variant="outlined"
           startIcon={<CloudUploadIcon />}
           onClick={() => setShowCSVImportModal(true)}
@@ -308,6 +312,7 @@ export function WishlistPage() {
           {t('wishlist.importCsv')}
         </Button>
         <Button
+          id="wishlist-add-button"
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => setShowAddModal(true)}

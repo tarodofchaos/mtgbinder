@@ -211,6 +211,24 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
             }
             label={t('settings.makePublic', 'Public Binder (Visible in Explore)')}
           />
+
+          <Box sx={{ mt: 2 }}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={async () => {
+                try {
+                  const response = await api.put('/auth/me', { tutorialProgress: {} });
+                  updateUser(response.data.data);
+                  onClose();
+                } catch (err) {
+                  console.error('Failed to reset tutorial', err);
+                }
+              }}
+            >
+              {t('settings.replayTutorial', 'Replay Tutorial')}
+            </Button>
+          </Box>
         </Box>
         
         <Divider sx={{ my: 3 }} />

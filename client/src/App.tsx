@@ -6,6 +6,7 @@ import { Header } from './components/layout/Header';
 import { BottomNav } from './components/layout/BottomNav';
 import { LoadingPage } from './components/ui/LoadingSpinner';
 import { ScrollToTop } from './components/layout/ScrollToTop';
+import { Tutorial } from './components/ui/Tutorial';
 
 // Pages
 import { LoginPage } from './pages/LoginPage';
@@ -62,6 +63,8 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AppLayout({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  
   return (
     <Box sx={styles.root}>
       <Header />
@@ -69,6 +72,9 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         {children}
       </Container>
       <BottomNav />
+      {user && (
+        <Tutorial />
+      )}
     </Box>
   );
 }

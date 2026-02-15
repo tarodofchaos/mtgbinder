@@ -46,6 +46,7 @@ describe('TradeHistoryTab', () => {
         shareCode: 'SHARE1',
         avatarId: 'avatar-1',
         isPublic: false,
+        tutorialProgress: {},
         createdAt: new Date(),
       },
       token: 'mock-token',

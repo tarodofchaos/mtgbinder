@@ -67,8 +67,9 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   
   return (
     <Box sx={styles.root}>
+      <div className="texture-overlay" />
       <Header />
-      <Container component="main" maxWidth="lg" sx={styles.main}>
+      <Container component="main" maxWidth="lg" sx={styles.main} className="page-fade-in">
         {children}
       </Container>
       <BottomNav />
@@ -82,7 +83,8 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 function MinimalLayout({ children }: { children: React.ReactNode }) {
   return (
     <Box sx={styles.root}>
-      <Container component="main" maxWidth="lg" sx={styles.main}>
+      <div className="texture-overlay" />
+      <Container component="main" maxWidth="lg" sx={styles.main} className="page-fade-in">
         {children}
       </Container>
     </Box>

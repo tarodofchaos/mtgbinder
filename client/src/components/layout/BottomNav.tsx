@@ -21,6 +21,7 @@ const styles: Record<string, SxProps<Theme>> = {
   },
   nav: {
     bgcolor: 'background.paper',
+    backdropFilter: 'blur(12px)',
     borderTop: 1,
     borderColor: 'divider',
     height: 64,
@@ -28,18 +29,32 @@ const styles: Record<string, SxProps<Theme>> = {
   action: {
     minWidth: 'auto',
     py: 1,
+    color: 'text.secondary',
     // Fix mobile touch feedback causing visual glitch
     WebkitTapHighlightColor: 'transparent',
+    transition: 'all 0.2s ease-in-out',
     '&:active': {
       opacity: 0.7,
     },
     '&.Mui-selected': {
       color: 'primary.main',
+      '& .MuiSvgIcon-root': {
+        transform: 'scale(1.2) translateY(-2px)',
+        filter: 'drop-shadow(0 0 8px rgba(124, 58, 237, 0.4))',
+      },
     },
     // Ensure label stays visible
     '& .MuiBottomNavigationAction-label': {
       opacity: 1,
       transition: 'none',
+      fontSize: '0.75rem',
+      fontWeight: 500,
+      '&.Mui-selected': {
+        fontSize: '0.75rem',
+      },
+    },
+    '& .MuiSvgIcon-root': {
+      transition: 'all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
     },
   },
 };

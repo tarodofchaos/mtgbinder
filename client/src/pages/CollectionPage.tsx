@@ -34,6 +34,7 @@ import { PrintingSelector } from '../components/cards/PrintingSelector';
 import { Modal } from '../components/ui/Modal';
 import { LoadingPage } from '../components/ui/LoadingSpinner';
 import { DebouncedTextField } from '../components/ui/DebouncedTextField';
+import { ManaSymbol } from '../components/ui/ManaSymbol';
 
 interface EditFormData {
   quantity: number;
@@ -94,15 +95,27 @@ const styles: Record<string, SxProps<Theme>> = {
     mb: 3,
   },
   statCard: {
-    p: 2,
+    p: 3,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    textAlign: 'center',
+    borderRadius: 4,
+    border: '1px solid rgba(255,255,255,0.05)',
   },
   statValue: {
-    fontSize: '1.5rem',
-    fontWeight: 700,
+    fontSize: '2rem',
+    fontWeight: 400,
+    fontFamily: "'Planewalker', serif",
+    lineHeight: 1,
+    mb: 0.5,
   },
   statLabel: {
     color: 'text.secondary',
-    fontSize: '0.875rem',
+    fontSize: '0.75rem',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.1em',
   },
   filtersRow: {
     display: 'flex',
@@ -411,8 +424,13 @@ export function CollectionPage() {
                       value={color.value}
                       aria-label={t(color.labelKey)}
                       title={t(color.labelKey)}
+                      sx={{ px: 1 }}
                     >
-                      {color.value}
+                      {['W', 'U', 'B', 'R', 'G', 'C'].includes(color.value) ? (
+                        <ManaSymbol color={color.value} size={20} />
+                      ) : (
+                        color.value
+                      )}
                     </ToggleButton>
                   ))}
                 </ToggleButtonGroup>

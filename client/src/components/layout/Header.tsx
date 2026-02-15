@@ -42,7 +42,6 @@ const styles: Record<string, SxProps<Theme>> = {
   },
   logo: {
     color: 'primary.main',
-    fontWeight: 700,
     textDecoration: 'none',
     '&:hover': {
       textDecoration: 'none',
@@ -119,7 +118,7 @@ export function Header() {
     <AppBar position="static" elevation={0} sx={styles.appBar}>
       <Toolbar sx={styles.toolbar}>
         <Link component={RouterLink} to="/" sx={styles.logo}>
-          <Typography variant="h6" component="span" sx={{ fontWeight: 700 }}>
+          <Typography variant="h5" component="span">
             {t('header.title')}
           </Typography>
         </Link>

@@ -24,38 +24,67 @@ const styles: Record<string, SxProps<Theme>> = {
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
-    transition: 'transform 0.2s, box-shadow 0.2s',
+    position: 'relative',
+    overflow: 'visible', // Allow badges to pop
+    bgcolor: 'background.paper',
+    transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
     '&:hover': {
-      transform: 'translateY(-4px)',
-      boxShadow: 6,
-    },
-    '&:hover .card-actions': {
-      opacity: 1,
+      transform: 'translateY(-8px) scale(1.02)',
+      boxShadow: (theme) => theme.palette.mode === 'dark' 
+        ? '0 20px 40px rgba(0,0,0,0.6), 0 0 20px rgba(124, 58, 237, 0.2)'
+        : '0 20px 40px rgba(0,0,0,0.1)',
+      '& .card-actions': {
+        opacity: 1,
+        transform: 'translateY(0)',
+      },
+      '& .card-image-wrapper': {
+        transform: 'scale(1.05)',
+      }
     },
   },
   imageContainer: {
     position: 'relative',
+    borderRadius: '12px 12px 0 0',
+    overflow: 'hidden',
+    '&::after': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      background: 'linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.8) 100%)',
+      opacity: 0.6,
+      pointerEvents: 'none',
+    },
   },
   quantityBadge: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    bgcolor: 'rgba(0, 0, 0, 0.7)',
+    top: 10,
+    right: 10,
+    bgcolor: 'rgba(15, 23, 42, 0.85)',
+    backdropFilter: 'blur(4px)',
     color: 'white',
-    px: 1,
+    px: 1.5,
     py: 0.5,
-    borderRadius: 1,
-    fontSize: '0.875rem',
-    fontWeight: 500,
+    borderRadius: '20px',
+    fontSize: '0.75rem',
+    fontWeight: 700,
+    zIndex: 2,
+    border: '1px solid rgba(255,255,255,0.1)',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
   },
   foilText: {
     ml: 0.5,
-    color: 'warning.main',
+    color: '#fbbf24', // Gold
+    textShadow: '0 0 8px rgba(251, 191, 36, 0.5)',
   },
   tradeBadge: {
     position: 'absolute',
-    top: 8,
-    left: 8,
+    top: 10,
+    left: 10,
+    zIndex: 2,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
   },
   actionsOverlay: {
     position: 'absolute',
@@ -63,45 +92,81 @@ const styles: Record<string, SxProps<Theme>> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 1,
-    bgcolor: 'rgba(0, 0, 0, 0.6)',
+    gap: 1.5,
+    bgcolor: 'rgba(15, 23, 42, 0.4)',
+    backdropFilter: 'blur(4px)',
     opacity: 0,
-    transition: 'opacity 0.2s',
+    transform: 'translateY(10px)',
+    transition: 'all 0.3s ease-out',
+    zIndex: 3,
   },
   actionButton: {
     bgcolor: 'primary.main',
     color: 'white',
+    boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)',
     '&:hover': {
       bgcolor: 'primary.dark',
+      transform: 'scale(1.1)',
     },
   },
   deleteButton: {
-    bgcolor: 'error.main',
+    bgcolor: 'rgba(239, 68, 68, 0.9)',
     color: 'white',
+    boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
     '&:hover': {
       bgcolor: 'error.dark',
+      transform: 'scale(1.1)',
     },
   },
   content: {
     flexGrow: 1,
-    pb: 1,
+    p: '16px !important',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 0.5,
+  },
+  cardName: {
+    fontWeight: 700,
+    fontSize: '0.95rem',
+    letterSpacing: '0.01em',
+    color: 'text.primary',
+  },
+  setName: {
+    fontSize: '0.75rem',
+    opacity: 0.8,
+    fontWeight: 500,
   },
   footer: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    mt: 1,
+    mt: 'auto',
+    pt: 1,
   },
   price: {
     color: 'success.main',
-    fontWeight: 500,
+    fontWeight: 800,
+    fontSize: '1rem',
+  },
+  conditionBadge: {
+    fontSize: '0.7rem',
+    fontWeight: 700,
+    px: 1,
+    py: 0.25,
+    borderRadius: '4px',
+    bgcolor: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    textTransform: 'uppercase',
   },
   alterBadge: {
     position: 'absolute',
-    bottom: 8,
-    left: 8,
+    bottom: 10,
+    left: 10,
+    zIndex: 2,
     bgcolor: 'secondary.main',
     color: 'white',
+    fontWeight: 700,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
   },
 };
 
@@ -191,16 +256,16 @@ export function CollectionCard({ item, onEdit, onRemove }: CollectionCardProps) 
       </Box>
 
       <CardContent sx={styles.content}>
-        <Typography variant="subtitle2" noWrap title={card.name}>
+        <Typography sx={styles.cardName} noWrap title={card.name}>
           {card.name}
         </Typography>
-        <Typography variant="body2" color="text.secondary" noWrap>
+        <Typography sx={styles.setName} color="text.secondary" noWrap>
           {card.setName}
         </Typography>
         <Box sx={styles.footer}>
-          <Typography variant="caption" color="text.secondary">
+          <Box sx={styles.conditionBadge}>
             {getConditionLabel(item.condition as CardCondition)}
-          </Typography>
+          </Box>
           {totalValue !== null && (
             <Typography variant="body2" sx={styles.price}>
               €{totalValue.toFixed(2)}

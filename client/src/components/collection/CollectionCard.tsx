@@ -57,8 +57,8 @@ const styles: Record<string, SxProps<Theme>> = {
   },
   quantityBadge: {
     position: 'absolute',
-    top: 10,
-    right: 10,
+    bottom: 10,
+    left: 10,
     bgcolor: 'rgba(15, 23, 42, 0.85)',
     backdropFilter: 'blur(4px)',
     color: 'white',
@@ -78,7 +78,7 @@ const styles: Record<string, SxProps<Theme>> = {
   },
   tradeBadge: {
     position: 'absolute',
-    top: 10,
+    top: 25,
     left: 10,
     zIndex: 2,
     boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
@@ -165,7 +165,7 @@ const styles: Record<string, SxProps<Theme>> = {
   alterBadge: {
     position: 'absolute',
     bottom: 10,
-    left: 10,
+    right: 10,
     zIndex: 2,
     bgcolor: 'secondary.main',
     color: 'white',

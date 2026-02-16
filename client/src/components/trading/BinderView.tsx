@@ -131,7 +131,7 @@ const styles: Record<string, SxProps<Theme>> = {
   quantityBadge: {
     position: 'absolute',
     bottom: 2,
-    right: 2,
+    left: 2,
     bgcolor: 'rgba(0,0,0,0.85)',
     color: 'white',
     px: 0.5,
@@ -295,10 +295,9 @@ export function BinderView({ items }: BinderViewProps) {
           <Box
             sx={{
               ...styles.quantityBadge,
-              bottom: 'auto',
-              top: 2,
-              left: 2,
-              right: 'auto',
+              bottom: 2,
+              right: 2,
+              left: 'auto',
               bgcolor: 'secondary.main',
             }}
           >

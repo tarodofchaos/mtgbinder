@@ -46,13 +46,13 @@ const styles: Record<string, SxProps<Theme>> = {
   },
   priorityBadge: {
     position: 'absolute',
-    top: 8,
+    top: 25,
     left: 8,
   },
   quantityBadge: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    bottom: 8,
+    left: 8,
     bgcolor: 'rgba(0, 0, 0, 0.7)',
     color: 'white',
     px: 1,
@@ -64,7 +64,7 @@ const styles: Record<string, SxProps<Theme>> = {
   foilBadge: {
     position: 'absolute',
     bottom: 8,
-    left: 8,
+    right: 8,
   },
   actionsOverlay: {
     position: 'absolute',

@@ -10,6 +10,7 @@ import { ImportProgressStep } from './ImportProgressStep';
 import { ImportResultsStep } from './ImportResultsStep';
 import { TextImportTab } from '../import/TextImportTab';
 import { UrlImportTab } from '../import/UrlImportTab';
+import { PhotoImportTab } from '../import/PhotoImportTab';
 import {
   parseCollectionCSV,
   prepareImportPreview,
@@ -33,7 +34,7 @@ interface ImportCollectionModalProps {
 }
 
 type ImportStep = 'input' | 'preview' | 'progress' | 'results';
-type ImportMethod = 'csv' | 'text' | 'url';
+type ImportMethod = 'csv' | 'text' | 'url' | 'photo';
 
 const styles: Record<string, SxProps<Theme>> = {
   stepper: {
@@ -333,6 +334,7 @@ export function ImportCollectionModal({ isOpen, onClose, onSuccess }: ImportColl
                 <Tab label={t('import.tabCsv')} value="csv" />
                 <Tab label={t('import.tabText')} value="text" />
                 <Tab label={t('import.tabUrl')} value="url" />
+                <Tab label={t('import.tabPhoto')} value="photo" />
               </Tabs>
 
               {importMethod === 'csv' && (
@@ -357,6 +359,14 @@ export function ImportCollectionModal({ isOpen, onClose, onSuccess }: ImportColl
                   onFetch={handleUrlFetch}
                   isLoading={isLoading}
                   error={urlError}
+                />
+              )}
+
+              {importMethod === 'photo' && (
+                <PhotoImportTab
+                  onParse={handleTextParse}
+                  isLoading={isLoading}
+                  error={textError}
                 />
               )}
             </>

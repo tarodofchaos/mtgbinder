@@ -36,6 +36,7 @@ import {
 import { importFromUrl } from '../../services/import-service';
 import { CardImage } from '../cards/CardImage';
 import { UrlImportTab } from '../import/UrlImportTab';
+import { PhotoImportTab } from '../import/PhotoImportTab';
 
 interface ImportDecklistModalProps {
   isOpen: boolean;
@@ -43,7 +44,7 @@ interface ImportDecklistModalProps {
   onSuccess: () => void;
 }
 
-type ImportMethod = 'text' | 'url';
+type ImportMethod = 'text' | 'url' | 'photo';
 
 const styles: Record<string, SxProps<Theme>> = {
   tabs: {
@@ -228,6 +229,7 @@ export function ImportDecklistModal({ isOpen, onClose, onSuccess }: ImportDeckli
             >
               <Tab label={t('import.tabText')} value="text" />
               <Tab label={t('import.tabUrl')} value="url" />
+              <Tab label={t('import.tabPhoto')} value="photo" />
             </Tabs>
 
             {importMethod === 'text' && (
@@ -312,6 +314,40 @@ export function ImportDecklistModal({ isOpen, onClose, onSuccess }: ImportDeckli
                   onFetch={handleUrlFetch}
                   isLoading={isUrlLoading}
                   error={urlError}
+                />
+
+                <Box sx={styles.buttonGroup}>
+                  <Button variant="outlined" onClick={handleClose}>
+                    {t('common.cancel')}
+                  </Button>
+                </Box>
+              </>
+            )}
+
+            {importMethod === 'photo' && (
+              <>
+                <TextField
+                  select
+                  label={t('import.defaultPriority')}
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as WishlistPriority)}
+                  fullWidth
+                  sx={{ mb: 2 }}
+                >
+                  <MenuItem value={WishlistPriority.LOW}>{t('priorities.low')}</MenuItem>
+                  <MenuItem value={WishlistPriority.NORMAL}>{t('priorities.normal')}</MenuItem>
+                  <MenuItem value={WishlistPriority.HIGH}>{t('priorities.high')}</MenuItem>
+                  <MenuItem value={WishlistPriority.URGENT}>{t('priorities.urgent')}</MenuItem>
+                </TextField>
+
+                <PhotoImportTab
+                  onParse={async (text) => {
+                    setDecklistText(text);
+                    // Trigger preview mutation after state update
+                    setTimeout(() => previewMutation.mutate(), 0);
+                  }}
+                  isLoading={previewMutation.isPending}
+                  error={previewMutation.isError ? t('import.parseError') : null}
                 />
 
                 <Box sx={styles.buttonGroup}>

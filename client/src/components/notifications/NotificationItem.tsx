@@ -180,6 +180,7 @@ export function NotificationItem({ notification, onMarkAsRead, onDelete, onClick
     // Fallback to string comparison if NotificationType is undefined due to build issues
     const isPriceAlert = (type as string) === 'PRICE_ALERT' || (NotificationType && type === NotificationType.PRICE_ALERT);
     const isTradeMatch = (type as string) === 'TRADE_MATCH' || (NotificationType && type === NotificationType.TRADE_MATCH);
+    const isTradeRequest = (type as string) === 'TRADE_REQUEST' || (NotificationType && type === (NotificationType as any).TRADE_REQUEST);
 
     if (isPriceAlert && card) {
       const oldPrice = data?.oldPrice || 0;
@@ -200,6 +201,28 @@ export function NotificationItem({ notification, onMarkAsRead, onDelete, onClick
           <Typography variant="body2" color="success.main" sx={{ fontWeight: 500 }}>
             (-{percentDrop}%)
           </Typography>
+        </Box>
+      );
+    }
+
+    if (isTradeRequest) {
+      const sessionCode = data?.sessionCode;
+      return (
+        <Box sx={{ mt: 0.5, mb: 1 }}>
+          <Typography variant="body2" color="text.secondary">
+            {translatedMessage as any}
+          </Typography>
+          {sessionCode && (
+            <Button 
+              variant="contained" 
+              size="small" 
+              startIcon={<SwapIcon />}
+              onClick={(e) => handleNavigateToSession(e, sessionCode)}
+              sx={{ mt: 1 }}
+            >
+              {t('notifications.goToTrade')}
+            </Button>
+          )}
         </Box>
       );
     }

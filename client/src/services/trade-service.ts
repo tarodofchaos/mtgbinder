@@ -36,6 +36,16 @@ export async function acceptTrade(code: string, accepted: boolean): Promise<Trad
   return response.data.data;
 }
 
+export async function acceptTradeRequest(code: string): Promise<TradeSession> {
+  const response = await api.post(`/trade/${code}/accept-request`);
+  return response.data.data;
+}
+
+export async function rejectTradeRequest(code: string): Promise<{ message: string }> {
+  const response = await api.post(`/trade/${code}/reject-request`);
+  return response.data;
+}
+
 export async function completeTradeSession(code: string): Promise<TradeSession> {
   const response = await api.post(`/trade/${code}/complete`);
   return response.data.data;

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useParams, Link as RouterLink } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
   Box,
@@ -23,12 +23,15 @@ import {
   GridView as GridViewIcon,
   AutoStories as BinderIcon,
   Favorite as WishlistIcon,
+  SwapHoriz as TradeIcon,
 } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
 import { getPublicTrades } from '../services/public-binder-service';
 import { PublicTradeCard } from '../components/trading/PublicTradeCard';
 import { BinderView } from '../components/trading/BinderView';
 import { LoadingPage, LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { useAuth } from '../context/auth-context';
+import { createTradeSession } from '../services/trade-service';
 
 type ViewMode = 'grid' | 'binder';
 
@@ -86,10 +89,30 @@ const styles: Record<string, SxProps<Theme>> = {
 
 export function PublicTradesPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { user: currentUser, isAuthenticated } = useAuth();
   const { shareCode } = useParams<{ shareCode: string }>();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+
+  const createSessionMutation = useMutation({
+    mutationFn: createTradeSession,
+    onSuccess: (data) => {
+      navigate(`/trade/${data.sessionCode}`);
+    },
+    onError: (error: any) => {
+      console.error('Failed to create trade session:', error);
+    },
+  });
+
+  const handleRequestTrade = (targetUserId: string) => {
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: window.location.pathname } });
+      return;
+    }
+    createSessionMutation.mutate({ withUserId: targetUserId });
+  };
 
   // For grid view, paginate server-side. For binder view, fetch all items
   const pageSize = viewMode === 'grid' ? 24 : 500;
@@ -167,6 +190,20 @@ export function PublicTradesPage() {
           >
             {t('wishlist.title')}
           </Button>
+
+          {currentUser?.id !== user.id && (
+            <Button
+              variant="contained"
+              size="small"
+              color="primary"
+              startIcon={<TradeIcon />}
+              onClick={() => handleRequestTrade(user.id)}
+              disabled={createSessionMutation.isPending}
+              sx={{ ml: 1, height: 32, borderRadius: 16 }}
+            >
+              {createSessionMutation.isPending ? t('common.loading') : t('publicBinder.requestTrade')}
+            </Button>
+          )}
         </Box>
       </Paper>
 
@@ -264,12 +301,25 @@ export function PublicTradesPage() {
 
       {/* Contact info */}
       <Paper sx={{ p: 2, textAlign: 'center' }}>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" sx={{ mb: currentUser?.id !== user.id ? 2 : 0 }}>
           {t('publicBinder.contactTrader', { name: user.displayName })}{' '}
           <Typography component="span" fontWeight={600} color="primary.main" fontFamily="monospace">
             {user.shareCode}
           </Typography>
         </Typography>
+        
+        {currentUser?.id !== user.id && (
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<TradeIcon />}
+            onClick={() => handleRequestTrade(user.id)}
+            disabled={createSessionMutation.isPending}
+            sx={{ borderRadius: 2 }}
+          >
+            {createSessionMutation.isPending ? t('common.loading') : t('publicBinder.requestTrade')}
+          </Button>
+        )}
       </Paper>
     </Stack>
   );

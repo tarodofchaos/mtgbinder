@@ -183,6 +183,7 @@ model TradeMessage {
 enum NotificationType {
   PRICE_ALERT
   TRADE_MATCH
+  TRADE_REQUEST
 }
 
 model Notification {

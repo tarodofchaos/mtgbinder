@@ -29,6 +29,7 @@ import { QRCodeDisplay } from '../components/trading/QRCodeDisplay';
 import { QRScanner } from '../components/trading/QRScanner';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { TradeHistoryTab } from '../components/trading/TradeHistoryTab';
+import { TradeSession } from '@mtg-binder/shared';
 
 const styles: Record<string, SxProps<Theme>> = {
   container: {
@@ -36,8 +37,19 @@ const styles: Record<string, SxProps<Theme>> = {
   },
   activeSession: {
     p: 2,
-    bgcolor: 'success.main',
-    color: 'success.contrastText',
+    bgcolor: 'action.selected',
+    borderRadius: 2,
+    border: '1px solid',
+    borderColor: 'divider',
+    transition: 'background-color 0.2s',
+    '&:hover': {
+      bgcolor: 'action.hover',
+    },
+  },
+  pendingRequest: {
+    p: 2,
+    bgcolor: 'primary.main',
+    color: 'primary.contrastText',
     borderRadius: 2,
     '& .MuiTypography-root': {
       color: 'inherit',
@@ -76,6 +88,49 @@ const styles: Record<string, SxProps<Theme>> = {
     },
   },
 };
+
+function TradeSessionItem({ 
+  session, 
+  onView 
+}: { 
+  session: TradeSession; 
+  onView: (code: string) => void;
+}) {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  
+  const partner = session.initiatorId === user?.id ? session.joiner : session.initiator;
+  const isPending = session.status === 'PENDING';
+  const hasPartner = !!session.joinerId;
+
+  return (
+    <Paper 
+      sx={isPending && hasPartner && session.joinerId === user?.id ? styles.pendingRequest : styles.activeSession}
+    >
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box>
+          <Typography variant="subtitle1" fontWeight={700}>
+            {partner ? t('trade.tradeWith', { name: partner.displayName }) : t('trade.activeSession')}
+          </Typography>
+          <Typography variant="body2" color={isPending && hasPartner && session.joinerId === user?.id ? "inherit" : "text.secondary"}>
+            {isPending && hasPartner 
+              ? (session.initiatorId === user?.id ? t('trade.tradeRequestPending') : t('trade.hasRequestedTrade', { name: partner?.displayName }))
+              : t('trade.session', { code: session.sessionCode })}
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          color={isPending && hasPartner && session.joinerId === user?.id ? "inherit" : "primary"}
+          size="small"
+          onClick={() => onView(session.sessionCode)}
+          sx={{ color: isPending && hasPartner && session.joinerId === user?.id ? "primary.main" : undefined }}
+        >
+          {isPending && hasPartner && session.joinerId === user?.id ? t('trade.viewRequest', 'View Request') : t('common.view')}
+        </Button>
+      </Box>
+    </Paper>
+  );
+}
 
 export function TradePage() {
   const { t } = useTranslation();
@@ -141,8 +196,9 @@ export function TradePage() {
     joinMutation.mutate(code.trim().toUpperCase());
   };
 
-  const pendingSession = sessions?.find((s) => s.status === 'PENDING');
-  const activeSession = sessions?.find((s) => s.status === 'ACTIVE');
+  const activeSessions = sessions?.filter((s) => s.status === 'ACTIVE') || [];
+  const pendingDirectRequests = sessions?.filter((s) => s.status === 'PENDING' && s.joinerId) || [];
+  const pendingPublicSession = sessions?.find((s) => s.status === 'PENDING' && !s.joinerId);
 
   return (
     <Stack spacing={3} sx={styles.container}>
@@ -165,81 +221,80 @@ export function TradePage() {
       {/* Active tab content */}
       {activeTab === 0 && (
         <Stack spacing={3}>
-          {/* Active session notice */}
-          {activeSession && (
-        <Paper sx={styles.activeSession}>
-          <Typography variant="h6" gutterBottom>
-            {t('trade.activeSession')}
-          </Typography>
-          <Typography variant="body2" sx={{ mb: 2 }}>
-            {t('trade.tradingWith', {
-              name: activeSession.joiner?.displayName || activeSession.initiator?.displayName
-            })}
-          </Typography>
-          <Button
-            variant="contained"
-            color="inherit"
-            onClick={() => navigate(`/trade/${activeSession.sessionCode}`)}
-          >
-            {t('trade.viewMatches')}
-          </Button>
-        </Paper>
-      )}
+          {/* Active and Direct Pending Sessions */}
+          {(activeSessions.length > 0 || pendingDirectRequests.length > 0) && (
+            <Stack spacing={2}>
+              {pendingDirectRequests.map((s) => (
+                <TradeSessionItem 
+                  key={s.id} 
+                  session={s} 
+                  onView={(code) => navigate(`/trade/${code}`)} 
+                />
+              ))}
+              {activeSessions.map((s) => (
+                <TradeSessionItem 
+                  key={s.id} 
+                  session={s} 
+                  onView={(code) => navigate(`/trade/${code}`)} 
+                />
+              ))}
+            </Stack>
+          )}
 
-      {/* Create new session */}
-      <Paper sx={styles.section}>
-        <Typography variant="h5" gutterBottom>
-          {t('trade.startTrade')}
-        </Typography>
-
-        {pendingSession ? (
-          <Stack spacing={3} alignItems="center">
-            <Typography color="text.secondary">
-              {t('trade.shareCodeOrQr')}
+          {/* Create or Share Public session */}
+          <Paper sx={styles.section}>
+            <Typography variant="h5" gutterBottom>
+              {t('trade.startTrade')}
             </Typography>
 
-            <QRCodeDisplay
-              value={`${window.location.origin}/trade/${pendingSession.sessionCode}`}
-              size={200}
-            />
+            {pendingPublicSession ? (
+              <Stack spacing={3} alignItems="center">
+                <Typography color="text.secondary">
+                  {t('trade.shareCodeOrQr')}
+                </Typography>
 
-            <Box textAlign="center">
-              <Typography sx={styles.sessionCode}>
-                {pendingSession.sessionCode}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {t('trade.sessionExpires')}
-              </Typography>
-            </Box>
+                <QRCodeDisplay
+                  value={`${window.location.origin}/trade/${pendingPublicSession.sessionCode}`}
+                  size={200}
+                />
 
-            <Button
-              variant="outlined"
-              fullWidth
-              startIcon={<CopyIcon />}
-              onClick={() => {
-                navigator.clipboard.writeText(pendingSession.sessionCode);
-              }}
-            >
-              {t('trade.copyCode')}
-            </Button>
-          </Stack>
-        ) : (
-          <Box textAlign="center">
-            <Typography color="text.secondary" sx={{ mb: 2 }}>
-              {t('trade.createSessionDescription')}
-            </Typography>
-            <Button
-              id="trade-create-session"
-              variant="contained"
-              onClick={() => createMutation.mutate(undefined)}
-              disabled={createMutation.isPending}
-              startIcon={createMutation.isPending ? <LoadingSpinner size="sm" /> : undefined}
-            >
-              {createMutation.isPending ? t('common.creating') : t('trade.createSession')}
-            </Button>
-          </Box>
-        )}
-      </Paper>
+                <Box textAlign="center">
+                  <Typography sx={styles.sessionCode}>
+                    {pendingPublicSession.sessionCode}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('trade.sessionExpires')}
+                  </Typography>
+                </Box>
+
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  startIcon={<CopyIcon />}
+                  onClick={() => {
+                    navigator.clipboard.writeText(pendingPublicSession.sessionCode);
+                  }}
+                >
+                  {t('trade.copyCode')}
+                </Button>
+              </Stack>
+            ) : (
+              <Box textAlign="center">
+                <Typography color="text.secondary" sx={{ mb: 2 }}>
+                  {t('trade.createSessionDescription')}
+                </Typography>
+                <Button
+                  id="trade-create-session"
+                  variant="contained"
+                  onClick={() => createMutation.mutate(undefined)}
+                  disabled={createMutation.isPending}
+                  startIcon={createMutation.isPending ? <LoadingSpinner size="sm" /> : undefined}
+                >
+                  {createMutation.isPending ? t('common.creating') : t('trade.createSession')}
+                </Button>
+              </Box>
+            )}
+          </Paper>
 
       {/* Join existing session */}
       <Paper sx={styles.section}>

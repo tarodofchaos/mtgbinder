@@ -56,6 +56,24 @@ router.post('/session', async (req: AuthenticatedRequest, res: Response, next) =
     });
 
     if (existingSession) {
+      if (withUserId) {
+        // Still notify receiver even if session exists
+        const initiator = await prisma.user.findUnique({ where: { id: req.userId } });
+        const notification = await prisma.notification.create({
+          data: {
+            userId: withUserId,
+            type: NotificationType.TRADE_REQUEST,
+            title: 'notifications.tradeRequestTitle',
+            message: 'notifications.tradeRequestMessage',
+            data: {
+              sessionCode: existingSession.sessionCode,
+              userName: initiator?.displayName,
+              type: 'request',
+            },
+          },
+        });
+        emitToUser(withUserId, 'notification', notification);
+      }
       res.json({ data: existingSession });
       return;
     }
@@ -67,11 +85,11 @@ router.post('/session', async (req: AuthenticatedRequest, res: Response, next) =
       sessionCode,
       initiatorId: req.userId!,
       expiresAt,
+      status: TradeSessionStatus.PENDING,
     };
 
     if (withUserId) {
       data.joinerId = withUserId;
-      data.status = TradeSessionStatus.ACTIVE;
     }
 
     const session = await prisma.tradeSession.create({
@@ -85,6 +103,25 @@ router.post('/session', async (req: AuthenticatedRequest, res: Response, next) =
         },
       },
     });
+
+    if (withUserId) {
+      // Notify receiver
+      const initiator = await prisma.user.findUnique({ where: { id: req.userId } });
+      const notification = await prisma.notification.create({
+        data: {
+          userId: withUserId,
+          type: NotificationType.TRADE_REQUEST,
+          title: 'notifications.tradeRequestTitle',
+          message: 'notifications.tradeRequestMessage',
+          data: {
+            sessionCode: session.sessionCode,
+            userName: initiator?.displayName,
+            type: 'request',
+          },
+        },
+      });
+      emitToUser(withUserId, 'notification', notification);
+    }
 
     res.status(201).json({ data: session });
   } catch (error) {
@@ -197,6 +234,108 @@ router.post('/:code/join', async (req: AuthenticatedRequest, res: Response, next
     });
 
     res.json({ data: updatedSession });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/:code/accept-request', async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const { code } = req.params;
+
+    const session = await prisma.tradeSession.findUnique({
+      where: { sessionCode: code.toUpperCase() },
+    });
+
+    if (!session) {
+      throw new AppError('Trade session not found', 404);
+    }
+
+    if (session.joinerId !== req.userId) {
+      throw new AppError('Only the requested partner can accept the trade request', 403);
+    }
+
+    if (session.status !== TradeSessionStatus.PENDING) {
+      throw new AppError('Trade session is not pending', 400);
+    }
+
+    const updatedSession = await prisma.tradeSession.update({
+      where: { id: session.id },
+      data: { status: TradeSessionStatus.ACTIVE },
+      include: {
+        initiator: { select: { id: true, displayName: true, shareCode: true } },
+        joiner: { select: { id: true, displayName: true, shareCode: true } },
+      },
+    });
+
+    // Notify initiator
+    const joiner = await prisma.user.findUnique({ where: { id: req.userId } });
+    const notification = await prisma.notification.create({
+      data: {
+        userId: session.initiatorId,
+        type: NotificationType.TRADE_MATCH,
+        title: 'notifications.tradeRequestAcceptedTitle',
+        message: 'notifications.tradeRequestAcceptedMessage',
+        data: {
+          sessionCode: session.sessionCode,
+          userName: joiner?.displayName,
+          type: 'accept',
+        },
+      },
+    });
+    emitToUser(session.initiatorId, 'notification', notification);
+
+    // Notify initiator via socket if they are already on the page
+    emitToTradeSession(session.sessionCode, 'trade:request-accepted', {
+      user: updatedSession.joiner,
+    });
+
+    res.json({ data: updatedSession });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/:code/reject-request', async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const { code } = req.params;
+
+    const session = await prisma.tradeSession.findUnique({
+      where: { sessionCode: code.toUpperCase() },
+    });
+
+    if (!session) {
+      throw new AppError('Trade session not found', 404);
+    }
+
+    if (session.joinerId !== req.userId) {
+      throw new AppError('Only the requested partner can reject the trade request', 403);
+    }
+
+    await prisma.tradeSession.delete({ where: { id: session.id } });
+
+    // Notify initiator
+    const rejecter = await prisma.user.findUnique({ where: { id: req.userId } });
+    const notification = await prisma.notification.create({
+      data: {
+        userId: session.initiatorId,
+        type: NotificationType.TRADE_MATCH,
+        title: 'notifications.tradeRequestRejectedTitle',
+        message: 'notifications.tradeRequestRejectedMessage',
+        data: {
+          userName: rejecter?.displayName,
+          type: 'reject',
+        },
+      },
+    });
+    emitToUser(session.initiatorId, 'notification', notification);
+
+    // Notify via socket if they are on the page
+    emitToTradeSession(session.sessionCode, 'trade:request-rejected', {
+      userId: req.userId,
+    });
+
+    res.json({ message: 'Trade request rejected' });
   } catch (error) {
     next(error);
   }

@@ -15,6 +15,7 @@ const pulse = keyframes`
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
+  sx?: SxProps<Theme>;
 }
 
 const sizeMap = {
@@ -23,7 +24,7 @@ const sizeMap = {
   lg: 80,
 };
 
-export function LoadingSpinner({ size = 'md' }: LoadingSpinnerProps) {
+export function LoadingSpinner({ size = 'md', sx }: LoadingSpinnerProps) {
   const pixelSize = sizeMap[size];
   const colors = ['W', 'U', 'B', 'R', 'G'];
 
@@ -36,6 +37,7 @@ export function LoadingSpinner({ size = 'md' }: LoadingSpinnerProps) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        ...sx,
       }}
     >
       <Box
@@ -52,17 +54,22 @@ export function LoadingSpinner({ size = 'md' }: LoadingSpinnerProps) {
           const angle = (i * 360) / colors.length;
           const radius = pixelSize * 0.35;
           return (
-            <ManaSymbol
+            <Box
               key={c}
-              color={c}
-              size={pixelSize * 0.3}
               sx={{
                 position: 'absolute',
                 transform: `rotate(${angle}deg) translateY(-${radius}px) rotate(-${angle}deg)`,
-                animation: `${pulse} 1.5s ease-in-out infinite`,
-                animationDelay: `${i * 0.2}s`,
               }}
-            />
+            >
+              <ManaSymbol
+                color={c}
+                size={pixelSize * 0.3}
+                sx={{
+                  animation: `${pulse} 1.5s ease-in-out infinite`,
+                  animationDelay: `${i * 0.2}s`,
+                }}
+              />
+            </Box>
           );
         })}
       </Box>

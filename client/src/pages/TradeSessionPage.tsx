@@ -21,6 +21,7 @@ import {
   Delete as DeleteIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
 import { useTranslation } from 'react-i18next';
@@ -29,12 +30,14 @@ import {
   completeTradeSession, 
   deleteTradeSession, 
   updateTradeSelection,
-  acceptTrade 
+  acceptTrade,
+  acceptTradeRequest,
+  rejectTradeRequest
 } from '../services/trade-service';
 import { getWishlist, removeFromWishlist } from '../services/wishlist-service';
 import { useAuth } from '../context/auth-context';
 import { MatchList } from '../components/trading/MatchList';
-import { LoadingPage } from '../components/ui/LoadingSpinner';
+import { LoadingPage, LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { TradeChatPanel } from '../components/trading/TradeChatPanel';
 import { ConfirmationModal } from '../components/ui/ConfirmationModal';
 import { joinTradeSessionRoom, leaveTradeSessionRoom } from '../services/socket-service';
@@ -92,6 +95,21 @@ const styles: Record<string, SxProps<Theme>> = {
     borderColor: 'divider',
     borderRadius: 1,
     mt: 1,
+  },
+  pendingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    bgcolor: 'rgba(0,0,0,0.7)',
+    zIndex: 100,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 2,
+    backdropFilter: 'blur(4px)',
+    p: 3,
   }
 };
 
@@ -202,14 +220,31 @@ export function TradeSessionPage() {
       refetch();
     };
 
+    const handleRequestAccepted = () => {
+      refetch();
+    };
+
+    const handleRequestRejected = () => {
+      navigate('/trade', {
+        state: {
+          message: t('trade.tradeRequestRejectedMessage'),
+          severity: 'info'
+        }
+      });
+    };
+
     socket.on('trade:selection-updated', handleSelectionUpdated);
     socket.on('trade:acceptance-updated', handleAcceptanceUpdated);
     socket.on('trade:user-joined', handleUserJoined);
+    socket.on('trade:request-accepted', handleRequestAccepted);
+    socket.on('trade:request-rejected', handleRequestRejected);
 
     return () => {
       socket.off('trade:selection-updated', handleSelectionUpdated);
       socket.off('trade:acceptance-updated', handleAcceptanceUpdated);
       socket.off('trade:user-joined', handleUserJoined);
+      socket.off('trade:request-accepted', handleRequestAccepted);
+      socket.off('trade:request-rejected', handleRequestRejected);
     };
   }, [socket, code, user?.id, refetch]);
 
@@ -231,6 +266,20 @@ export function TradeSessionPage() {
     mutationFn: (accepted: boolean) => acceptTrade(code!, accepted),
     onSuccess: () => {
       refetch();
+    },
+  });
+
+  const acceptRequestMutation = useMutation({
+    mutationFn: () => acceptTradeRequest(code!),
+    onSuccess: () => {
+      refetch();
+    },
+  });
+
+  const rejectRequestMutation = useMutation({
+    mutationFn: () => rejectTradeRequest(code!),
+    onSuccess: () => {
+      navigate('/trade');
     },
   });
 
@@ -464,6 +513,63 @@ export function TradeSessionPage() {
       </Box>
     </Box>
   );
+
+  if (session.status === 'PENDING' && session.joinerId) {
+    return (
+      <Box sx={{ position: 'relative', minHeight: '60vh' }}>
+        <Box sx={styles.pendingOverlay}>
+          <Paper sx={{ p: 4, maxWidth: 500, textAlign: 'center', width: '100%' }}>
+            <Typography variant="h5" fontWeight={700} gutterBottom>
+              {t('trade.tradeRequestPending')}
+            </Typography>
+            
+            {isInitiator ? (
+              <Stack spacing={3}>
+                <Typography>
+                  {t('trade.waitingForAcceptance')}
+                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                  <LoadingSpinner size="lg" />
+                </Box>
+                <Button variant="outlined" onClick={() => navigate('/trade')}>
+                  {t('trade.backToTrade')}
+                </Button>
+              </Stack>
+            ) : (
+              <Stack spacing={3}>
+                <Typography>
+                  {t('trade.hasRequestedTrade', { name: session.initiator?.displayName || t('trade.unknownUser') })}
+                </Typography>
+                <Stack direction="row" spacing={2} justifyContent="center">
+                  <Button 
+                    variant="contained" 
+                    color="success" 
+                    startIcon={<CheckIcon />}
+                    onClick={() => acceptRequestMutation.mutate()}
+                    disabled={acceptRequestMutation.isPending}
+                  >
+                    {t('trade.acceptRequest')}
+                  </Button>
+                  <Button 
+                    variant="outlined" 
+                    color="error" 
+                    startIcon={<CloseIcon />}
+                    onClick={() => rejectRequestMutation.mutate()}
+                    disabled={rejectRequestMutation.isPending}
+                  >
+                    {t('trade.rejectRequest')}
+                  </Button>
+                </Stack>
+                <Button variant="text" onClick={() => navigate('/explore')}>
+                  {t('trade.backToBinders')}
+                </Button>
+              </Stack>
+            )}
+          </Paper>
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Stack spacing={3} sx={styles.container}>

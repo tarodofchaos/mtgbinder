@@ -259,6 +259,7 @@ export interface SetCompletionDetail {
 export enum NotificationType {
   PRICE_ALERT = 'PRICE_ALERT',
   TRADE_MATCH = 'TRADE_MATCH',
+  TRADE_REQUEST = 'TRADE_REQUEST',
 }
 
 export interface Notification {

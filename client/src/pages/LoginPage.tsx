@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Box,
@@ -63,8 +63,11 @@ export function LoginPage() {
   const { t } = useTranslation();
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const from = location.state?.from || '/collection';
 
   const { control, handleSubmit, formState: { errors } } = useForm<LoginForm>({
     defaultValues: {
@@ -79,7 +82,7 @@ export function LoginPage() {
 
     try {
       await login(data.email, data.password);
-      navigate('/collection');
+      navigate(from, { replace: true });
     } catch (err: unknown) {
       // Check if it's an axios error with a response
       if (err && typeof err === 'object' && 'response' in err) {

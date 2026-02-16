@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useParams, Link as RouterLink } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
   Box,
@@ -18,11 +18,14 @@ import {
   Search as SearchIcon,
   Favorite as WishlistIcon,
   Storefront as StorefrontIcon,
+  SwapHoriz as TradeIcon,
 } from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
 import { getPublicWishlist } from '../services/public-binder-service';
 import { WishlistCard } from '../components/wishlist/WishlistCard';
 import { LoadingPage, LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { useAuth } from '../context/auth-context';
+import { createTradeSession } from '../services/trade-service';
 
 const styles: Record<string, SxProps<Theme>> = {
   container: {
@@ -67,10 +70,30 @@ const styles: Record<string, SxProps<Theme>> = {
 
 export function PublicWishlistPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { user: currentUser, isAuthenticated } = useAuth();
   const { shareCode } = useParams<{ shareCode: string }>();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const pageSize = 24;
+
+  const createSessionMutation = useMutation({
+    mutationFn: createTradeSession,
+    onSuccess: (data) => {
+      navigate(`/trade/${data.sessionCode}`);
+    },
+    onError: (error: any) => {
+      console.error('Failed to create trade session:', error);
+    },
+  });
+
+  const handleRequestTrade = (targetUserId: string) => {
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: window.location.pathname } });
+      return;
+    }
+    createSessionMutation.mutate({ withUserId: targetUserId });
+  };
 
   const { data, isLoading, error, isFetching } = useQuery({
     queryKey: ['publicWishlist', shareCode, search, page],
@@ -127,6 +150,20 @@ export function PublicWishlistPage() {
           >
             {t('nav.collection')}
           </Button>
+
+          {currentUser?.id !== user.id && (
+            <Button
+              variant="contained"
+              size="small"
+              color="primary"
+              startIcon={<TradeIcon />}
+              onClick={() => handleRequestTrade(user.id)}
+              disabled={createSessionMutation.isPending}
+              sx={{ ml: 1, height: 32, borderRadius: 16 }}
+            >
+              {createSessionMutation.isPending ? t('common.loading') : t('publicWishlist.requestTrade')}
+            </Button>
+          )}
         </Box>
       </Paper>
 
@@ -199,12 +236,25 @@ export function PublicWishlistPage() {
 
       {/* Contact info */}
       <Paper sx={{ p: 2, textAlign: 'center' }}>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" sx={{ mb: currentUser?.id !== user.id ? 2 : 0 }}>
           {t('publicWishlist.contactTrader', { name: user.displayName })}{' '}
           <Typography component="span" fontWeight={600} color="primary.main" fontFamily="monospace">
             {user.shareCode}
           </Typography>
         </Typography>
+
+        {currentUser?.id !== user.id && (
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<TradeIcon />}
+            onClick={() => handleRequestTrade(user.id)}
+            disabled={createSessionMutation.isPending}
+            sx={{ borderRadius: 2 }}
+          >
+            {createSessionMutation.isPending ? t('common.loading') : t('publicWishlist.requestTrade')}
+          </Button>
+        )}
       </Paper>
     </Stack>
   );

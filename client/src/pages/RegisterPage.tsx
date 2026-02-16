@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Box,
@@ -58,8 +58,11 @@ export function RegisterPage() {
   const { t } = useTranslation();
   const { register: registerUser } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const from = location.state?.from || '/collection';
 
   const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<RegisterForm>({
     defaultValues: {
@@ -81,7 +84,7 @@ export function RegisterPage() {
 
     try {
       await registerUser(data.email, data.password, data.displayName, data.avatarId, data.inviteCode);
-      navigate('/collection');
+      navigate(from, { replace: true });
     } catch (err: any) {
       if (err.response?.status === 403) {
         setError(t('auth.inviteCodeRequired'));

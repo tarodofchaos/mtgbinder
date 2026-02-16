@@ -14,9 +14,15 @@ import {
   Stack,
   Pagination,
   IconButton,
+  Tooltip,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { Add as AddIcon, Close as CloseIcon, Upload as UploadIcon, CloudUpload as CloudUploadIcon } from '@mui/icons-material';
+import {
+  Add as AddIcon,
+  Close as CloseIcon,
+  Upload as UploadIcon,
+  Share as ShareIcon,
+} from '@mui/icons-material';
 import type { SxProps, Theme } from '@mui/material';
 import { WishlistItem, WishlistPriority, Card } from '@mtg-binder/shared';
 import { getWishlist, addToWishlist, removeFromWishlist, updateWishlistItem } from '../services/wishlist-service';
@@ -29,9 +35,10 @@ import { Modal } from '../components/ui/Modal';
 import { ConfirmationModal } from '../components/ui/ConfirmationModal';
 import { LoadingPage } from '../components/ui/LoadingSpinner';
 import { DebouncedTextField } from '../components/ui/DebouncedTextField';
-import { ImportDecklistModal } from '../components/wishlist/ImportDecklistModal';
-import { ImportWishlistModal } from '../components/wishlist/ImportWishlistModal';
+import { UnifiedImportWishlistModal } from '../components/wishlist/UnifiedImportWishlistModal';
+import { ShareWishlistModal } from '../components/wishlist/ShareWishlistModal';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../context/auth-context';
 
 interface AddWishlistForm {
   priority: WishlistPriority;
@@ -102,9 +109,10 @@ const styles: Record<string, SxProps<Theme>> = {
 
 export function WishlistPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [showCSVImportModal, setShowCSVImportModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [pendingCardName, setPendingCardName] = useState<string | null>(null);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [editingItem, setEditingItem] = useState<WishlistItem | null>(null);
@@ -303,20 +311,12 @@ export function WishlistPage() {
           <MenuItem value="LOW">{t('priorities.low')}</MenuItem>
         </TextField>
         <Button
-          id="wishlist-import-decklist"
+          id="wishlist-import-button"
           variant="outlined"
           startIcon={<UploadIcon />}
           onClick={() => setShowImportModal(true)}
         >
-          {t('wishlist.importDecklist')}
-        </Button>
-        <Button
-          id="wishlist-import-csv"
-          variant="outlined"
-          startIcon={<CloudUploadIcon />}
-          onClick={() => setShowCSVImportModal(true)}
-        >
-          {t('wishlist.importCsv')}
+          {t('common.import')}
         </Button>
         <Button
           id="wishlist-add-button"
@@ -326,6 +326,19 @@ export function WishlistPage() {
         >
           {t('wishlist.addCard')}
         </Button>
+        {user?.shareCode && (
+          <Tooltip title={t('common.copyLink')}>
+            <Button
+              id="wishlist-share-button"
+              variant="outlined"
+              color="primary"
+              startIcon={<ShareIcon />}
+              onClick={() => setShowShareModal(true)}
+            >
+              {t('common.share')}
+            </Button>
+          </Tooltip>
+        )}
       </Box>
 
       {/* Wishlist grid */}
@@ -658,17 +671,10 @@ export function WishlistPage() {
         />
       </Modal>
 
-      {/* Import decklist modal */}
-      <ImportDecklistModal
+      {/* Unified Import modal */}
+      <UnifiedImportWishlistModal
         isOpen={showImportModal}
         onClose={() => setShowImportModal(false)}
-        onSuccess={handleImportSuccess}
-      />
-
-      {/* Import CSV modal */}
-      <ImportWishlistModal
-        isOpen={showCSVImportModal}
-        onClose={() => setShowCSVImportModal(false)}
         onSuccess={handleImportSuccess}
       />
 
@@ -681,6 +687,14 @@ export function WishlistPage() {
         severity="error"
         isLoading={removeMutation.isPending}
       />
+
+      {user?.shareCode && (
+        <ShareWishlistModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          shareCode={user.shareCode}
+        />
+      )}
     </Box>
   );
 }

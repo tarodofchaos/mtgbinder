@@ -6,7 +6,6 @@ import {
   Typography,
   Card,
   CardContent,
-  CardActionArea,
   Avatar,
   Box,
   TextField,
@@ -14,10 +13,18 @@ import {
   Pagination,
   CircularProgress,
   Alert,
+  Stack,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { Search as SearchIcon } from '@mui/icons-material';
+import {
+  Search as SearchIcon,
+  Storefront as StorefrontIcon,
+  Favorite as WishlistIcon,
+} from '@mui/icons-material';
 import { api } from '../services/api';
+import { Link as RouterLink } from 'react-router-dom';
 import type { UserPublic, ApiResponse, PaginatedResponse } from '@mtg-binder/shared';
 import { AVATARS } from '../components/layout/SettingsModal';
 
@@ -91,32 +98,54 @@ export function ExplorePage() {
               return (
                 <Grid key={user.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
                   <Card id={index === 0 ? 'explore-user-card-0' : undefined}>
-                    <CardActionArea 
-                      component="a" 
-                      href={`/binder/${user.shareCode}`} 
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Avatar
-                          sx={{
-                            width: 56,
-                            height: 56,
-                            bgcolor: userAvatar?.color || 'primary.main',
-                          }}
-                        >
-                          {user.displayName.charAt(0).toUpperCase()}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="h6" noWrap>
-                            {user.displayName}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {t('explore.viewBinder', 'View Binder')}
-                          </Typography>
-                        </Box>
-                      </CardContent>
-                    </CardActionArea>
+                    <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Avatar
+                        sx={{
+                          width: 56,
+                          height: 56,
+                          bgcolor: userAvatar?.color || 'primary.main',
+                        }}
+                      >
+                        {user.displayName.charAt(0).toUpperCase()}
+                      </Avatar>
+                      <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                        <Typography variant="h6" noWrap>
+                          {user.displayName}
+                        </Typography>
+                        <Stack direction="row" spacing={1} mt={0.5}>
+                          <Tooltip title={t('explore.viewBinder')}>
+                            <IconButton
+                              component={RouterLink}
+                              to={`/binder/${user.shareCode}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              size="medium"
+                              sx={{ 
+                                p: { xs: 1.5, sm: 1 },
+                                color: 'primary.main'
+                              }}
+                            >
+                              <StorefrontIcon sx={{ fontSize: { xs: 28, sm: 20 } }} />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title={t('wishlist.title')}>
+                            <IconButton
+                              component={RouterLink}
+                              to={`/wishlist/${user.shareCode}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              size="medium"
+                              sx={{ 
+                                p: { xs: 1.5, sm: 1 },
+                                color: 'secondary.main'
+                              }}
+                            >
+                              <WishlistIcon sx={{ fontSize: { xs: 28, sm: 20 } }} />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                      </Box>
+                    </CardContent>
                   </Card>
                 </Grid>
               );

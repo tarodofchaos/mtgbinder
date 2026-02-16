@@ -399,7 +399,7 @@ export function CollectionPage() {
             startIcon={<UploadIcon />}
             onClick={() => setShowImportModal(true)}
           >
-            {t('collection.importCsv')}
+            {t('common.import')}
           </Button>
           <Button
             id="add-card-button"

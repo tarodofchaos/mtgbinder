@@ -33,6 +33,8 @@
     "copy": "Copiar",
     "copied": "¡Copiado!",
     "copyLink": "Copiar enlace",
+    "share": "Compartir",
+    "import": "Importar",
     "page": "Página {{current}} de {{total}}",
     "clearFilters": "Limpiar filtros",
     "activeFilters": "Filtros activos:",
@@ -433,6 +435,16 @@
     "pages": "Páginas {{start}}-{{end}}",
     "ofTotal": "de {{total}}",
     "binderHelp": "{{count}} cartas en carpeta • Toca una carta para ampliar"
+  },
+  "publicWishlist": {
+    "title": "Lista de deseos de {{name}}",
+    "subtitle": "Cartas que este coleccionista está buscando",
+    "cardsWanted": "{{count}} cartas deseadas",
+    "searchPlaceholder": "Buscar en la lista...",
+    "noCardsMatch": "No hay cartas que coincidan con tu búsqueda",
+    "noCardsWanted": "Esta lista de deseos está vacía",
+    "contactTrader": "¿Tienes estas cartas? Contacta a {{name}} con su código:",
+    "invalidShareCode": "No se encontró la lista de deseos. El código puede ser inválido."
   },
   "import": {
     "uploadStep": "Subir archivo",

@@ -33,6 +33,8 @@
     "copy": "Copy",
     "copied": "Copied!",
     "copyLink": "Copy Link",
+    "share": "Share",
+    "import": "Import",
     "page": "Page {{current}} of {{total}}",
     "clearFilters": "Clear Filters",
     "activeFilters": "Active filters:",
@@ -432,6 +434,16 @@
     "pages": "Pages {{start}}-{{end}}",
     "ofTotal": "of {{total}}",
     "binderHelp": "{{count}} cards in binder • Tap a card to enlarge"
+  },
+  "publicWishlist": {
+    "title": "{{name}}'s Wants List",
+    "subtitle": "Cards this collector is currently looking for",
+    "cardsWanted": "{{count}} cards wanted",
+    "searchPlaceholder": "Search wants list...",
+    "noCardsMatch": "No cards match your search",
+    "noCardsWanted": "This wishlist is empty",
+    "contactTrader": "Have these cards? Contact {{name}} with their share code:",
+    "invalidShareCode": "Could not find this collector's wishlist. The share code may be invalid."
   },
   "import": {
     "uploadStep": "Upload File",

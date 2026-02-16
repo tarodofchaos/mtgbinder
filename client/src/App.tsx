@@ -22,6 +22,7 @@ import { TradeSessionPage } from './pages/TradeSessionPage';
 import { SearchPage } from './pages/SearchPage';
 import { ExplorePage } from './pages/ExplorePage';
 import { PublicTradesPage } from './pages/PublicTradesPage';
+import { PublicWishlistPage } from './pages/PublicWishlistPage';
 import LandingPage from './pages/LandingPage';
 
 const styles: Record<string, SxProps<Theme>> = {
@@ -148,6 +149,14 @@ export default function App() {
           element={
             <MinimalLayout>
               <PublicTradesPage />
+            </MinimalLayout>
+          }
+        />
+        <Route
+          path="/wishlist/:shareCode"
+          element={
+            <MinimalLayout>
+              <PublicWishlistPage />
             </MinimalLayout>
           }
         />

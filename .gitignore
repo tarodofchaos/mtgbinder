@@ -57,5 +57,8 @@ dev-dist/
 .claude/
 .agents/*
 
+# Legacy/Backup pages
+client/src/pages/LandingPage.tsx
+
 # Debug/test files at root
 test-*.ts

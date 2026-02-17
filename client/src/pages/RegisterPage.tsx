@@ -12,11 +12,24 @@ import {
   Alert,
   Stack,
   Avatar,
+  keyframes,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import type { SxProps, Theme } from '@mui/material';
 import { useAuth } from '../context/auth-context';
 import { AVATARS } from '../components/layout/SettingsModal';
+
+// Keyframes for animations
+const rotate = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
+const drift = keyframes`
+  0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); opacity: 0.3; }
+  50% { transform: translate(-45%, -55%) rotate(180deg) scale(1.5); opacity: 0.5; }
+  100% { transform: translate(-50%, -50%) rotate(360deg) scale(1); opacity: 0.3; }
+`;
 
 interface RegisterForm {
   email: string;
@@ -24,7 +37,6 @@ interface RegisterForm {
   confirmPassword: string;
   displayName: string;
   avatarId: string;
-  inviteCode: string;
 }
 
 const styles: Record<string, SxProps<Theme>> = {
@@ -71,7 +83,6 @@ export function RegisterPage() {
       confirmPassword: '',
       displayName: '',
       avatarId: 'avatar-1',
-      inviteCode: '',
     },
   });
   const password = watch('password');
@@ -83,25 +94,83 @@ export function RegisterPage() {
     setIsLoading(true);
 
     try {
-      await registerUser(data.email, data.password, data.displayName, data.avatarId, data.inviteCode);
+      await registerUser(data.email, data.password, data.displayName, data.avatarId);
       navigate(from, { replace: true });
     } catch (err: any) {
-      if (err.response?.status === 403) {
-        setError(t('auth.inviteCodeRequired'));
-      } else {
-        setError(t('auth.registrationFailed'));
-      }
+      setError(t('auth.registrationFailed'));
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Box sx={styles.container}>
-      <Paper sx={styles.card}>
-        <Typography variant="h4" sx={styles.title}>
-          {t('auth.registerTitle')}
-        </Typography>
+    <Box sx={{
+      height: '100vh',
+      width: '100vw',
+      overflow: 'hidden',
+      bgcolor: '#030308',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative',
+    }}>
+      {/* Carbon fiber texture layer */}
+      <Box sx={{
+        position: 'absolute',
+        inset: 0,
+        backgroundImage: 'url("https://www.transparenttextures.com/patterns/carbon-fibre.png")',
+        opacity: 0.1,
+        zIndex: 0,
+      }} />
+
+      {/* Atmospheric Smoke/Fog Layers */}
+      {[...Array(6)].map((_, i) => (
+        <Box 
+          key={`smoke-${i}`}
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            width: '250vw',
+            height: '250vh',
+            transform: 'translate(-50%, -50%)',
+            background: `radial-gradient(circle, ${
+              i % 3 === 0 ? 'rgba(63, 81, 181, 0.15)' : 
+              i % 3 === 1 ? 'rgba(156, 39, 176, 0.12)' : 
+              'rgba(0, 0, 0, 0.8)'
+            } 0%, transparent 70%)`,
+            filter: 'blur(120px)',
+            // @ts-ignore
+            animation: `${drift} ${60 + i * 20}s infinite alternate ease-in-out`,
+            opacity: 0.4 + (i * 0.05),
+            zIndex: 0,
+          }} 
+        />
+      ))}
+
+      {/* The Vortex Core */}
+      <Box sx={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: '1400px',
+        height: '1400px',
+        borderRadius: '50%',
+        background: 'conic-gradient(from 0deg, transparent, #3f51b5, transparent, #9c27b0, transparent, #3f51b5)',
+        opacity: 0.2,
+        // @ts-ignore
+        animation: `${rotate} 30s infinite linear`,
+        zIndex: 0,
+        filter: 'blur(100px)',
+      }} />
+
+      <Box sx={{ ...styles.container, zIndex: 10, position: 'relative' }}>
+        <Paper sx={styles.card}>
+          <Typography variant="h4" sx={styles.title}>
+            {t('auth.registerTitle')}
+          </Typography>
 
         <Box component="form" onSubmit={handleSubmit(onSubmit)}>
           <Stack spacing={2.5}>
@@ -207,21 +276,6 @@ export function RegisterPage() {
               )}
             />
 
-            <Controller
-              name="inviteCode"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label={t('auth.inviteCode')}
-                  placeholder={t('auth.inviteCodePlaceholder')}
-                  fullWidth
-                  error={!!errors.inviteCode}
-                  helperText={errors.inviteCode?.message}
-                />
-              )}
-            />
-
             {error && <Alert severity="error">{error}</Alert>}
 
             <Button
@@ -243,6 +297,7 @@ export function RegisterPage() {
           </Link>
         </Typography>
       </Paper>
+    </Box>
     </Box>
   );
 }

@@ -225,7 +225,12 @@ export function LoginPage() {
             </Stack>
           </Box>
 
-          {/* Registration is restricted to beta testers */}
+          <Typography sx={styles.footer}>
+            {t('auth.noAccount')}{' '}
+            <Link component={RouterLink} to="/register">
+              {t('auth.registerNow')}
+            </Link>
+          </Typography>
         </Paper>
       </Box>
     </Box>

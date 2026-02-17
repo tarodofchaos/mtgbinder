@@ -20,7 +20,6 @@ const registerSchema = z.object({
   password: z.string().min(8),
   displayName: z.string().min(2).max(50),
   avatarId: z.string().optional(),
-  inviteCode: z.string().optional(),
 });
 
 const loginSchema = z.object({
@@ -55,14 +54,8 @@ const deleteAccountSchema = z.object({
 
 router.post('/register', validate(registerSchema), async (req, res: Response, next) => {
   try {
-    const { email: rawEmail, password, displayName, avatarId, inviteCode } = req.body;
+    const { email: rawEmail, password, displayName, avatarId } = req.body;
     const email = rawEmail.toLowerCase();
-
-    // Registration is strictly restricted. Must have a secret configured AND the invite code must match.
-    if (!config.registrationSecret || inviteCode !== config.registrationSecret) {
-      logger.warn({ email, hasSecret: !!config.registrationSecret }, 'Registration attempt blocked: missing or invalid invite code');
-      throw new AppError('Registration is currently restricted. A valid invite code is required.', 403);
-    }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {

@@ -23,7 +23,6 @@ import { SearchPage } from './pages/SearchPage';
 import { ExplorePage } from './pages/ExplorePage';
 import { PublicTradesPage } from './pages/PublicTradesPage';
 import { PublicWishlistPage } from './pages/PublicWishlistPage';
-import LandingPage from './pages/LandingPage';
 
 const styles: Record<string, SxProps<Theme>> = {
   root: {
@@ -99,14 +98,10 @@ export default function App() {
     <>
       <ScrollToTop />
       <Routes>
-        {/* Teaser Landing Page */}
+        {/* Redirect root to login */}
         <Route
           path="/"
-          element={
-            <PublicRoute>
-              <LandingPage />
-            </PublicRoute>
-          }
+          element={<Navigate to="/login" replace />}
         />
 
         {/* Public routes */}

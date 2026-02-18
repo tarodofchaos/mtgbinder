@@ -36,6 +36,9 @@ import { ConfirmationModal } from '../components/ui/ConfirmationModal';
 import { LoadingPage } from '../components/ui/LoadingSpinner';
 import { DebouncedTextField } from '../components/ui/DebouncedTextField';
 import { ManaSymbol } from '../components/ui/ManaSymbol';
+import { useAuth } from '../context/auth-context';
+
+import { DynamicBanner } from '../components/ui/DynamicBanner';
 
 interface EditFormData {
   quantity: number;
@@ -89,11 +92,26 @@ const styles: Record<string, SxProps<Theme>> = {
   container: {
     pb: 10,
   },
-  statsGrid: {
-    display: 'grid',
-    gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
+  statsRow: {
+    display: 'flex',
     gap: 2,
+    flexWrap: 'wrap',
     mb: 3,
+  },
+  statChip: {
+    height: 32,
+    borderRadius: 1,
+    bgcolor: 'background.paper',
+    border: '1px solid',
+    borderColor: 'divider',
+    '& .MuiChip-label': {
+      px: 1,
+      fontWeight: 600,
+    },
+    '& .stat-value': {
+      color: 'primary.main',
+      ml: 1,
+    },
   },
   statCard: {
     p: 3,
@@ -170,6 +188,7 @@ const styles: Record<string, SxProps<Theme>> = {
 
 export function CollectionPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -341,28 +360,59 @@ export function CollectionPage() {
 
   return (
     <Box sx={styles.container}>
-      {/* Stats */}
-      <Box sx={styles.statsGrid}>
-        <Paper sx={styles.statCard}>
-          <Typography sx={styles.statValue}>{stats?.uniqueCards || 0}</Typography>
-          <Typography sx={styles.statLabel}>{t('collection.uniqueCards')}</Typography>
-        </Paper>
-        <Paper sx={styles.statCard}>
-          <Typography sx={styles.statValue}>{stats?.totalCards || 0}</Typography>
-          <Typography sx={styles.statLabel}>{t('collection.totalCards')}</Typography>
-        </Paper>
-        <Paper sx={styles.statCard}>
-          <Typography sx={{ ...styles.statValue, color: 'success.main' }}>
-            €{((stats?.totalValue || 0) + (stats?.totalValueFoil || 0)).toFixed(2)}
-          </Typography>
-          <Typography sx={styles.statLabel}>{t('collection.totalValue')}</Typography>
-        </Paper>
-        <Paper sx={styles.statCard}>
-          <Typography sx={{ ...styles.statValue, color: 'primary.main' }}>
-            {stats?.forTradeCount || 0}
-          </Typography>
-          <Typography sx={styles.statLabel}>{t('collection.forTrade')}</Typography>
-        </Paper>
+      {/* Dynamic Banner */}
+      <DynamicBanner
+        title={t('nav.collection')}
+        subtitle={setCode ? t('filters.setBanner', { code: setCode }) : t('collection.subtitle')}
+        context={{
+          setCode: setCode || undefined,
+          cardName: search || undefined,
+          scryfallId: items[0]?.card?.scryfallId || undefined,
+          themeId: user?.bannerTheme || undefined,
+        }}
+        height={250}
+      />
+
+      {/* Stats Chips Row */}
+      <Box sx={styles.statsRow}>
+        <Chip
+          label={
+            <Box component="span">
+              {t('collection.totalCards')}
+              <Box component="span" className="stat-value">{stats?.totalCards || 0}</Box>
+            </Box>
+          }
+          sx={styles.statChip}
+        />
+        <Chip
+          label={
+            <Box component="span">
+              {t('collection.uniqueCards')}
+              <Box component="span" className="stat-value">{stats?.uniqueCards || 0}</Box>
+            </Box>
+          }
+          sx={styles.statChip}
+        />
+        <Chip
+          label={
+            <Box component="span">
+              {t('collection.totalValue')}
+              <Box component="span" className="stat-value" sx={{ color: 'success.main !important' }}>
+                €{((stats?.totalValue || 0) + (stats?.totalValueFoil || 0)).toFixed(2)}
+              </Box>
+            </Box>
+          }
+          sx={styles.statChip}
+        />
+        <Chip
+          label={
+            <Box component="span">
+              {t('collection.forTrade')}
+              <Box component="span" className="stat-value">{stats?.forTradeCount || 0}</Box>
+            </Box>
+          }
+          sx={styles.statChip}
+        />
       </Box>
 
       {/* Filters */}

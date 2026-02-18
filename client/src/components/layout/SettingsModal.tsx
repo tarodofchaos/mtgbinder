@@ -24,6 +24,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../context/auth-context';
 import { api } from '../../services/api';
+import { BANNER_THEMES } from '../../constants/banner-themes';
 
 interface SettingsModalProps {
   open: boolean;
@@ -47,6 +48,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [avatarId, setAvatarId] = useState(user?.avatarId || 'avatar-1');
+  const [bannerTheme, setBannerTheme] = useState(user?.bannerTheme || 'default');
   const [isPublic, setIsPublic] = useState(user?.isPublic || false);
   const [autoAddBoughtCards, setAutoAddBoughtCards] = useState(user?.autoAddBoughtCards ?? true);
   
@@ -66,6 +68,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
     if (open && user) {
       setDisplayName(user.displayName);
       setAvatarId(user.avatarId || 'avatar-1');
+      setBannerTheme(user.bannerTheme || 'default');
       setIsPublic(user.isPublic);
       setAutoAddBoughtCards(user.autoAddBoughtCards ?? true);
       setEmail(user.email);
@@ -87,6 +90,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
       const data: any = {
         displayName,
         avatarId,
+        bannerTheme,
         isPublic,
         autoAddBoughtCards,
       };
@@ -197,7 +201,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
             </Typography>
             <Grid container spacing={1}>
               {AVATARS.map((av) => (
-                <Grid key={av.id}>
+                <Grid key={av.id} size={1.5}>
                   <Box
                     onClick={() => setAvatarId(av.id)}
                     sx={{
@@ -222,6 +226,54 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
             onChange={(e) => setDisplayName(e.target.value)}
             sx={{ mb: 2 }}
           />
+
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="body2" gutterBottom>
+              {t('settings.chooseTheme', 'Choose Banner Theme')}
+            </Typography>
+            <Grid container spacing={1}>
+              {BANNER_THEMES.map((theme) => (
+                <Grid key={theme.id} size={{ xs: 6, sm: 4 }}>
+                  <Box
+                    onClick={() => setBannerTheme(theme.id)}
+                    sx={{
+                      width: '100%',
+                      height: 60,
+                      borderRadius: 1,
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      position: 'relative',
+                      border: 2,
+                      borderColor: bannerTheme === theme.id ? 'primary.main' : 'transparent',
+                      transition: 'all 0.2s',
+                      '&:hover': { transform: 'scale(1.02)' }
+                    }}
+                  >
+                    <Box
+                      component="img"
+                      src={theme.imageUrl}
+                      referrerPolicy="no-referrer"
+                      sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                    <Box sx={{
+                      position: 'absolute',
+                      inset: 0,
+                      bgcolor: 'rgba(0,0,0,0.4)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      p: 0.5,
+                      textAlign: 'center'
+                    }}>
+                      <Typography variant="caption" sx={{ color: 'white', fontWeight: 700, fontSize: '0.65rem', lineHeight: 1 }}>
+                        {t(theme.nameKey)}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
           
           <FormControlLabel
             control={

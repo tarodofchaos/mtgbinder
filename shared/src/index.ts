@@ -53,6 +53,7 @@ export interface User {
   displayName: string;
   shareCode: string;
   avatarId: string | null;
+  bannerTheme: string | null;
   isPublic: boolean;
   autoAddBoughtCards: boolean;
   tutorialProgress: Record<string, boolean>;
@@ -64,6 +65,7 @@ export interface UserPublic {
   displayName: string;
   shareCode: string;
   avatarId: string | null;
+  bannerTheme: string | null;
 }
 
 // Collection types

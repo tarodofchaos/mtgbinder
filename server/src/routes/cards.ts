@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../utils/prisma';
 import { validateQuery } from '../middleware/validate';
 import { AppError } from '../middleware/error-handler';
@@ -31,15 +32,39 @@ router.get('/search', validateQuery(searchQuerySchema), async (req: Request, res
       pageSize: number;
     };
 
-    const where: Record<string, unknown> = {};
-
     if (q) {
-      // Search both English and Spanish names
-      where.OR = [
-        { name: { contains: q, mode: 'insensitive' } },
-        { nameEs: { contains: q, mode: 'insensitive' } },
-      ];
+      const searchTerms = q.trim().split(/\s+/).filter(Boolean).map(term => `${term}:*`).join(' & ');
+      
+      const cards = await prisma.$queryRaw<any[]>`
+        SELECT * FROM cards
+        WHERE name_tsvector @@ to_tsquery('english', ${searchTerms})
+        ${setCode ? Prisma.sql`AND "setCode" ILIKE ${setCode.toUpperCase() + '%'}` : Prisma.empty}
+        ${rarity ? Prisma.sql`AND rarity = ${rarity.toLowerCase()}` : Prisma.empty}
+        ${type ? Prisma.sql`AND "typeLine" ILIKE ${'%' + type + '%'}` : Prisma.empty}
+        ORDER BY name ASC, "setCode" ASC
+        LIMIT ${pageSize} OFFSET ${(page - 1) * pageSize}
+      `;
+
+      const totalResult = await prisma.$queryRaw<any[]>`
+        SELECT COUNT(*)::BIGINT FROM cards
+        WHERE name_tsvector @@ to_tsquery('english', ${searchTerms})
+        ${setCode ? Prisma.sql`AND "setCode" ILIKE ${setCode.toUpperCase() + '%'}` : Prisma.empty}
+        ${rarity ? Prisma.sql`AND rarity = ${rarity.toLowerCase()}` : Prisma.empty}
+        ${type ? Prisma.sql`AND "typeLine" ILIKE ${'%' + type + '%'}` : Prisma.empty}
+      `;
+
+      const total = Number(totalResult[0].count);
+
+      return res.json({
+        data: cards,
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      });
     }
+
+    const where: any = {};
     if (setCode) {
       where.setCode = { startsWith: setCode.toUpperCase(), mode: 'insensitive' };
     }
@@ -76,25 +101,15 @@ router.get('/autocomplete', validateQuery(autocompleteQuerySchema), async (req: 
   try {
     const { q, limit } = req.query as unknown as { q: string; limit: number };
 
-    const cards = await prisma.card.findMany({
-      where: {
-        OR: [
-          { name: { contains: q, mode: 'insensitive' } },
-          { nameEs: { contains: q, mode: 'insensitive' } },
-        ],
-      },
-      select: {
-        id: true,
-        name: true,
-        nameEs: true,
-        setCode: true,
-        setName: true,
-        scryfallId: true,
-      },
-      take: limit,
-      orderBy: { name: 'asc' },
-      distinct: ['name'],
-    });
+    const searchTerms = q.trim().split(/\s+/).filter(Boolean).map(term => `${term}:*`).join(' & ');
+
+    const cards = await prisma.$queryRaw<any[]>`
+      SELECT DISTINCT ON (name) id, name, "nameEs", "setCode", "setName", "scryfallId"
+      FROM cards
+      WHERE name_tsvector @@ to_tsquery('english', ${searchTerms})
+      ORDER BY name ASC, "releasedAt" DESC NULLS LAST, "setCode" ASC
+      LIMIT ${limit}
+    `;
 
     res.json({ data: cards });
   } catch (error) {

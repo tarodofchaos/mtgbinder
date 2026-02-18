@@ -40,6 +40,7 @@ const resetPasswordSchema = z.object({
 const updateSettingsSchema = z.object({
   displayName: z.string().min(2).max(50).optional(),
   avatarId: z.string().optional(),
+  bannerTheme: z.string().optional(),
   isPublic: z.boolean().optional(),
   autoAddBoughtCards: z.boolean().optional(),
   tutorialProgress: z.record(z.boolean()).optional(),
@@ -80,6 +81,7 @@ router.post('/register', validate(registerSchema), async (req, res: Response, ne
         displayName: true,
         shareCode: true,
         avatarId: true,
+        bannerTheme: true,
         isPublic: true,
         autoAddBoughtCards: true,
         tutorialProgress: true,
@@ -131,6 +133,7 @@ router.post('/login', validate(loginSchema), async (req, res: Response, next) =>
           displayName: user.displayName,
           shareCode: user.shareCode,
           avatarId: user.avatarId,
+          bannerTheme: user.bannerTheme,
           isPublic: user.isPublic,
           autoAddBoughtCards: user.autoAddBoughtCards,
           tutorialProgress: user.tutorialProgress as Record<string, boolean>,
@@ -145,7 +148,7 @@ router.post('/login', validate(loginSchema), async (req, res: Response, next) =>
   }
 });
 
-router.post('/forgot-password', validate(forgotPasswordSchema), async (req, res: Response, next) => {
+router.post('/forgot-password', validate(forgotPasswordSchema), async (req, res: Response) => {
   try {
     const { email: rawEmail, locale: bodyLocale } = req.body;
     const email = rawEmail.toLowerCase();
@@ -164,12 +167,13 @@ router.post('/forgot-password', validate(forgotPasswordSchema), async (req, res:
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
     const resetTokenExpires = new Date(Date.now() + 3600000); // 1 hour       
 
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        resetToken,
+        resetToken: hashedToken,
         resetTokenExpires,
       },
     });
@@ -190,10 +194,11 @@ router.post('/forgot-password', validate(forgotPasswordSchema), async (req, res:
 router.post('/reset-password', validate(resetPasswordSchema), async (req, res: Response, next) => {
   try {
     const { token, password } = req.body;
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
     const user = await prisma.user.findFirst({
       where: {
-        resetToken: token,
+        resetToken: hashedToken,
         resetTokenExpires: {
           gt: new Date(),
         },
@@ -231,6 +236,7 @@ router.get('/me', authMiddleware, async (req: AuthenticatedRequest, res: Respons
         displayName: true,
         shareCode: true,
         avatarId: true,
+        bannerTheme: true,
         isPublic: true,
         autoAddBoughtCards: true,
         tutorialProgress: true,
@@ -250,7 +256,7 @@ router.get('/me', authMiddleware, async (req: AuthenticatedRequest, res: Respons
 
 router.put('/me', authMiddleware, validate(updateSettingsSchema), async (req: AuthenticatedRequest, res: Response, next) => {
   try {
-    const { displayName, avatarId, isPublic, autoAddBoughtCards, tutorialProgress, email, currentPassword, newPassword } = req.body;
+    const { displayName, avatarId, bannerTheme, isPublic, autoAddBoughtCards, tutorialProgress, email, currentPassword, newPassword } = req.body;
 
     const user = await prisma.user.findUnique({ where: { id: req.userId } });
     if (!user) {
@@ -260,6 +266,7 @@ router.put('/me', authMiddleware, validate(updateSettingsSchema), async (req: Au
     const updateData: any = {};
     if (displayName !== undefined) updateData.displayName = displayName;
     if (avatarId !== undefined) updateData.avatarId = avatarId;
+    if (bannerTheme !== undefined) updateData.bannerTheme = bannerTheme;
     if (isPublic !== undefined) updateData.isPublic = isPublic;
     if (autoAddBoughtCards !== undefined) updateData.autoAddBoughtCards = autoAddBoughtCards;
     
@@ -307,6 +314,7 @@ router.put('/me', authMiddleware, validate(updateSettingsSchema), async (req: Au
         displayName: true,
         shareCode: true,
         avatarId: true,
+        bannerTheme: true,
         isPublic: true,
         autoAddBoughtCards: true,
         tutorialProgress: true,

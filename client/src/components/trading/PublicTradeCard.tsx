@@ -115,6 +115,7 @@ const styles: Record<string, SxProps<Theme>> = {
     '&:hover': {
       bgcolor: 'rgba(0,0,0,0.8)',
     },
+    zIndex: 10,
   },
 };
 
@@ -224,13 +225,6 @@ export function PublicTradeCard({ item }: PublicTradeCardProps) {
           },
         }}
       >
-        <IconButton
-          onClick={handleCloseModal}
-          sx={styles.closeButton}
-          size="small"
-        >
-          <CloseIcon />
-        </IconButton>
         <DialogContent sx={styles.modalContent}>
           <Box sx={styles.modalCard}>
             <CardImage
@@ -297,6 +291,13 @@ export function PublicTradeCard({ item }: PublicTradeCardProps) {
             </Button>
           </Paper>
         </DialogContent>
+        <IconButton
+          onClick={handleCloseModal}
+          sx={styles.closeButton}
+          size="small"
+        >
+          <CloseIcon />
+        </IconButton>
       </Dialog>
     </>
   );

@@ -7,8 +7,10 @@ import { BottomNav } from './components/layout/BottomNav';
 import { LoadingPage } from './components/ui/LoadingSpinner';
 import { ScrollToTop } from './components/layout/ScrollToTop';
 import { Tutorial } from './components/ui/Tutorial';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 
 // Pages
+import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
@@ -95,13 +97,17 @@ export default function App() {
   const { isAuthenticated } = useAuth();
 
   return (
-    <>
+    <ErrorBoundary>
       <ScrollToTop />
       <Routes>
-        {/* Redirect root to login */}
+        {/* Landing page as root */}
         <Route
           path="/"
-          element={<Navigate to="/login" replace />}
+          element={
+            <PublicRoute>
+              <LandingPage />
+            </PublicRoute>
+          }
         />
 
         {/* Public routes */}
@@ -244,6 +250,6 @@ export default function App() {
           element={<Navigate to={isAuthenticated ? "/collection" : "/"} replace />} 
         />
       </Routes>
-    </>
+    </ErrorBoundary>
   );
 }

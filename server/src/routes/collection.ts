@@ -226,33 +226,26 @@ router.get('/', validateQuery(listQuerySchema), async (req: AuthenticatedRequest
 
 router.get('/stats', async (req: AuthenticatedRequest, res: Response, next) => {
   try {
-    const items = await prisma.collectionItem.findMany({
-      where: { userId: req.userId },
-      include: { card: true },
-    });
+    const result = await prisma.$queryRaw<any[]>`
+      SELECT 
+          COALESCE(SUM(ci.quantity + ci."foilQuantity"), 0)::BIGINT as "totalCards",
+          COUNT(ci.id)::BIGINT as "uniqueCards",
+          COALESCE(SUM(ci.quantity * c."priceEur"), 0)::DOUBLE PRECISION as "totalValue",
+          COALESCE(SUM(ci."foilQuantity" * c."priceEurFoil"), 0)::DOUBLE PRECISION as "totalValueFoil",
+          COALESCE(SUM(ci."forTrade"), 0)::BIGINT as "forTradeCount"
+      FROM collection_items ci
+      LEFT JOIN cards c ON ci."cardId" = c.id
+      WHERE ci."userId" = ${req.userId}
+    `;
 
+    const row = result[0];
     const stats = {
-      totalCards: 0,
-      uniqueCards: items.length,
-      totalValue: 0,
-      totalValueFoil: 0,
-      forTradeCount: 0,
+      totalCards: Number(row.totalCards),
+      uniqueCards: Number(row.uniqueCards),
+      totalValue: Math.round(Number(row.totalValue) * 100) / 100,
+      totalValueFoil: Math.round(Number(row.totalValueFoil) * 100) / 100,
+      forTradeCount: Number(row.forTradeCount),
     };
-
-    for (const item of items) {
-      stats.totalCards += item.quantity + item.foilQuantity;
-      stats.forTradeCount += item.forTrade;
-
-      if (item.card.priceEur) {
-        stats.totalValue += item.quantity * item.card.priceEur;
-      }
-      if (item.card.priceEurFoil) {
-        stats.totalValueFoil += item.foilQuantity * item.card.priceEurFoil;
-      }
-    }
-
-    stats.totalValue = Math.round(stats.totalValue * 100) / 100;
-    stats.totalValueFoil = Math.round(stats.totalValueFoil * 100) / 100;
 
     res.json({ data: stats });
   } catch (error) {

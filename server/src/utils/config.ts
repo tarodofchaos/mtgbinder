@@ -51,6 +51,7 @@ export const config = {
   // Rate limiting
   rateLimitWindowMs: optionalEnvInt('RATE_LIMIT_WINDOW_MS', 15 * 60 * 1000), // 15 minutes
   rateLimitMaxRequests: optionalEnvInt('RATE_LIMIT_MAX_REQUESTS', 1000),
+  authRateLimitMax: optionalEnvInt('AUTH_RATE_LIMIT_MAX', 200),
 
   // Email (SMTP)
   email: {

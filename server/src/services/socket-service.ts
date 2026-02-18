@@ -22,6 +22,26 @@ interface TradeTypingPayload {
   isTyping: boolean;
 }
 
+// Simple in-memory rate limiting
+const messageRateLimit = new Map<string, number[]>();
+const typingRateLimit = new Map<string, number[]>();
+
+function checkRateLimit(userId: string, limit: number, windowMs: number, map: Map<string, number[]>): boolean {
+  const now = Date.now();
+  const timestamps = map.get(userId) || [];
+  
+  // Clean up old timestamps
+  const filtered = timestamps.filter(t => now - t < windowMs);
+  
+  if (filtered.length >= limit) {
+    return true;
+  }
+  
+  filtered.push(now);
+  map.set(userId, filtered);
+  return false;
+}
+
 export function initializeSocket(httpServer: HttpServer): Server {
   io = new Server(httpServer, {
     cors: {
@@ -92,6 +112,14 @@ export function initializeSocket(httpServer: HttpServer): Server {
     // Send message in trade session
     socket.on('trade-message', async (payload: TradeMessagePayload) => {
       try {
+        if (!socket.userId) return;
+
+        // Rate limit: 5 messages per 10 seconds
+        if (checkRateLimit(socket.userId, 5, 10000, messageRateLimit)) {
+          socket.emit('error', { message: 'Too many messages. Please wait a moment.' });
+          return;
+        }
+
         if (!payload.sessionCode || !payload.content || typeof payload.content !== 'string') {
           socket.emit('error', { message: 'Invalid message data' });
           return;
@@ -149,6 +177,13 @@ export function initializeSocket(httpServer: HttpServer): Server {
     // Handle typing indicator
     socket.on('trade-typing', async (payload: TradeTypingPayload) => {
       try {
+        if (!socket.userId) return;
+
+        // Rate limit: 10 events per 10 seconds
+        if (checkRateLimit(socket.userId, 10, 10000, typingRateLimit)) {
+          return;
+        }
+
         if (!payload.sessionCode || typeof payload.isTyping !== 'boolean') {
           return;
         }

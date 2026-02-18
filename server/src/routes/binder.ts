@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
+import jwt from 'jsonwebtoken';
 import { prisma } from '../utils/prisma';
+import { config } from '../utils/config';
 import { validateQuery } from '../middleware/validate';
 import { AppError } from '../middleware/error-handler';
 
@@ -73,11 +75,29 @@ router.get('/:shareCode', validateQuery(listQuerySchema), async (req: Request, r
 
     const user = await prisma.user.findUnique({
       where: { shareCode: shareCode.toUpperCase() },
-      select: { id: true, displayName: true, shareCode: true, isPublic: true, avatarId: true },
+      select: { id: true, displayName: true, shareCode: true, isPublic: true, avatarId: true, bannerTheme: true },
     });
 
     if (!user) {
       throw new AppError('Binder not found', 404);
+    }
+
+    // If not public, only the owner can see it
+    if (!user.isPublic) {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new AppError('This binder is private', 403);
+      }
+      
+      try {
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, config.jwtSecret) as { userId: string };
+        if (decoded.userId !== user.id) {
+          throw new AppError('This binder is private', 403);
+        }
+      } catch (error) {
+        throw new AppError('This binder is private', 403);
+      }
     }
 
     // Check if binder is public
@@ -156,11 +176,29 @@ router.get('/:shareCode/wishlist', validateQuery(listQuerySchema), async (req: R
 
     const user = await prisma.user.findUnique({
       where: { shareCode: shareCode.toUpperCase() },
-      select: { id: true, displayName: true, shareCode: true },
+      select: { id: true, displayName: true, shareCode: true, isPublic: true, bannerTheme: true },
     });
 
     if (!user) {
       throw new AppError('Binder not found', 404);
+    }
+
+    // If not public, only the owner can see it
+    if (!user.isPublic) {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new AppError('This binder is private', 403);
+      }
+      
+      try {
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, config.jwtSecret) as { userId: string };
+        if (decoded.userId !== user.id) {
+          throw new AppError('This binder is private', 403);
+        }
+      } catch (error) {
+        throw new AppError('This binder is private', 403);
+      }
     }
 
     const where: Record<string, unknown> = { userId: user.id };

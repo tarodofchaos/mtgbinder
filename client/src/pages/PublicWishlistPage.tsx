@@ -16,7 +16,6 @@ import {
 import Grid from '@mui/material/Grid';
 import {
   Search as SearchIcon,
-  Favorite as WishlistIcon,
   Storefront as StorefrontIcon,
   SwapHoriz as TradeIcon,
 } from '@mui/icons-material';
@@ -26,6 +25,7 @@ import { WishlistCard } from '../components/wishlist/WishlistCard';
 import { LoadingPage, LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useAuth } from '../context/auth-context';
 import { createTradeSession } from '../services/trade-service';
+import { DynamicBanner } from '../components/ui/DynamicBanner';
 
 const styles: Record<string, SxProps<Theme>> = {
   container: {
@@ -35,11 +35,19 @@ const styles: Record<string, SxProps<Theme>> = {
     p: 3,
     mb: 3,
     textAlign: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: 4,
+    bgcolor: 'background.paper',
+    border: '1px solid',
+    borderColor: 'divider',
   },
   headerIcon: {
     fontSize: 48,
     color: 'primary.main',
     mb: 1,
+    position: 'relative',
+    zIndex: 2,
   },
   statsRow: {
     display: 'flex',
@@ -47,6 +55,8 @@ const styles: Record<string, SxProps<Theme>> = {
     gap: 2,
     mt: 2,
     flexWrap: 'wrap',
+    position: 'relative',
+    zIndex: 2,
   },
   searchContainer: {
     mb: 3,
@@ -124,29 +134,47 @@ export function PublicWishlistPage() {
 
   return (
     <Stack spacing={3} sx={styles.container}>
-      {/* Header */}
-      <Paper sx={styles.header}>
-        <WishlistIcon sx={styles.headerIcon} />
-        <Typography variant="h4" fontWeight={700}>
-          {t('publicWishlist.title', { name: user.displayName })}
-        </Typography>
-        <Typography color="text.secondary" sx={{ mt: 1 }}>
-          {t('publicWishlist.subtitle')}
-        </Typography>
-
-        <Box sx={styles.statsRow}>
+      {/* Header Banner */}
+      <Box sx={{ position: 'relative', mb: 1 }}>
+        <DynamicBanner
+          title={t('publicWishlist.title', { name: user.displayName })}
+          subtitle={t('publicWishlist.subtitle')}
+          context={{
+            scryfallId: items[0]?.card?.scryfallId || undefined,
+            themeId: user.bannerTheme || undefined,
+          }}
+          height={200}
+        />
+        
+        <Box sx={{ 
+          position: 'absolute', 
+          bottom: 20, 
+          left: 0, 
+          right: 0, 
+          display: 'flex', 
+          justifyContent: 'center', 
+          gap: 2, 
+          flexWrap: 'wrap',
+          zIndex: 3
+        }}>
           <Chip
             label={t('publicWishlist.cardsWanted', { count: total })}
             color="primary"
-            variant="outlined"
+            sx={{ bgcolor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', color: 'white', fontWeight: 700 }}
           />
           <Button
             component={RouterLink}
             to={`/binder/${shareCode}`}
-            variant="outlined"
+            variant="contained"
             size="small"
             startIcon={<StorefrontIcon />}
-            sx={{ ml: 1, height: 32, borderRadius: 16 }}
+            sx={{ 
+              height: 32, 
+              borderRadius: 16, 
+              bgcolor: 'rgba(255,255,255,0.9)', 
+              color: 'black',
+              '&:hover': { bgcolor: 'white' }
+            }}
           >
             {t('nav.collection')}
           </Button>
@@ -159,13 +187,13 @@ export function PublicWishlistPage() {
               startIcon={<TradeIcon />}
               onClick={() => handleRequestTrade(user.id)}
               disabled={createSessionMutation.isPending}
-              sx={{ ml: 1, height: 32, borderRadius: 16 }}
+              sx={{ height: 32, borderRadius: 16 }}
             >
               {createSessionMutation.isPending ? t('common.loading') : t('publicWishlist.requestTrade')}
             </Button>
           )}
         </Box>
-      </Paper>
+      </Box>
 
       {/* Search */}
       <TextField

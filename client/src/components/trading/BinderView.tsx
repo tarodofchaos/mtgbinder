@@ -194,6 +194,7 @@ const styles: Record<string, SxProps<Theme>> = {
     '&:hover': {
       bgcolor: 'rgba(0,0,0,0.8)',
     },
+    zIndex: 10,
   },
 };
 
@@ -411,83 +412,82 @@ export function BinderView({ items }: BinderViewProps) {
           },
         }}
       >
-        <IconButton
-          onClick={handleCloseModal}
-          sx={styles.closeButton}
-          size="small"
-        >
-          <CloseIcon />
-        </IconButton>
-        <DialogContent sx={styles.modalContent}>
-          {selectedCard && (
-            <>
-              <Box sx={styles.modalCard}>
-                <CardImage
-                  scryfallId={selectedCard.card!.scryfallId}
-                  name={selectedCard.card!.name}
-                  size="large"
-                  customImageUrl={selectedCard.photoUrl}
-                  setCode={selectedCard.card!.setCode}
-                  collectorNumber={selectedCard.card!.collectorNumber}
-                  language={selectedCard.language}
-                />
-              </Box>
-              <Paper sx={styles.modalInfo}>
-                <Typography variant="h6" gutterBottom>
-                  {selectedCard.card!.name}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  {selectedCard.card!.setName} ({selectedCard.card!.setCode})
-                </Typography>
-                <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1 }}>
-                  <Chip
-                    label={getConditionLabel(selectedCard.condition as CardCondition)}
-                    size="small"
-                    variant="outlined"
-                  />
-                  <Chip
-                    label={t('collection.copiesForTrade', { count: selectedCard.forTrade })}
-                    size="small"
-                    color="success"
-                  />
-                  {selectedCard.isAlter && (
-                    <Chip label={t('common.alter')} size="small" color="secondary" />
+                <DialogContent sx={styles.modalContent}>
+                  {selectedCard && (
+                    <>
+                      <Box sx={styles.modalCard}>
+                        <CardImage
+                          scryfallId={selectedCard.card!.scryfallId}
+                          name={selectedCard.card!.name}
+                          size="large"
+                          customImageUrl={selectedCard.photoUrl}
+                          setCode={selectedCard.card!.setCode}
+                          collectorNumber={selectedCard.card!.collectorNumber}
+                          language={selectedCard.language}
+                        />
+                      </Box>
+                      <Paper sx={styles.modalInfo}>
+                        <Typography variant="h6" gutterBottom>
+                          {selectedCard.card!.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                          {selectedCard.card!.setName} ({selectedCard.card!.setCode})
+                        </Typography>
+                        <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1 }}>
+                          <Chip
+                            label={getConditionLabel(selectedCard.condition as CardCondition)}
+                            size="small"
+                            variant="outlined"
+                          />
+                          <Chip
+                            label={t('collection.copiesForTrade', { count: selectedCard.forTrade })}
+                            size="small"
+                            color="success"
+                          />
+                          {selectedCard.isAlter && (
+                            <Chip label={t('common.alter')} size="small" color="secondary" />
+                          )}
+                          {selectedCard.foilQuantity > 0 && (
+                            <Chip label={t('common.foil')} size="small" color="warning" />
+                          )}
+                          {selectedCard.tradePrice !== null && (
+                            <Chip
+                              label={t('trade.eachPrice', { price: selectedCard.tradePrice.toFixed(2) })}
+                              size="small"
+                              color="primary"
+                            />
+                          )}
+                          {selectedCard.tradePrice === null && selectedCard.card!.priceEur && (
+                            <Chip
+                              label={`~€${selectedCard.card!.priceEur.toFixed(2)}`}
+                              size="small"
+                              variant="outlined"
+                            />
+                          )}
+                        </Stack>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          fullWidth
+                          startIcon={<ExternalLinkIcon />}
+                          href={getCardmarketUrl(selectedCard.card!)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          sx={{ mt: 2 }}
+                        >
+                          {t('publicBinder.viewOnCardmarket')}
+                        </Button>
+                      </Paper>
+                    </>
                   )}
-                  {selectedCard.foilQuantity > 0 && (
-                    <Chip label={t('common.foil')} size="small" color="warning" />
-                  )}
-                  {selectedCard.tradePrice !== null && (
-                    <Chip
-                      label={t('trade.eachPrice', { price: selectedCard.tradePrice.toFixed(2) })}
-                      size="small"
-                      color="primary"
-                    />
-                  )}
-                  {selectedCard.tradePrice === null && selectedCard.card!.priceEur && (
-                    <Chip
-                      label={`~€${selectedCard.card!.priceEur.toFixed(2)}`}
-                      size="small"
-                      variant="outlined"
-                    />
-                  )}
-                </Stack>
-                <Button
-                  variant="outlined"
+                </DialogContent>
+                <IconButton
+                  onClick={handleCloseModal}
+                  sx={styles.closeButton}
                   size="small"
-                  fullWidth
-                  startIcon={<ExternalLinkIcon />}
-                  href={getCardmarketUrl(selectedCard.card!)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{ mt: 2 }}
                 >
-                  {t('publicBinder.viewOnCardmarket')}
-                </Button>
-              </Paper>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-    </Box>
+                  <CloseIcon />
+                </IconButton>
+              </Dialog>    </Box>
   );
 }

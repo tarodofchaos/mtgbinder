@@ -32,6 +32,7 @@ export interface MTGJSONCard {
 export interface MTGJSONSet {
   name: string;
   code: string;
+  releaseDate?: string;
   isOnlineOnly?: boolean;
   cards: MTGJSONCard[];
 }
@@ -51,6 +52,7 @@ export interface CardRecord {
   scryfallId: string | null;
   collectorNumber: string;
   isOnlineOnly: boolean;
+  releasedAt: Date | null;
 }
 
 export async function downloadFile(url: string, dest: string): Promise<void> {

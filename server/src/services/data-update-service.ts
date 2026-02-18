@@ -64,6 +64,7 @@ export async function updateCardsWeekly(force = false): Promise<void> {
 
         const setCode = key;
         const setName = value.name || setCode;
+        const releaseDate = value.releaseDate ? new Date(value.releaseDate) : null;
         const isAlchemySet = setName.toLowerCase().includes('alchemy');
         const isMTGOSet = setName.toLowerCase().includes('magic online') || setName.toLowerCase().includes('masters edition');
         const isDigitalOnlySet = !!value.isOnlineOnly || isAlchemySet || isMTGOSet;
@@ -109,6 +110,7 @@ export async function updateCardsWeekly(force = false): Promise<void> {
             scryfallId: card.identifiers?.scryfallId || null,
             collectorNumber: card.number || '',
             isOnlineOnly: !!card.isOnlineOnly || isDigitalOnlySet,
+            releasedAt: releaseDate,
           });
 
           if (batch.length >= BATCH_SIZE) {

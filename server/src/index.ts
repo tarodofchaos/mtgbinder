@@ -32,6 +32,9 @@ import { notificationsRouter } from './routes/notifications';
 const app = express();
 const httpServer = createServer(app);
 
+// Trust proxy (needed for rate limiting to see correct client IP when behind reverse proxy)
+app.set('trust proxy', 1);
+
 // Initialize Socket.IO
 initializeSocket(httpServer);
 
@@ -153,7 +156,7 @@ const apiLimiter = rateLimit({
 // Stricter rate limit for auth endpoints to prevent brute force
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: config.isDevelopment ? 2000 : 100, // Higher limit for dev and production
+  max: config.authRateLimitMax,
   message: {
     error: 'Too many authentication attempts, please try again later.',
     retryAfter: 900,
@@ -168,7 +171,15 @@ app.get('/health', (_req, res) => {
 });
 
 // Metrics endpoint (ideally should be restricted to internal network)
-app.get('/metrics', async (_req, res) => {
+app.get('/metrics', async (req, res) => {
+  const metricsToken = process.env.METRICS_TOKEN;
+  if (metricsToken) {
+    const providedToken = req.headers['x-metrics-token'] || req.query.token;
+    if (providedToken !== metricsToken) {
+      return res.status(403).end('Forbidden');
+    }
+  }
+
   try {
     res.set('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
     res.end(await getMetrics());

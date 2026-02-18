@@ -19,7 +19,6 @@ import {
 import Grid from '@mui/material/Grid';
 import {
   Search as SearchIcon,
-  Storefront as StorefrontIcon,
   GridView as GridViewIcon,
   AutoStories as BinderIcon,
   Favorite as WishlistIcon,
@@ -32,6 +31,7 @@ import { BinderView } from '../components/trading/BinderView';
 import { LoadingPage, LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useAuth } from '../context/auth-context';
 import { createTradeSession } from '../services/trade-service';
+import { DynamicBanner } from '../components/ui/DynamicBanner';
 
 type ViewMode = 'grid' | 'binder';
 
@@ -43,11 +43,19 @@ const styles: Record<string, SxProps<Theme>> = {
     p: 3,
     mb: 3,
     textAlign: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: 4,
+    bgcolor: 'background.paper',
+    border: '1px solid',
+    borderColor: 'divider',
   },
   headerIcon: {
     fontSize: 48,
     color: 'primary.main',
     mb: 1,
+    position: 'relative',
+    zIndex: 2,
   },
   statsRow: {
     display: 'flex',
@@ -55,6 +63,8 @@ const styles: Record<string, SxProps<Theme>> = {
     gap: 2,
     mt: 2,
     flexWrap: 'wrap',
+    position: 'relative',
+    zIndex: 2,
   },
   searchContainer: {
     mb: 3,
@@ -159,34 +169,53 @@ export function PublicTradesPage() {
 
   return (
     <Stack spacing={3} sx={styles.container}>
-      {/* Header */}
-      <Paper sx={styles.header}>
-        <StorefrontIcon sx={styles.headerIcon} />
-        <Typography variant="h4" fontWeight={700}>
-          {t('publicBinder.tradeBinder', { name: user.displayName })}
-        </Typography>
-        <Typography color="text.secondary" sx={{ mt: 1 }}>
-          {t('publicBinder.browseCards')}
-        </Typography>
-
-        <Box sx={styles.statsRow}>
+      {/* Header Banner */}
+      <Box sx={{ position: 'relative', mb: 1 }}>
+        <DynamicBanner
+          title={t('publicBinder.tradeBinder', { name: user.displayName })}
+          subtitle={t('publicBinder.browseCards')}
+          context={{
+            setCode: items[0]?.card?.setCode,
+            scryfallId: items[0]?.card?.scryfallId || undefined,
+            themeId: user.bannerTheme || undefined,
+          }}
+          height={200}
+        />
+        
+        <Box sx={{ 
+          position: 'absolute', 
+          bottom: 20, 
+          left: 0, 
+          right: 0, 
+          display: 'flex', 
+          justifyContent: 'center', 
+          gap: 2, 
+          flexWrap: 'wrap',
+          zIndex: 3
+        }}>
           <Chip
             label={t('publicBinder.cardsAvailable', { count: total })}
             color="primary"
-            variant="outlined"
+            sx={{ bgcolor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', color: 'white', fontWeight: 700 }}
           />
           <Chip
             label={t('publicBinder.totalValueLabel', { value: `€${totalValue.toFixed(2)}` })}
             color="success"
-            variant="outlined"
+            sx={{ bgcolor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', color: 'white', fontWeight: 700 }}
           />
           <Button
             component={RouterLink}
             to={`/wishlist/${shareCode}`}
-            variant="outlined"
+            variant="contained"
             size="small"
             startIcon={<WishlistIcon />}
-            sx={{ ml: 1, height: 32, borderRadius: 16 }}
+            sx={{ 
+              height: 32, 
+              borderRadius: 16, 
+              bgcolor: 'rgba(255,255,255,0.9)', 
+              color: 'black',
+              '&:hover': { bgcolor: 'white' }
+            }}
           >
             {t('wishlist.title')}
           </Button>
@@ -199,13 +228,13 @@ export function PublicTradesPage() {
               startIcon={<TradeIcon />}
               onClick={() => handleRequestTrade(user.id)}
               disabled={createSessionMutation.isPending}
-              sx={{ ml: 1, height: 32, borderRadius: 16 }}
+              sx={{ height: 32, borderRadius: 16 }}
             >
               {createSessionMutation.isPending ? t('common.loading') : t('publicBinder.requestTrade')}
             </Button>
           )}
         </Box>
-      </Paper>
+      </Box>
 
       {/* Search and view toggle */}
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">

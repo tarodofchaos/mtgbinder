@@ -80,6 +80,7 @@
     "title": "User Settings",
     "profile": "Profile",
     "chooseAvatar": "Choose Avatar",
+    "chooseTheme": "Choose Banner Theme",
     "displayName": "Display Name",
     "makePublic": "Public Binder (Visible in Explore)",
     "account": "Account",
@@ -189,6 +190,7 @@
     "totalCards": "Total Cards",
     "totalValue": "Total Value",
     "forTrade": "For Trade",
+    "subtitle": "Manage and organize your MTG card collection",
     "searchPlaceholder": "Search your collection...",
     "forTradeOnly": "For Trade Only",
     "exportCsv": "Export CSV",
@@ -227,6 +229,7 @@
   },
   "wishlist": {
     "title": "Wishlist",
+    "subtitle": "Cards you're looking to acquire",
     "searchPlaceholder": "Search wishlist...",
     "allPriorities": "All Priorities",
     "importDecklist": "Import Decklist",
@@ -289,10 +292,16 @@
     "mythic": "Mythic",
     "anyRarity": "Any rarity"
   },
+  "themes": {
+    "default": "Classic MTG",
+    "artifact": "Ancient Artifacts",
+    "vintage": "Vintage Collection"
+  },
   "filters": {
     "rarity": "Rarity",
     "setCode": "Set Code",
     "setCodePlaceholder": "e.g., MH3",
+    "setBanner": "Cards from {{code}}",
     "minPrice": "Min Price",
     "maxPrice": "Max Price",
     "search": "Search: {{term}}",

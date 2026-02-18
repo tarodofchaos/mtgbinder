@@ -80,6 +80,7 @@
     "title": "Ajustes de Usuario",
     "profile": "Perfil",
     "chooseAvatar": "Elegir Avatar",
+    "chooseTheme": "Elegir tema del banner",
     "displayName": "Nombre de Usuario",
     "makePublic": "Carpeta Pública (Visible en Explorar)",
     "account": "Cuenta",
@@ -190,6 +191,7 @@
     "totalCards": "Total de cartas",
     "totalValue": "Valor total",
     "forTrade": "Para intercambio",
+    "subtitle": "Gestiona y organiza tu colección de cartas MTG",
     "searchPlaceholder": "Buscar en tu colección...",
     "forTradeOnly": "Solo para intercambio",
     "exportCsv": "Exportar",
@@ -228,6 +230,7 @@
   },
   "wishlist": {
     "title": "Lista de deseos",
+    "subtitle": "Cartas que estás buscando adquirir",
     "searchPlaceholder": "Buscar en lista de deseos...",
     "allPriorities": "Todas las prioridades",
     "importDecklist": "Importar mazo",
@@ -290,10 +293,16 @@
     "mythic": "Mítica",
     "anyRarity": "Cualquier rareza"
   },
+  "themes": {
+    "default": "MTG Clásico",
+    "artifact": "Artefactos Antiguos",
+    "vintage": "Colección Vintage"
+  },
   "filters": {
     "rarity": "Rareza",
     "setCode": "Código de edición",
     "setCodePlaceholder": "ej. MH3",
+    "setBanner": "Cartas de {{code}}",
     "minPrice": "Precio mín",
     "maxPrice": "Precio máx",
     "search": "Búsqueda: {{term}}",

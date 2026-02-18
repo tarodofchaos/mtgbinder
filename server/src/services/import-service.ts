@@ -77,7 +77,7 @@ export async function resolveCardNames(cardNames: string[]): Promise<ResolveCard
   const uniqueNames = [...namesToQuery];
 
   // Use raw query to get the most recent printing per card name
-  // DISTINCT ON with ORDER BY setCode DESC gives us the latest set
+  // DISTINCT ON with ORDER BY releasedAt DESC gives us the latest printing by date
   // We include setName to help with Art Series prioritization
   const cards = await prisma.$queryRaw<Array<{
     id: string;
@@ -87,11 +87,12 @@ export async function resolveCardNames(cardNames: string[]): Promise<ResolveCard
     setName: string;
     scryfallId: string | null;
     priceEur: number | null;
+    releasedAt: Date | null;
   }>>`
-    SELECT id, name, "nameEs", "setCode", "setName", "scryfallId", "priceEur"
+    SELECT id, name, "nameEs", "setCode", "setName", "scryfallId", "priceEur", "releasedAt"
     FROM cards
     WHERE LOWER(name) = ANY(${uniqueNames}) OR LOWER("nameEs") = ANY(${uniqueNames})
-    ORDER BY LOWER(name), "setCode" DESC
+    ORDER BY LOWER(name), "releasedAt" DESC NULLS LAST, "setCode" DESC
   `;
 
   // Build lookup maps

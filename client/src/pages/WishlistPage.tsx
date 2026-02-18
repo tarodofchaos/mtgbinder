@@ -37,6 +37,7 @@ import { LoadingPage } from '../components/ui/LoadingSpinner';
 import { DebouncedTextField } from '../components/ui/DebouncedTextField';
 import { UnifiedImportWishlistModal } from '../components/wishlist/UnifiedImportWishlistModal';
 import { ShareWishlistModal } from '../components/wishlist/ShareWishlistModal';
+import { DynamicBanner } from '../components/ui/DynamicBanner';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/auth-context';
 
@@ -281,6 +282,18 @@ export function WishlistPage() {
 
   return (
     <Box sx={styles.container}>
+      {/* Dynamic Banner */}
+      <DynamicBanner
+        title={t('nav.wishlist')}
+        subtitle={t('wishlist.subtitle')}
+        context={{
+          cardName: search || undefined,
+          scryfallId: items[0]?.card?.scryfallId || undefined,
+          themeId: user?.bannerTheme || undefined,
+        }}
+        height={250}
+      />
+
       {/* Filters */}
       <Box sx={styles.filtersRow}>
         <DebouncedTextField

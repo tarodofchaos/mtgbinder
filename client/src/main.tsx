@@ -22,12 +22,12 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <ThemeProvider>
-          <CssBaseline />
-          <AuthProvider>
+        <AuthProvider>
+          <ThemeProvider>
+            <CssBaseline />
             <App />
-          </AuthProvider>
-        </ThemeProvider>
+          </ThemeProvider>
+        </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
   </React.StrictMode>

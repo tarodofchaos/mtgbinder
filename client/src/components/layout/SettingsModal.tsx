@@ -31,23 +31,12 @@ interface SettingsModalProps {
   onClose: () => void;
 }
 
-export const AVATARS = [
-  { id: 'avatar-1', color: '#f44336', label: 'Red' },
-  { id: 'avatar-2', color: '#2196f3', label: 'Blue' },
-  { id: 'avatar-3', color: '#4caf50', label: 'Green' },
-  { id: 'avatar-4', color: '#ffeb3b', label: 'Yellow' },
-  { id: 'avatar-5', color: '#9c27b0', label: 'Purple' },
-  { id: 'avatar-6', color: '#ff9800', label: 'Orange' },
-  { id: 'avatar-7', color: '#795548', label: 'Brown' },
-  { id: 'avatar-8', color: '#607d8b', label: 'Grey' },
-];
-
 export function SettingsModal({ open, onClose }: SettingsModalProps) {
   const { t } = useTranslation();
   const { user, updateUser } = useAuth();
   
   const [displayName, setDisplayName] = useState(user?.displayName || '');
-  const [avatarId, setAvatarId] = useState(user?.avatarId || 'avatar-1');
+  const [avatarId, setAvatarId] = useState(user?.avatarId || 'fblthp');
   const [bannerTheme, setBannerTheme] = useState(user?.bannerTheme || 'default');
   const [isPublic, setIsPublic] = useState(user?.isPublic || false);
   const [autoAddBoughtCards, setAutoAddBoughtCards] = useState(user?.autoAddBoughtCards ?? true);
@@ -67,7 +56,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   useEffect(() => {
     if (open && user) {
       setDisplayName(user.displayName);
-      setAvatarId(user.avatarId || 'avatar-1');
+      setAvatarId(user.avatarId || 'fblthp');
       setBannerTheme(user.bannerTheme || 'default');
       setIsPublic(user.isPublic);
       setAutoAddBoughtCards(user.autoAddBoughtCards ?? true);
@@ -80,6 +69,42 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
     // Only reset form when modal is opened
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  const handleUpdateTheme = async (newThemeId: string) => {
+    setBannerTheme(newThemeId);
+    try {
+      // Find the theme and check if current avatar belongs to it
+      const theme = BANNER_THEMES.find(t => t.id === newThemeId);
+      let newAvatarId = avatarId;
+      
+      if (theme && !theme.avatars.some(a => a.id === avatarId)) {
+        newAvatarId = theme.avatars[0].id;
+        setAvatarId(newAvatarId);
+      }
+
+      const response = await api.put('/auth/me', { 
+        bannerTheme: newThemeId,
+        avatarId: newAvatarId 
+      });
+      updateUser(response.data.data);
+      setSuccess(t('settings.themeUpdated', 'Theme updated successfully'));
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: any) {
+      setError(err.response?.data?.error || t('settings.saveError', 'Error saving settings'));
+    }
+  };
+
+  const handleUpdateAvatar = async (newAvatarId: string) => {
+    setAvatarId(newAvatarId);
+    try {
+      const response = await api.put('/auth/me', { avatarId: newAvatarId });
+      updateUser(response.data.data);
+      setSuccess(t('settings.avatarUpdated', 'Avatar updated successfully'));
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: any) {
+      setError(err.response?.data?.error || t('settings.saveError', 'Error saving settings'));
+    }
+  };
 
   const handleSave = async () => {
     setIsLoading(true);
@@ -200,19 +225,35 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
               {t('settings.chooseAvatar', 'Choose Avatar')}
             </Typography>
             <Grid container spacing={1}>
-              {AVATARS.map((av) => (
-                <Grid key={av.id} size={1.5}>
+              {BANNER_THEMES.find(t => t.id === bannerTheme)?.avatars.map((av) => (
+                <Grid key={av.id} sx={{ display: 'flex', justifyContent: 'center' }} size={2}>
                   <Box
-                    onClick={() => setAvatarId(av.id)}
+                    onClick={() => handleUpdateAvatar(av.id)}
                     sx={{
                       cursor: 'pointer',
                       p: 0.5,
                       borderRadius: '50%',
                       border: 2,
                       borderColor: avatarId === av.id ? 'primary.main' : 'transparent',
+                      width: 50,
+                      height: 50,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.2s',
+                      '&:hover': { transform: 'scale(1.1)' }
                     }}
                   >
-                    <Avatar sx={{ bgcolor: av.color }}>{displayName.charAt(0).toUpperCase()}</Avatar>
+                    <Avatar 
+                      src={av.imageUrl} 
+                      sx={{ 
+                        width: '100%', 
+                        height: '100%',
+                        bgcolor: av.color 
+                      }}
+                    >
+                      {av.name.charAt(0)}
+                    </Avatar>
                   </Box>
                 </Grid>
               ))}
@@ -235,7 +276,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
               {BANNER_THEMES.map((theme) => (
                 <Grid key={theme.id} size={{ xs: 6, sm: 4 }}>
                   <Box
-                    onClick={() => setBannerTheme(theme.id)}
+                    onClick={() => handleUpdateTheme(theme.id)}
                     sx={{
                       width: '100%',
                       height: 60,
@@ -251,7 +292,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                   >
                     <Box
                       component="img"
-                      src={theme.imageUrl}
+                      src={theme.imageUrls[0]}
                       referrerPolicy="no-referrer"
                       sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />

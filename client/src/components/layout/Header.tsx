@@ -28,8 +28,9 @@ import {
 import type { SxProps, Theme } from '@mui/material';
 import { useAuth } from '../../context/auth-context';
 import { useTheme } from '../../context/theme-context';
+import { BANNER_THEMES, getAvatarById } from '../../constants/banner-themes';
 import { NotificationBell } from '../notifications/NotificationBell';
-import { SettingsModal, AVATARS } from './SettingsModal';
+import { SettingsModal } from './SettingsModal';
 
 const styles: Record<string, SxProps<Theme>> = {
   appBar: {
@@ -112,7 +113,7 @@ export function Header() {
     setShowLogoutConfirm(false);
   };
 
-  const userAvatar = AVATARS.find(a => a.id === user?.avatarId);
+  const userAvatar = getAvatarById(user?.avatarId || '');
 
   return (
     <AppBar position="static" elevation={0} sx={styles.appBar}>
@@ -137,6 +138,7 @@ export function Header() {
               <NotificationBell />
               <Box id="user-menu-button" onClick={handleMenuOpen} sx={styles.userName}>
                 <Avatar 
+                  src={userAvatar?.imageUrl}
                   sx={{ 
                     width: 32, 
                     height: 32, 

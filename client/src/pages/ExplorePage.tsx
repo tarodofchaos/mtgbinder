@@ -26,7 +26,7 @@ import {
 import { api } from '../services/api';
 import { Link as RouterLink } from 'react-router-dom';
 import type { UserPublic, ApiResponse, PaginatedResponse } from '@mtg-binder/shared';
-import { AVATARS } from '../components/layout/SettingsModal';
+import { getAvatarById } from '../constants/banner-themes';
 
 export function ExplorePage() {
   const { t } = useTranslation();
@@ -94,12 +94,13 @@ export function ExplorePage() {
         <>
           <Grid container spacing={3}>
             {data.data.map((user: UserPublic, index: number) => {
-              const userAvatar = AVATARS.find(a => a.id === user.avatarId);
+              const userAvatar = getAvatarById(user.avatarId || '');
               return (
                 <Grid key={user.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
                   <Card id={index === 0 ? 'explore-user-card-0' : undefined}>
                     <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                       <Avatar
+                        src={userAvatar?.imageUrl}
                         sx={{
                           width: 56,
                           height: 56,

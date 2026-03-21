@@ -25,12 +25,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Safety timeout: ensure loading state clears even if API hangs
+    const timeout = setTimeout(() => {
+      if (isLoading) {
+        console.warn('Auth check timed out, clearing loading state');
+        setIsLoading(false);
+      }
+    }, 10000); // 10 second safety break
+
     if (token) {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchUser();
+      fetchUser().finally(() => clearTimeout(timeout));
     } else {
       setIsLoading(false);
+      clearTimeout(timeout);
     }
+
+    return () => clearTimeout(timeout);
   }, [token]);
 
   async function fetchUser() {

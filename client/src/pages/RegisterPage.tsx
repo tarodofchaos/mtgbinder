@@ -17,7 +17,7 @@ import {
 import Grid from '@mui/material/Grid';
 import type { SxProps, Theme } from '@mui/material';
 import { useAuth } from '../context/auth-context';
-import { AVATARS } from '../components/layout/SettingsModal';
+import { ALL_AVATARS } from '../constants/banner-themes';
 
 // Keyframes for animations
 const rotate = keyframes`
@@ -82,7 +82,7 @@ export function RegisterPage() {
       password: '',
       confirmPassword: '',
       displayName: '',
-      avatarId: 'avatar-1',
+      avatarId: ALL_AVATARS[0].id,
     },
   });
   const password = watch('password');
@@ -179,7 +179,7 @@ export function RegisterPage() {
                 {t('settings.chooseAvatar', 'Choose Avatar')}
               </Typography>
               <Grid container spacing={1} justifyContent="center">
-                {AVATARS.map((av) => (
+                {ALL_AVATARS.slice(0, 8).map((av) => (
                   <Grid key={av.id}>
                     <Box
                       onClick={() => setValue('avatarId', av.id)}
@@ -189,9 +189,23 @@ export function RegisterPage() {
                         borderRadius: '50%',
                         border: 2,
                         borderColor: selectedAvatarId === av.id ? 'primary.main' : 'transparent',
+                        width: 44,
+                        height: 44,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s',
+                        '&:hover': { transform: 'scale(1.1)' }
                       }}
                     >
-                      <Avatar sx={{ bgcolor: av.color }}>
+                      <Avatar 
+                        src={av.imageUrl} 
+                        sx={{ 
+                          width: '100%', 
+                          height: '100%',
+                          bgcolor: av.color 
+                        }}
+                      >
                         {displayName ? displayName.charAt(0).toUpperCase() : '?'}
                       </Avatar>
                     </Box>

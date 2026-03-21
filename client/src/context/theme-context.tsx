@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
-import { ThemeProvider as MuiThemeProvider, createTheme, PaletteMode } from '@mui/material';
+import { ThemeProvider as MuiThemeProvider, createTheme, PaletteMode, alpha } from '@mui/material';
 import type { Theme } from '@mui/material';
+import { useAuth } from './auth-context';
+import { BANNER_THEMES } from '../constants/banner-themes';
 
 type ThemeMode = 'dark' | 'light';
 
@@ -14,16 +16,17 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const THEME_KEY = 'mtg_binder_theme';
 
-function createAppTheme(mode: PaletteMode): Theme {
+function createAppTheme(mode: PaletteMode, customPrimary?: string): Theme {
   const isDark = mode === 'dark';
+  const primaryMain = customPrimary || (isDark ? '#a78bfa' : '#7c3aed');
   
   return createTheme({
     palette: {
       mode,
       primary: {
-        main: isDark ? '#a78bfa' : '#7c3aed', // Soft violet for dark, deeper for light
-        light: '#c4b5fd',
-        dark: '#6d28d9',
+        main: primaryMain,
+        light: alpha(primaryMain, 0.7),
+        dark: alpha(primaryMain, 0.9),
         contrastText: '#ffffff',
       },
       secondary: {
@@ -193,6 +196,7 @@ function createAppTheme(mode: PaletteMode): Theme {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [mode, setModeState] = useState<ThemeMode>(() => {
     const saved = localStorage.getItem(THEME_KEY);
     if (saved === 'light' || saved === 'dark') return saved;
@@ -203,7 +207,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(THEME_KEY, mode);
   }, [mode]);
 
-  const theme = useMemo(() => createAppTheme(mode), [mode]);
+  const customPrimary = useMemo(() => {
+    if (user?.bannerTheme) {
+      const theme = BANNER_THEMES.find(t => t.id === user.bannerTheme);
+      return theme?.primaryColor;
+    }
+    return undefined;
+  }, [user?.bannerTheme]);
+
+  const theme = useMemo(() => createAppTheme(mode, customPrimary), [mode, customPrimary]);
 
   function toggleTheme() {
     setModeState((prev) => (prev === 'dark' ? 'light' : 'dark'));

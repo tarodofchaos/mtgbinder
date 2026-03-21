@@ -96,6 +96,8 @@
     "confirmDeleteFinal": "Are you ABSOLUTELY sure?",
     "save": "Save Changes",
     "saveSuccess": "Settings saved successfully",
+    "themeUpdated": "Theme updated successfully",
+    "avatarUpdated": "Avatar updated successfully",
     "saveError": "Error saving settings",
     "deleteError": "Error deleting account",
     "replayTutorial": "Replay Tutorial",

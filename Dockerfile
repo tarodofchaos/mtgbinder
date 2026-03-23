@@ -1,9 +1,7 @@
 # Stage 1: Build
 FROM node:22-alpine AS builder
+RUN apk add --no-cache bash
 WORKDIR /app
-
-# Install TypeScript globally for build scripts
-RUN npm install -g typescript
 
 COPY package*.json ./
 COPY client/package*.json ./client/
@@ -20,7 +18,7 @@ RUN npm run build
 
 # Stage 2: Production
 FROM node:22-alpine AS production
-RUN apk add --no-cache curl openssl
+RUN apk add --no-cache curl openssl bash
 WORKDIR /app
 
 COPY package*.json ./

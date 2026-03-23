@@ -28,7 +28,7 @@ import {
 import type { SxProps, Theme } from '@mui/material';
 import { useAuth } from '../../context/auth-context';
 import { useTheme } from '../../context/theme-context';
-import { BANNER_THEMES, getAvatarById } from '../../constants/banner-themes';
+import { getAvatarById } from '../../constants/banner-themes';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { SettingsModal } from './SettingsModal';
 

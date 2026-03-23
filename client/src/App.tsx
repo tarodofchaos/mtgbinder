@@ -10,7 +10,6 @@ import { Tutorial } from './components/ui/Tutorial';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 
 // Pages
-import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
@@ -100,12 +99,12 @@ export default function App() {
     <ErrorBoundary>
       <ScrollToTop />
       <Routes>
-        {/* Landing page as root */}
+        {/* Login page as root */}
         <Route
           path="/"
           element={
             <PublicRoute>
-              <LandingPage />
+              <LoginPage />
             </PublicRoute>
           }
         />
